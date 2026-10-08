@@ -196,4 +196,4 @@ These are starter templates, not a production-security claim. TLS/authentication
 
 ## License
 
-No project license has been selected in this scaffold. Add a [LICENSE](https://github.com/net-Circuit-Remote/net-Circuit-Remote/blob/main/LICENSE) only after the project owner chooses one.
+No project license has been selected in this scaffold. Add a `LICENSE` only after the project owner chooses one.

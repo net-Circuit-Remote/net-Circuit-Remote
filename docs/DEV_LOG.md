@@ -4,7 +4,7 @@ current_phase: web-foundation
 status: active
 last_updated: 2026-10-08
 next_task: begin-phase-1-web-foundation
-blocking_issue: none
+blocking_issue: frontend-build-fix-awaiting-ci-rerun
 hardware_mode: simulation
 fpga_development_started: false
 ---
@@ -41,6 +41,7 @@ Begin Phase 1 Web Foundation on top of the verified initial modular monorepo sca
 
 ## Verification evidence for initial scaffold
 
+- GitHub Actions Frontend run `37771048734` reproduced a TypeScript tooling failure: missing Node type definitions and missing `Symbol.asyncDispose` library declarations. Local regression test added and passing after the configuration fix; full npm build still requires CI/network re-verification.
 Executed in the implementation workspace:
 
 - `python3 scripts/check_context.py` -> **PASS**.
@@ -56,6 +57,7 @@ Executed in the implementation workspace:
 
 ## Known Issues / Unknowns
 
+- Frontend CI build fix is applied locally but requires a GitHub Actions rerun to verify `npm run build` in the hosted Node 22 environment.
 - `tests/contracts/test_circuit_schema.py` uses deprecated `jsonschema.RefResolver`; tests pass but should migrate to the newer `referencing` API in a later cleanup.
 - Exact SDR SDRAM part number and timing are not selected.
 - Routing MUX/crosspoint architecture and final independent channel count are not selected.

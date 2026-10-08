@@ -26,6 +26,10 @@ All notable project changes will be documented in this file. The project follows
 - Added GitHub Actions starter workflows and integration/context checks.
 - Hardened the Physical Hardware adapter so it delegates to a real driver and never fabricates successful physical operations.
 
+### Fixed
+
+- Fixed frontend TypeScript CI build configuration by adding Node.js type definitions and the `ESNext.Disposable` library required by current Vite/Rollup declarations.
+
 ### Notes
 
 - Exact SDRAM, routing IC, ADC, DAC and FPGA pin mappings are intentionally not selected yet.

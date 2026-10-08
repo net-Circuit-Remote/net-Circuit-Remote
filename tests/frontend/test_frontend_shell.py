@@ -27,3 +27,16 @@ def test_frontend_services_do_not_expose_physical_fpga_controls():
     text='\n'.join((WEB/p).read_text().lower() for p in ['src/services/api.ts','src/services/websocket.ts'])
     for forbidden in ['/dev/spidev','fpga_register','register_map','raw_mux','mux_address']:
         assert forbidden not in text
+
+
+def test_frontend_typescript_build_config_includes_node_and_modern_libs():
+    import json
+    package=json.loads((WEB/'package.json').read_text())
+    tsconfig=json.loads((WEB/'tsconfig.json').read_text())
+    dev=package.get('devDependencies', {})
+    options=tsconfig.get('compilerOptions', {})
+    libs={item.lower() for item in options.get('lib', [])}
+    types={item.lower() for item in options.get('types', [])}
+    assert '@types/node' in dev
+    assert 'node' in types
+    assert 'esnext' in libs or 'esnext.disposable' in libs
