@@ -1,0 +1,20 @@
+name: FPGA Scaffold
+on:
+  push:
+    paths: ['fpga/**', 'contracts/fpga-protocol/**', '.github/workflows/fpga.yml']
+  pull_request:
+    paths: ['fpga/**', 'contracts/fpga-protocol/**', '.github/workflows/fpga.yml']
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install pytest
+      - run: pytest -q tests/fpga
+      - name: Install Icarus Verilog
+        run: sudo apt-get update && sudo apt-get install -y iverilog
+      - name: Syntax check placeholder top
+        run: iverilog -tnull fpga/experiment-controller/rtl/top.v

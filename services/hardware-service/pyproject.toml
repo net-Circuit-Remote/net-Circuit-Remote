@@ -1,0 +1,15 @@
+[project]
+name = "netcircuit-hardware-service"
+version = "0.1.0"
+description = "Hardware abstraction service for net*CIRCUIT Remote"
+requires-python = ">=3.11"
+dependencies = [
+  "grpcio>=1.60",
+  "protobuf>=5"
+]
+
+[project.optional-dependencies]
+dev = ["grpcio-tools>=1.60", "pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

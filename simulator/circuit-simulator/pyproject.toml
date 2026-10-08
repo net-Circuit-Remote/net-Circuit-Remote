@@ -1,0 +1,11 @@
+[project]
+name = "netcircuit-simulator"
+version = "0.1.0"
+description = "Virtual digital hardware simulator for net*CIRCUIT Remote"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

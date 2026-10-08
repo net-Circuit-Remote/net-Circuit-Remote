@@ -1,0 +1,27 @@
+name: Frontend
+on:
+  push:
+    paths: ['apps/web/**', 'contracts/circuit-schema/**', '.github/workflows/frontend.yml']
+  pull_request:
+    paths: ['apps/web/**', 'contracts/circuit-schema/**', '.github/workflows/frontend.yml']
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Python smoke-test dependency
+        run: pip install pytest
+      - name: Install dependencies
+        working-directory: apps/web
+        run: npm install --no-audit --no-fund
+      - name: Build frontend
+        working-directory: apps/web
+        run: npm run build
+      - name: Boundary smoke tests
+        run: pytest -q tests/frontend

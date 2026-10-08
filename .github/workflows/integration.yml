@@ -1,0 +1,14 @@
+name: Integration
+on:
+  push:
+  pull_request:
+jobs:
+  repository-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install pytest jsonschema pyyaml
+      - run: pytest -q tests/integration tests/contracts tests/frontend tests/deployment tests/fpga tests/test_docs_baseline.py tests/test_root_config.py

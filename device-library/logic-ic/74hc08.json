@@ -1,0 +1,12 @@
+{
+  "schema_version": "0.1-dev",
+  "id": "74HC08",
+  "category": "logic-ic",
+  "function": "quad-2-input-and",
+  "package": "DIP14",
+  "simulation_model": "evaluate_74hc08_gate",
+  "electrical_rules": {
+    "status": "datasheet-values-not-yet-entered"
+  },
+  "notes": "Logical starter metadata only; voltage/timing limits must come from the exact selected device datasheet."
+}

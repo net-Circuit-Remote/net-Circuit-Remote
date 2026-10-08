@@ -1,0 +1,22 @@
+:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #dbe7ec; background: #0e171c; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(circle at top, #1d3038, #0e171c 55%); }
+button { font: inherit; }
+.app-shell { min-height: 100vh; display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; padding: 14px; }
+.topbar, .toolbox, .logic-analyzer, .lab-workspace { border: 1px solid #3e5965; background: #152128; box-shadow: 0 8px 24px rgba(0,0,0,.2); }
+.topbar { display: flex; justify-content: space-between; gap: 16px; padding: 14px 18px; align-items: center; }
+h1 { margin: 0; font-size: 1.25rem; letter-spacing: .04em; } p { margin: 4px 0 0; color: #9eb2ba; }
+.status-card { display: grid; grid-template-columns: auto auto auto; gap: 10px; align-items: center; font-size: .86rem; }
+.state { text-transform: uppercase; padding: 4px 8px; border: 1px solid #66818b; }
+.toolbox { display: flex; gap: 8px; padding: 8px; }
+.toolbox button { color: #dbe7ec; background: #1d3038; border: 1px solid #536f7b; padding: 7px 12px; cursor: pointer; }
+.lab-workspace { display: grid; grid-template-rows: auto 1fr; min-height: 420px; }
+.workspace-toolbar { padding: 8px 12px; border-bottom: 1px solid #3e5965; color: #a8bbc2; }
+.workspace-stage { display: grid; place-items: center; min-height: 390px; background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px); background-size: 20px 20px; }
+.placeholder-board { width: min(760px, 82%); height: 220px; border: 2px solid #66818b; background: #c9c7b7; color: #273238; display: grid; place-content: center; text-align: center; gap: 6px; box-shadow: 0 18px 28px rgba(0,0,0,.3); }
+.logic-analyzer { padding: 12px; }
+.logic-analyzer header { margin-bottom: 8px; font-weight: 700; }
+.trace { display: grid; grid-template-columns: 44px 1fr; align-items: center; gap: 8px; margin: 5px 0; }
+.digital-wave { height: 16px; background: repeating-linear-gradient(90deg, #87a3ad 0 20px, transparent 20px 38px); border-top: 1px solid #87a3ad; }
+.logic-analyzer small { color: #8ca0a8; }
+@media (max-width: 700px) { .topbar { align-items: flex-start; flex-direction: column; } .status-card { grid-template-columns: 1fr; } .toolbox { overflow-x: auto; } }

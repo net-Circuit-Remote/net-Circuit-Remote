@@ -1,0 +1,35 @@
+.worktrees/
+.superpowers/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Runtime
+.env
+*.db
+*.sqlite3
+logs/
+
+# FPGA / Quartus generated output
+db/
+incremental_db/
+output_files/
+*.sof
+*.pof
+*.jic
+*.qws
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

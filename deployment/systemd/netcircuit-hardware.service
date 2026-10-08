@@ -1,0 +1,19 @@
+[Unit]
+Description=net*CIRCUIT Remote Hardware Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=netcircuit
+Group=netcircuit
+WorkingDirectory=/opt/netcircuit/repo/services/hardware-service
+EnvironmentFile=-/etc/netcircuit/netcircuit.env
+ExecStart=/opt/netcircuit/venv-hardware/bin/python -m hardware_service.server 127.0.0.1:50051
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

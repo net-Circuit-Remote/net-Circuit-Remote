@@ -1,0 +1,19 @@
+[Unit]
+Description=net*CIRCUIT Remote Application API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=netcircuit
+Group=netcircuit
+WorkingDirectory=/opt/netcircuit/repo/services/api
+EnvironmentFile=-/etc/netcircuit/netcircuit.env
+ExecStart=/opt/netcircuit/venv-api/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
