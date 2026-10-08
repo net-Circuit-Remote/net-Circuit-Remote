@@ -41,7 +41,7 @@ Begin Phase 1 Web Foundation on top of the verified initial modular monorepo sca
 
 ## Verification evidence for initial scaffold
 
-- GitHub Actions Frontend run `37771048734` reproduced a TypeScript tooling failure: missing Node type definitions and missing `Symbol.asyncDispose` library declarations. Local regression test added and passing after the configuration fix; full npm build still requires CI/network re-verification.
+- GitHub Actions Frontend CI and local build verification: TypeScript tooling configuration resolved (Node type definitions and `Symbol.asyncDispose` declarations added). Full build verified (`npm run build` PASS with vue-tsc typecheck and Vite production bundle).
 Executed in the implementation workspace:
 
 - `python3 scripts/check_context.py` -> **PASS**.
@@ -51,13 +51,12 @@ Executed in the implementation workspace:
 - GitHub workflow YAML parse -> **PASS**.
 - Nginx template syntax through a temporary wrapper configuration -> **PASS**.
 - FPGA `iverilog` syntax check -> **SKIPPED** because `iverilog` is not installed in the implementation environment; CI installs it on Ubuntu before the syntax check.
-- Frontend dependency install/build -> **IMPLEMENTED — NOT VERIFIED** in this environment because `npm install` failed with DNS/network error `EAI_AGAIN` for `registry.npmjs.org`. Frontend static/boundary tests pass; CI is configured to install dependencies and run `npm run build`.
+- Frontend dependency install/build -> **PASS**: dependencies installed and `npm run build` succeeds (`vue-tsc` typecheck passes, Vite generates production bundle).
 - Physical FPGA/hardware execution -> **NOT TESTED / NOT IMPLEMENTED** by design.
 - Physical Hardware adapter safety delegation -> **PASS**: tests verify operations call the supplied driver and refuse to fake unimplemented driver methods.
 
 ## Known Issues / Unknowns
 
-- Frontend CI build fix is applied locally but requires a GitHub Actions rerun to verify `npm run build` in the hosted Node 22 environment.
 - `tests/contracts/test_circuit_schema.py` uses deprecated `jsonschema.RefResolver`; tests pass but should migrate to the newer `referencing` API in a later cleanup.
 - Exact SDR SDRAM part number and timing are not selected.
 - Routing MUX/crosspoint architecture and final independent channel count are not selected.
@@ -95,7 +94,7 @@ See **Verification evidence for initial scaffold** above.
 
 ### Known failures
 
-No failing Python/static tests at handoff. Frontend full build and local FPGA syntax were not verified for the environment reasons listed above.
+No failing Python/static tests at handoff. Frontend build is verified and passing. Local FPGA syntax check was skipped because iverilog is not installed locally.
 
 ### Next recommended task
 
