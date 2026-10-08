@@ -4,7 +4,7 @@ current_phase: web-foundation
 status: active
 last_updated: 2026-10-08
 next_task: begin-phase-1-web-foundation
-blocking_issue: frontend-build-fix-awaiting-ci-rerun
+blocking_issue: none
 hardware_mode: simulation
 fpga_development_started: false
 ---
