@@ -1,5 +1,6 @@
 from pathlib import Path
 import subprocess
+import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -16,6 +17,6 @@ def test_env_example_has_expected_keys():
 
 
 def test_context_check_script_passes():
-    result=subprocess.run(['python3','scripts/check_context.py'],cwd=ROOT,text=True,capture_output=True)
+    result=subprocess.run([sys.executable,'scripts/check_context.py'],cwd=ROOT,text=True,capture_output=True)
     assert result.returncode==0, result.stdout+result.stderr
     assert 'context-check: PASS' in result.stdout

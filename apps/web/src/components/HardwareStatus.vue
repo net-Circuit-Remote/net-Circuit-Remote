@@ -1,15 +1,9 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { useStationStore } from '../stores/station'
-
 const store = useStationStore()
-const { mode, state, stationId } = storeToRefs(store)
+const labels = { SIMULATION: 'Simulation', HARDWARE_AVAILABLE: 'Hardware available', HARDWARE_BUSY: 'Hardware busy', HARDWARE_OFFLINE: 'Hardware offline', FAULT: 'Fault' }
 </script>
 
 <template>
-  <section class="status-card" aria-label="Hardware status">
-    <strong>{{ mode === 'simulation' ? 'Simulation' : 'Remote Hardware' }}</strong>
-    <span>{{ stationId }}</span>
-    <span class="state">{{ state }}</span>
-  </section>
+  <span class="status-badge" :class="store.status.toLowerCase()" :title="store.status + (store.stationId ? ' · ' + store.stationId : '')" role="status" aria-label="Execution status"><i />{{ labels[store.status] }}</span>
 </template>

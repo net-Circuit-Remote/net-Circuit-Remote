@@ -17,8 +17,9 @@
 ## Phase 1 — Web Foundation
 
 - [x] Vue application shell.
-- [ ] Layout/navigation/state management.
-- [ ] API/WebSocket clients.
+- [x] Layout/navigation/state management (six pages, Laboratory panels, six Pinia stores).
+- [x] Typed API/WebSocket clients (response validation, status adapter, reconnect and cleanup).
+- [x] Frontend runtime tests, boundary checks and reproducible build/CI commands.
 
 ## Phase 2 — Circuit Workspace
 

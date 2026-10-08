@@ -1,9 +1,9 @@
 name: Frontend
 on:
   push:
-    paths: ['apps/web/**', 'contracts/circuit-schema/**', '.github/workflows/frontend.yml']
+    paths: ['apps/web/**', 'tests/frontend/**', 'contracts/circuit-schema/**', '.github/workflows/frontend.yml']
   pull_request:
-    paths: ['apps/web/**', 'contracts/circuit-schema/**', '.github/workflows/frontend.yml']
+    paths: ['apps/web/**', 'tests/frontend/**', 'contracts/circuit-schema/**', '.github/workflows/frontend.yml']
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -12,6 +12,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -19,7 +21,10 @@ jobs:
         run: pip install pytest
       - name: Install dependencies
         working-directory: apps/web
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
+      - name: Frontend runtime tests
+        working-directory: apps/web
+        run: npm test
       - name: Build frontend
         working-directory: apps/web
         run: npm run build

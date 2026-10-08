@@ -246,7 +246,7 @@ Frontend và Application Backend không được phụ thuộc trực tiếp và
 
 # PHẦN III — LỘ TRÌNH PHÁT TRIỂN CHI TIẾT
 
-# PHASE 0 — PROJECT ARCHITECTURE
+# PHASE 0 — PROJECT ARCHITECTURE [X]
 
 ## Trạng thái
 

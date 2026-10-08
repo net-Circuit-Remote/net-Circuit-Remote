@@ -345,7 +345,7 @@ npm run dev
 npm run build
 ```
 
-Giao diện Web hiện tại là khung ban đầu (shell). Trình chỉnh sửa breadboard/mạch điện Three.js đầy đủ thuộc về các giai đoạn Web tiếp theo.
+Giao diện Web đã có nền tảng Phase 1: sáu trang, layout Laboratory ba cột và instrument dock, sáu Pinia store, API typed và WebSocket tự reconnect. Chạy `npm test` để kiểm tra frontend. Circuit draft chỉ tồn tại trong phiên trình duyệt; editor Three.js, lưu trữ backend và capture thuộc các phase tiếp theo. Chi tiết trong `apps/web/README.md`.
 
 ### Khởi động nhanh — Backend ứng dụng
 
