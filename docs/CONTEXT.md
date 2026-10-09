@@ -136,4 +136,6 @@ Single Workspace Phase 1 is implemented. App renders one shell; legacy/unknown U
 
 Use supplied artwork through the committed thumbnails in `apps/web/src/assets/icons`; regenerate with `scripts/prepare_workbench_icons.py` after source artwork/device metadata changes. Do not bundle the large original SVG/embedded-PNG files. Read `docs/SOURCE_ANALYSIS_SINGLE_WORKSPACE.md` and the current DEV_LOG before Phase 2.
 
-Next work: metadata-backed placement, picking and graph edit commands. The grid and tool modes do not yet edit a circuit. Run/Stop/Step, acquisition, generator output and memory editing require real contracts; keep their current unavailable states honest.
+Phase 2 now implements metadata-backed placement, models, picking, graph commands, wire/unwire, orbit/pan/snap and gesture history. Canonical editor metadata lives in `device-library/editor/components.json`; sync with `scripts/sync_editor_catalog.py`. Memory has a separate local image v1.0 contract and working Hex Editor; it is configuration, not SDRAM/capture. Structure and power-supply visuals have no electrical ports. Read `docs/SOURCE_ANALYSIS_INTERACTIVE_WORKSPACE.md` and the Phase 2 spec/plan for current ownership and verification.
+
+Next work: Phase 3 simulator/event/clock/model adapters and real output/capture data. Run/Stop/Step, acquisition and generator output remain unavailable until their execution contracts exist. Geometry/rotation/snapping never creates electrical connectivity. Preserve unknown imported metadata and keep every editor mutation within command history.

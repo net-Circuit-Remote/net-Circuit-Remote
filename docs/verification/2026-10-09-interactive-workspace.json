@@ -1,0 +1,244 @@
+{
+  "schema_version": "1.0",
+  "circuit_id": "d7f8743c-d83b-49d9-bf83-87700c8f813d",
+  "modules": [
+    {
+      "id": "BREADBOARD_1",
+      "type": "BREADBOARD",
+      "position": {
+        "x": -2.5,
+        "y": 0,
+        "z": 1
+      },
+      "rotation": 0,
+      "properties": {}
+    },
+    {
+      "id": "DIGITAL_SWITCH_1",
+      "type": "DIGITAL_SWITCH",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": 1.5
+      },
+      "rotation": 90,
+      "properties": {
+        "state": false
+      }
+    },
+    {
+      "id": "LED_1",
+      "type": "LED",
+      "position": {
+        "x": 3,
+        "y": 0,
+        "z": 2.5
+      },
+      "rotation": 0,
+      "properties": {}
+    },
+    {
+      "id": "MEMORY_1",
+      "type": "MEMORY",
+      "position": {
+        "x": 4.5,
+        "y": 0,
+        "z": -2.5
+      },
+      "rotation": 0,
+      "properties": {
+        "memory": {
+          "version": "1.0",
+          "word_bits": 8,
+          "depth": 6,
+          "data": [
+            175,
+            1,
+            65,
+            66,
+            0,
+            255
+          ]
+        }
+      }
+    },
+    {
+      "id": "BOARD_1",
+      "type": "BOARD",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": -7
+      },
+      "rotation": 0,
+      "properties": {}
+    },
+    {
+      "id": "POWER_SUPPLY_1",
+      "type": "POWER_SUPPLY",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -7
+      },
+      "rotation": 0,
+      "properties": {}
+    },
+    {
+      "id": "RESISTOR_1",
+      "type": "RESISTOR",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": -3
+      },
+      "rotation": 0,
+      "properties": {
+        "resistance_ohm": 1000
+      }
+    },
+    {
+      "id": "CAPACITOR_1",
+      "type": "CAPACITOR",
+      "position": {
+        "x": -4,
+        "y": 0,
+        "z": -3
+      },
+      "rotation": 0,
+      "properties": {
+        "capacitance_nf": 100
+      }
+    },
+    {
+      "id": "PUSH_BUTTON_1",
+      "type": "PUSH_BUTTON",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -3
+      },
+      "rotation": 0,
+      "properties": {
+        "state": false
+      }
+    },
+    {
+      "id": "DIP_SWITCH_1",
+      "type": "DIP_SWITCH",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": -3
+      },
+      "rotation": 0,
+      "properties": {
+        "value": 0
+      }
+    },
+    {
+      "id": "CLOCK_1",
+      "type": "CLOCK",
+      "position": {
+        "x": -9,
+        "y": 0,
+        "z": 4
+      },
+      "rotation": 0,
+      "properties": {
+        "frequency_hz": 1000
+      }
+    },
+    {
+      "id": "SEGMENT_1_1",
+      "type": "SEGMENT_1",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 4
+      },
+      "rotation": 0,
+      "properties": {}
+    },
+    {
+      "id": "DISPLAY_1",
+      "type": "DISPLAY",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": 2
+      },
+      "rotation": 0,
+      "properties": {}
+    },
+    {
+      "id": "PROBE_1",
+      "type": "PROBE",
+      "position": {
+        "x": 5,
+        "y": 0,
+        "z": 4
+      },
+      "rotation": 0,
+      "properties": {}
+    },
+    {
+      "id": "74HC08_1",
+      "type": "74HC08",
+      "position": {
+        "x": -4,
+        "y": 0,
+        "z": -7
+      },
+      "rotation": 0,
+      "properties": {}
+    },
+    {
+      "id": "ADDER_1",
+      "type": "ADDER",
+      "position": {
+        "x": 4,
+        "y": 0,
+        "z": -7
+      },
+      "rotation": 0,
+      "properties": {}
+    },
+    {
+      "id": "MULTIPLIER_1",
+      "type": "MULTIPLIER",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": -7
+      },
+      "rotation": 0,
+      "properties": {}
+    }
+  ],
+  "connections": [
+    {
+      "source": "DIGITAL_SWITCH_1.OUT",
+      "destination": "LED_1.IN"
+    },
+    {
+      "source": "CLOCK_1.OUT",
+      "destination": "74HC08_1.A1"
+    },
+    {
+      "source": "DIGITAL_SWITCH_1.OUT",
+      "destination": "74HC08_1.B1"
+    },
+    {
+      "source": "74HC08_1.Y1",
+      "destination": "PROBE_1.IN"
+    },
+    {
+      "source": "MEMORY_1.DATA_OUT",
+      "destination": "DISPLAY_1.DATA"
+    }
+  ],
+  "metadata": {
+    "name": "Untitled circuit"
+  }
+}

@@ -1,0 +1,28 @@
+import json
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_editor_snapshot_matches_canonical_metadata_and_has_unambiguous_ports():
+    canonical = json.loads((ROOT / 'device-library/editor/components.json').read_text(encoding='utf-8'))
+    snapshot = json.loads((ROOT / 'apps/web/src/data/editorCatalog.json').read_text(encoding='utf-8'))
+    assert canonical == snapshot
+    components = canonical['components']
+    assert len({item['type'] for item in components}) == len(components)
+    for item in components:
+        assert len({port['id'] for port in item['ports']}) == len(item['ports'])
+        assert all('.' not in port['id'] and port['direction'] in {'input', 'output', 'inout'} for port in item['ports'])
+        if item.get('visualOnly'):
+            assert not item['ports']
+        if item['family'] == 'arithmetic':
+            assert not item.get('partNumber')
+
+
+def test_logic_editor_reference_uses_confirmed_device_library_identity():
+    catalog = json.loads((ROOT / 'device-library/editor/components.json').read_text(encoding='utf-8'))
+    logic = next(item for item in catalog['components'] if item['type'] == '74HC08')
+    device = json.loads((ROOT / 'device-library' / logic['metadataRef']).read_text(encoding='utf-8'))
+    assert device['id'] == logic['type']
+    assert len(logic['ports']) == 12
+    assert not any('pin' in port for port in logic['ports'])

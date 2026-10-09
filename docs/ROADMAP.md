@@ -45,29 +45,31 @@ UI migration completed on 2026-10-09; evidence in `DEV_LOG.md`:
 
 ## Phase 2 — Interactive Circuit Workspace
 
-- [~] Three.js scene/camera/rendering: disposable on-demand grid lifecycle exists; component rendering/animation remain.
-- [ ] Breadboard/board visual model.
-- [~] Metadata-driven component palette: supplied artwork and canonical starter metadata previews exist; placement/models remain.
-- [ ] Drag component from ribbon to workspace.
-- [ ] Component select/move/rotate/delete.
-- [ ] Wire/unwire interaction.
-- [ ] Zoom/pan/orbit/picking.
-- [~] Undo/redo command history: local project operations exist; graph edit commands remain.
-- [ ] Circuit Graph generation from workspace operations.
+- [x] Three.js scene/camera/lights/grid/models/picking and disposable render/resize/context lifecycle.
+- [x] Breadboard/board/power-supply visual models, without invented electrical nodes or sources.
+- [x] Canonical metadata-driven palette and generated browser catalog (17 functional editor types).
+- [x] Drag/drop and click-to-place from ribbon.
+- [x] Component select/move/rotate/delete; keyboard equivalents in Inspector/canvas.
+- [x] Explicit logical wire/unwire, duplicate/direction/width/input-driver checks.
+- [x] Zoom/pan/orbit/picking/reset/snap, with keyboard view controls.
+- [x] Undo/redo graph commands; one committed step per drag; canceled preview changes no graph.
+- [x] Circuit Graph updates independent of geometry; cascade deletion and JSON round trip.
 - [x] Local JSON save/open project UX in the Single Workspace (server persistence remains Phase 4).
-- [~] Contextual inspector: project/status/validation exists; selected-module editing remains.
+- [x] Selected-module Inspector and local Memory Hex Editor contract.
+
+Implemented on 2026-10-09. Evidence: `DEV_LOG.md`, `SOURCE_ANALYSIS_INTERACTIVE_WORKSPACE.md` and Phase 2 browser report. Models below provide placement/configuration contracts; simulation behavior belongs to Phase 3.
 
 Initial component families:
 
-- [ ] Structure / breadboards / boards.
-- [ ] Passive: resistor, capacitor and related starter parts.
+- [x] Structure / breadboard / board / visual power supply.
+- [x] Passive: resistor, capacitor functional terminals/configuration.
 - [ ] Active/basic transistor/LED representations as supported by simulator scope.
-- [ ] Inputs: button, switch, DIP switch, clock.
-- [ ] Outputs: LED, seven-segment and probes.
-- [ ] Logic ICs.
-- [ ] Arithmetic IC/module models: adder and multiplier family abstractions.
-- [ ] Memory components with data editor contract.
-- [ ] Display components.
+- [x] Inputs: button, toggle switch, 4-bit DIP switch, clock.
+- [x] Outputs: LED, single seven-segment, logical probe.
+- [x] Metadata-driven 74HC08 logical gate ports, without a package pin map.
+- [x] Generic adder/multiplier bus abstractions, no unconfirmed part number.
+- [x] Generic memory with separate local byte-image contract and Hex Editor.
+- [x] Generic 8-bit display. Dual/quad segment models remain pending.
 - [ ] Labels/notation.
 
 ## Phase 3 — Simulator
@@ -80,7 +82,7 @@ Initial component families:
 - [ ] Simulated LED/display state linked to Circuit Graph.
 - [ ] Function Generator simulation model.
 - [ ] Virtual Oscilloscope/Signal Monitor data source.
-- [ ] Memory model + Hex Editor integration where supported.
+- [~] Local initial memory image + Hex Editor implemented in Phase 2; runtime read/write/timing model remains.
 
 ## Phase 4 — Application Backend
 

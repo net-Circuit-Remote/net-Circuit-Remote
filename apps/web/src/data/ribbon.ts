@@ -1,5 +1,6 @@
 import type { WindowKind } from '../types/windows'
 import deviceMetadata from './deviceMetadata.json'
+import { getDefinition } from './editorCatalog'
 
 export const iconUrl = (filename: string) => new URL(`../assets/icons/${filename}.svg`, import.meta.url).href
 export interface LibraryComponent {
@@ -12,17 +13,19 @@ const future = (type: string, name: string, glyph: string): LibraryComponent => 
 export const ribbonGroups: RibbonGroup[] = [
   { id: 'structure', label: 'Structure', icon: 'breadboard_830', items: [
     { ...artwork('BREADBOARD', 'Breadboard', 'breadboard_830'), metadata: deviceMetadata['generic-full-size'] },
-    artwork('JUMPER', 'Jumper wire', 'Line'),
+    { type: 'BOARD', name: 'Board', glyph: 'chip', description: 'Decorative board; no electrical node map is inferred.' },
+    artwork('POWER_SUPPLY', 'Power supply visual', 'power_supply'),
+    { ...artwork('JUMPER', 'Wire tool', 'Line'), description: 'Connect explicitly named logical ports.' },
   ] },
   { id: 'passive', label: 'Passive', icon: 'resistor', items: [artwork('RESISTOR', 'Resistor', 'resistor'), artwork('CAPACITOR', 'Capacitor', 'capacitor')] },
   { id: 'active', label: 'Active', icon: 'transistor', items: [artwork('TRANSISTOR', 'Transistor', 'transistor'), artwork('DIODE', 'Diode', 'diode'), artwork('ZENER', 'Zener diode', 'diode_zener')] },
-  { id: 'output', label: 'Output', icon: 'led', items: [artwork('LED', 'LED indicator', 'led'), artwork('BUZZER', 'Buzzer', 'buzzer_chip')] },
-  { id: 'input', label: 'Input', icon: 'Input', items: [artwork('DIGITAL_SWITCH', 'Digital switch', 'Input'), future('CLOCK', 'Clock', 'clock'), artwork('POWER_SUPPLY', 'Power supply', 'power_supply')] },
+  { id: 'output', label: 'Output', icon: 'led', items: [artwork('LED', 'LED indicator', 'led'), future('PROBE', 'Logical probe', 'probe'), future('DISPLAY', 'Digital display', 'memory'), artwork('BUZZER', 'Buzzer', 'buzzer_chip')] },
+  { id: 'input', label: 'Input', icon: 'Input', items: [artwork('DIGITAL_SWITCH', 'Toggle switch', 'Input'), future('PUSH_BUTTON', 'Push button', 'plus'), future('DIP_SWITCH', 'DIP switch', 'chip'), future('CLOCK', 'Clock', 'clock')] },
   { id: 'logic', label: 'Logic ICs', icon: 'ic_logic', items: [
     { type: '74HC08', name: '74HC08 · AND', icon: 'ic_logic', description: 'Quad two-input AND gate. Starter logical metadata only; browser simulation integration is pending.', metadata: deviceMetadata['74HC08'] },
   ] },
-  { id: 'arithmetic', label: 'Arithmetic ICs', icon: 'ic_arithmetic', items: [artwork('ARITHMETIC', 'Arithmetic IC', 'ic_arithmetic')] },
-  { id: 'memory', label: 'Memory', glyph: 'memory', items: [{ ...future('MEMORY', 'Memory editor', 'memory'), window: 'hex-editor' }] },
+  { id: 'arithmetic', label: 'Arithmetic ICs', icon: 'ic_arithmetic', items: [artwork('ADDER', 'Adder abstraction', 'ic_arithmetic'), artwork('MULTIPLIER', 'Multiplier abstraction', 'ic_arithmetic')] },
+  { id: 'memory', label: 'Memory', glyph: 'memory', items: [future('MEMORY', 'Generic byte memory', 'memory')] },
   { id: 'display', label: 'Display', icon: '7doan1', items: [artwork('SEGMENT_1', '7-segment · single', '7doan1'), artwork('SEGMENT_2', '7-segment · dual', '7doan2'), artwork('SEGMENT_4', '7-segment · quad', '7doan4')] },
   { id: 'embedded', label: 'Embedded/Controller', glyph: 'chip', items: [future('CONTROLLER', 'Controller', 'chip')] },
   { id: 'instruments', label: 'Instruments', icon: 'Oscillocrope', items: [
@@ -33,3 +36,10 @@ export const ribbonGroups: RibbonGroup[] = [
   { id: 'notation', label: 'Notation', glyph: 'tag', items: [future('LABEL', 'Label', 'tag'), future('PROBE', 'Probe annotation', 'probe')] },
 ]
 export const libraryComponents = ribbonGroups.flatMap((group) => group.items)
+for (const item of libraryComponents) {
+  const definition = getDefinition(item.type)
+  if (definition) {
+    item.description = definition.visualOnly ? 'Visual structure only. Placement creates no source, electrical nodes or physical hardware.' : 'Functional editor model with named logical ports. Simulation and physical pin mapping are not connected.'
+    item.metadata = { ...item.metadata, editor_contract: definition }
+  }
+}

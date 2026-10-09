@@ -6,6 +6,7 @@ import { useWorkspaceStore } from '../../stores/workspace'
 import { useCircuitStore } from '../../stores/circuit'
 import { useUiStore } from '../../stores/ui'
 import WorkbenchIcon from './WorkbenchIcon.vue'
+import { useCircuitEditor } from '../../composables/useCircuitEditor'
 const workspace = useWorkspaceStore()
 const circuit = useCircuitStore()
 const ui = useUiStore()
@@ -14,34 +15,45 @@ const canvas = ref<HTMLCanvasElement>()
 const graphicsError = ref('')
 let manager: ReturnType<typeof createSceneManager> | undefined
 let observer: ResizeObserver | undefined
+let contextLost = false
+const editor = useCircuitEditor(canvas, () => manager)
+function visibility() { manager?.suspend(contextLost || document.hidden) }
 function size() { if (host.value) { const { width, height } = host.value.getBoundingClientRect(); manager?.resize(width, height); ui.setViewport(width, height) } }
-function lost(event: Event) { event.preventDefault(); graphicsError.value = 'Graphics context interrupted. Waiting for recovery…' }
-function restored() { graphicsError.value = ''; size() }
+function lost(event: Event) { event.preventDefault(); contextLost = true; editor.cancel(); visibility(); graphicsError.value = 'Graphics context interrupted. Waiting for recovery…' }
+function restored() { contextLost = false; graphicsError.value = ''; visibility(); editor.sync(); size() }
 onMounted(() => {
+  let renderer: WebGLRenderer | undefined
   try {
-    const renderer = new WebGLRenderer({ canvas: canvas.value, antialias: true, alpha: false })
+    renderer = new WebGLRenderer({ canvas: canvas.value, antialias: true, alpha: false })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    manager = createSceneManager({ renderer })
+    manager = createSceneManager({ renderer, canvas: canvas.value, onRender: editor.updatePorts })
     manager.setZoom(workspace.zoom)
-  } catch { graphicsError.value = '3D graphics unavailable. File tools and instrument windows remain available.' }
+    editor.sync(); visibility()
+  } catch { renderer?.dispose(); graphicsError.value = '3D graphics unavailable. Edit graph coordinates and ports using Inspector.' }
   observer = new ResizeObserver(size)
   if (host.value) observer.observe(host.value)
   canvas.value?.addEventListener('webglcontextlost', lost)
   canvas.value?.addEventListener('webglcontextrestored', restored)
+  document.addEventListener('visibilitychange', visibility)
   size()
 })
 watch(() => workspace.zoom, (zoom) => manager?.setZoom(zoom))
-onUnmounted(() => { observer?.disconnect(); manager?.dispose(); canvas.value?.removeEventListener('webglcontextlost', lost); canvas.value?.removeEventListener('webglcontextrestored', restored) })
+onUnmounted(() => { observer?.disconnect(); manager?.dispose(); canvas.value?.removeEventListener('webglcontextlost', lost); canvas.value?.removeEventListener('webglcontextrestored', restored); document.removeEventListener('visibilitychange', visibility) })
 </script>
 <template>
-  <div ref="host" class="circuit-workspace">
-    <canvas ref="canvas" aria-label="Three-dimensional circuit workspace" />
+  <div ref="host" class="circuit-workspace" @dragover.prevent @drop="editor.drop">
+    <canvas ref="canvas" tabindex="0" aria-label="Three-dimensional circuit workspace" aria-describedby="editor-help" @pointerdown="editor.pointerDown" @pointermove="editor.pointerMove" @pointerup="editor.pointerUp" @pointercancel="editor.cancel" @lostpointercapture="editor.cancel" @keydown="editor.keydown" @contextmenu.prevent @pointerleave="!workspace.placementType || editor.cancel()" />
+    <span id="editor-help" class="visually-hidden">Click to select or place. Move tool drags a component. R rotates, Delete removes, arrows move, Escape cancels. Right drag orbits, middle drag pans. Wire connects named logical ports; keyboard controls are in Inspector.</span>
     <div class="workspace-caption"><span class="workspace-dot" /><strong>WORKSPACE</strong><span>{{ circuit.current?.name || 'No circuit open' }}</span></div>
-    <div class="viewport-controls" role="toolbar" aria-label="Viewport controls"><span>Perspective</span><button aria-label="Zoom out" @click="workspace.setZoom(workspace.zoom - 10)"><WorkbenchIcon name="minus" /></button><output aria-label="Zoom">{{ workspace.zoom }}%</output><button aria-label="Zoom in" @click="workspace.setZoom(workspace.zoom + 10)"><WorkbenchIcon name="plus" /></button><button aria-label="Reset view" @click="workspace.setZoom(100)"><WorkbenchIcon name="reset" /></button></div>
-    <div v-if="!circuit.graph?.modules.length" class="workspace-empty"><span class="empty-cross">+</span><p>Your next circuit starts here.</p><span>Explore the ribbon. Open an instrument.<br />Component placement arrives with the circuit editor.</span><div class="workspace-quick"><button @click="ui.openWindow('oscilloscope')">Oscilloscope</button><button @click="ui.openWindow('generator')">Generator</button><button @click="ui.openWindow('monitor')">Signal Monitor</button></div></div>
-    <p v-else class="graph-loaded">{{ circuit.graph.modules.length }} graph modules loaded · 3D component rendering is pending.</p>
+    <div class="viewport-controls" role="toolbar" aria-label="Viewport controls"><span>Perspective</span><label class="snap-toggle"><input v-model="workspace.snap" type="checkbox" />Snap</label><button aria-label="Zoom out" @click="workspace.setZoom(workspace.zoom - 10)"><WorkbenchIcon name="minus" /></button><output aria-label="Zoom">{{ workspace.zoom }}%</output><button aria-label="Zoom in" @click="workspace.setZoom(workspace.zoom + 10)"><WorkbenchIcon name="plus" /></button><button aria-label="Reset view" @click="workspace.setZoom(100); manager?.resetView()"><WorkbenchIcon name="reset" /></button></div>
+    <details class="view-options"><summary>View controls</summary><div><button @click="manager?.orbit(-15)">Orbit left</button><button @click="manager?.orbit(15)">Orbit right</button><button @click="manager?.pan(-0.5, 0)">Pan left</button><button @click="manager?.pan(0.5, 0)">Pan right</button><button @click="manager?.pan(0, -0.5)">Pan forward</button><button @click="manager?.pan(0, 0.5)">Pan back</button></div></details>
+    <div v-if="!circuit.graph?.modules.length && !workspace.placementType" class="workspace-empty"><span class="empty-cross">+</span><p>Your next circuit starts here.</p><span>Drag a component from the ribbon.<br />Connect named ports to build your logical graph.</span></div>
+    <div class="scene-ports"><button v-for="port in editor.ports.value" :key="port.endpoint" :class="['port-anchor', port.direction, { pending: workspace.pendingPort === port.endpoint }]" :style="{ left: port.x + 'px', top: port.y + 'px' }" :aria-label="'Connect port ' + port.endpoint" @click.stop="editor.connect(port.endpoint)">{{ port.endpoint.split('.')[1] }}</button></div>
+    <details class="scene-inventory"><summary>Components ({{ circuit.graph?.modules.length || 0 }})</summary><div><button v-for="module in circuit.graph?.modules" :key="module.id" :aria-pressed="workspace.selectedModuleId === module.id" @click="editor.selectModule(module.id)">{{ module.id }}</button><button @click="ui.openWindow('inspector')">Open Inspector</button></div></details>
+    <div v-if="editor.selected.value" class="selection-actions"><strong>{{ editor.selected.value.id }}</strong><button @click="ui.openWindow('inspector')">Properties</button><button @click="ui.openWindow('component-info')">Info</button><button aria-label="Rotate selected component" @click="circuit.rotateModule(editor.selected.value!.id)"><WorkbenchIcon name="rotate" /></button><button aria-label="Delete selected component" @click="circuit.removeModule(editor.selected.value!.id)"><WorkbenchIcon name="delete" /></button></div>
+    <p v-if="workspace.editError" class="editor-error" role="alert">{{ workspace.editError }}<button @click="workspace.editError = ''">Dismiss</button></p>
     <p v-if="graphicsError" class="graphics-notice" role="status">{{ graphicsError }}</p>
-    <div class="workspace-hint"><span>{{ workspace.tool.toUpperCase() }}</span><span>{{ workspace.previewType ? 'Preview: ' + workspace.previewType : 'Visual grid · logical graph kept separate' }}</span></div>
+    <div class="workspace-hint"><span>{{ workspace.placementType ? 'PLACE ' + workspace.placementType : workspace.tool.toUpperCase() }}</span><span>{{ workspace.placementType ? 'Click surface to place · Esc to cancel' : workspace.pendingPort ? workspace.pendingPort + ' → choose another port · Esc cancels' : 'Right drag: orbit · Middle drag: pan · Wheel: dolly · Ports are logical' }}</span></div>
     <div class="workspace-axis" aria-hidden="true">
       <svg viewBox="0 0 84 84" class="axis-gizmo" aria-hidden="true">
         <!-- Y Axis (Green) -->

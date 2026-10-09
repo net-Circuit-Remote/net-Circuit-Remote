@@ -74,7 +74,7 @@ The Browser never directly writes FPGA registers, raw MUX addresses, or Linux SP
 
 ### Single Workspace UI direction
 
-The frontend implements a **single full-screen electronics workbench**. `/` opens it directly; all legacy and unknown URLs redirect to `/`. The previous routed pages and visible page navigation have been removed. Phase 1 includes local JSON file/history commands, a component ribbon using the supplied SVG artwork, a tool rail, a disposable Three.js grid, status bar and six contextual floating windows. Full circuit editing and execution remain subsequent work.
+The frontend implements a **single full-screen electronics workbench**. `/` opens it directly; legacy/unknown URLs redirect to `/`. Phase 1 supplies the file bar, artwork ribbon, tool rail, status bar and contextual windows. Phase 2 adds metadata-backed scene models, picking, graph editing/wiring/history, camera controls and a local memory image editor. Simulation execution and acquisition remain subsequent work.
 
 Target layout:
 
@@ -148,7 +148,7 @@ Production build:
 npm run build
 ```
 
-Single Workspace Phase 1 is implemented and verified on 2026-10-09. New/Open/Save use local Circuit Graph JSON (2 MB maximum); Undo/Redo cover project commands. The next frontend task is Phase 2 component placement and graph-driven editing. See [web usage](apps/web/README.md), [source analysis](docs/SOURCE_ANALYSIS_SINGLE_WORKSPACE.md) and [verification evidence](docs/DEV_LOG.md).
+Single Workspace Phases 1 and 2 are implemented on 2026-10-09. The interactive editor supports 17 metadata-backed models, drag/place/select/move/rotate/delete, logical wire/unwire, view controls/snap and graph Undo/Redo. Memory has a separate local byte-image contract and Hex Editor. New/Open/Save use Circuit Graph JSON (2 MB maximum). Next: Phase 3 simulation/event/model integration. See [web usage](apps/web/README.md), [Phase 2 source analysis](docs/SOURCE_ANALYSIS_INTERACTIVE_WORKSPACE.md) and [verification evidence](docs/DEV_LOG.md).
 
 ### Quick start — Application Backend
 
@@ -367,7 +367,7 @@ npm run dev
 npm run build
 ```
 
-Phase 1 **Single Workspace** đã được triển khai và kiểm chứng ngày 2026-10-09: `/` mở workbench, không còn navigation nhiều trang; có file bar, 12 nhóm ribbon dùng artwork SVG được cung cấp, 7 công cụ, Three.js grid, status bar và 6 cửa sổ nổi. New/Open/Save dùng JSON cục bộ, Undo/Redo hỗ trợ lịch sử project; API typed, WebSocket và 6 store được giữ đúng boundary. Phase 2 tiếp theo là đặt linh kiện và chỉnh Circuit Graph. Xem [hướng dẫn web](apps/web/README.md) và [phân tích source](docs/SOURCE_ANALYSIS_SINGLE_WORKSPACE.md).
+Phase 1 và Phase 2 **Single Workspace** đã được triển khai ngày 2026-10-09: `/` mở workbench, có 17 model theo metadata, kéo/đặt/chọn/di chuyển/xoay/xóa, nối/ngắt dây logic, zoom/pan/orbit/snap và Undo/Redo graph. Memory dùng contract byte image riêng với Hex Editor cục bộ. Artwork SVG, file bar, ribbon, tool rail, status bar, cửa sổ nổi, typed API/WebSocket và 6 store được giữ. Hình học/breadboard/power-supply visual không xác nhận electrical truth hoặc phần cứng. Tiếp theo là Phase 3 simulator/event/model. Xem [hướng dẫn web](apps/web/README.md), [phân tích Phase 2](docs/SOURCE_ANALYSIS_INTERACTIVE_WORKSPACE.md) và [bằng chứng](docs/DEV_LOG.md).
 
 ### Khởi động nhanh — Backend ứng dụng
 

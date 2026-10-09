@@ -44,12 +44,20 @@ Application-level graph:
     {"id": "U1", "type": "74HC08"}
   ],
   "connections": [
-    {"source": "SW1.OUT", "destination": "U1.1"}
+    {"source": "SW1.OUT", "destination": "U1.A1"}
   ]
 }
 ```
 
 Canonical JSON Schemas live under `contracts/circuit-schema/`.
+
+Phase 2 modules may include world `position: {x,y,z}` and yaw `rotation` in degrees around Y. XZ is the visual work surface; these values never define a net. Command operations use stable module IDs and metadata port IDs, with finite geometry, cascade deletion and independent history. Local file guards additionally check unique IDs, existing endpoint modules and optional memory images. Unknown imported types/port names remain available for inspection; no pin map is inferred.
+
+`device-library/editor/components.json` defines functional ports/directions/widths and visual/configuration defaults. 74HC08 A1/B1/Y1…A4/B4/Y4 are logical gates, not physical DIP pin numbers. Adder/Multiplier have generic 8-bit operand contracts, no selected part number. Breadboard/Board/Power supply visuals have no ports; no real power source is assumed. Passive values and requested clock frequency are local model configuration, not confirmed hardware ratings.
+
+Generic memory uses `contracts/memory/memory-image.schema.json`: version 1.0, 8-bit words, 1–256 bytes, data length exactly depth. Its image lives in `properties.memory`, is explicitly zero-initialized for new instances and is editable/undoable through Hex Editor. It is separate from physical SDRAM, capture and future memory execution/timing semantics.
+
+Editor connection checks reject direction/width mismatches, duplicate wires and second input drivers; output fanout is permitted. Passive `inout` connections need future net/electrical analysis. Backend structural validation alone remains insufficient to authorize physical execution.
 
 ## 5. Device metadata
 

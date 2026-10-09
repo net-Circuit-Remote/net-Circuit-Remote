@@ -4,7 +4,7 @@
 **UI architecture:** Single Workspace  
 **Repository:** `net-Circuit-Remote/net-Circuit-Remote`
 
-**Trạng thái thực thi Phase 1 — 2026-10-09:** Single Workspace shell đã được triển khai; acceptance và bằng chứng hiện tại nằm trong `docs/DEV_LOG.md`. Các phần bên dưới mô tả mục tiêu của từng phase, không phải tất cả đã hoạt động. Task frontend tiếp theo là Phase 2: đặt linh kiện theo metadata, picking và chỉnh Circuit Graph. File bar hiện dùng JSON cục bộ; tool editing, Run/Step và thiết bị đo cần contract/model của các phase tiếp theo. Không dựng lại navigation nhiều trang.
+**Trạng thái thực thi Phase 1 + Phase 2 — 2026-10-09:** Single Workspace shell và Interactive Circuit Workspace đã được triển khai; acceptance/bằng chứng nằm trong `docs/DEV_LOG.md` và báo cáo browser Phase 2. Có 17 model metadata, scene/picking, drag/place/select/move/rotate/delete/wire/unwire/view/snap/undo/redo, Inspector và local Memory Hex Editor. Geometry không định nghĩa electrical truth; power-supply visual không phải nguồn thật. Task tiếp theo là Phase 3 simulator/event/clock/model và output/capture; Run/Step/thiết bị đo cần contract execution. Không dựng lại navigation nhiều trang.
 
 ---
 
@@ -956,7 +956,7 @@ docs/PROMPT_SINGLE_WORKSPACE_UI_AI.md
 
 Task tiếp theo là:
 
-> **Phase 2: đặt một module theo metadata canonical vào Single Workspace, render hình học riêng với logical graph, triển khai picking/select và đưa mọi thay đổi Circuit Graph qua undo/redo. Giữ nguyên shell, typed API/WebSocket và boundary hardware.**
+> **Phase 3: xây simulator/event/clock/model adapters cho catalog functional ports đã có, giữ graph là nguồn truth và cập nhật output/capture chỉ từ kết quả execution thật. Định nghĩa memory runtime semantics riêng với initial image. Giữ shell, history, typed API/WebSocket và hardware boundary.**
 
 Không làm FPGA.
 

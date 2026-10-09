@@ -1,9 +1,9 @@
 ---
 project: net-Circuit-Remote
-current_phase: single-workspace-shell-complete
+current_phase: interactive-circuit-workspace-complete
 status: verified
 last_updated: 2026-10-09
-next_task: phase-2-component-placement-and-graph-editing
+next_task: phase-3-simulator-event-clock-model-integration
 blocking_issue: none
 hardware_mode: simulation
 fpga_development_started: false
@@ -13,7 +13,36 @@ fpga_development_started: false
 
 ## Current Goal
 
-Phase 1 **Single Workspace Shell Migration** is implemented. Continue with Phase 2 metadata-backed placement and Circuit Graph editing, preserving the shell and transport boundaries.
+Phase 2 **Interactive Circuit Workspace** is implemented, preserving Phase 1 shell and transport boundaries. Next: Phase 3 simulator/event/clock/model adapters and real output/capture data.
+
+## Phase 2 source and behavior — 2026-10-09
+
+Deep source analysis: `SOURCE_ANALYSIS_INTERACTIVE_WORKSPACE.md`. Added canonical functional catalog and verified browser snapshot for 17 placeable types. 74HC08 uses logical gate port metadata; generic Adder/Multiplier have no part number. Breadboard/Board/Power supply visuals have no ports. Local memory image v1.0 is a separate 8-bit byte contract (1–256 bytes, explicit 32-zero-byte initialization), not physical RAM/capture.
+
+SceneManager now owns lights/models/labels/port anchors/wire projection/picking and OrbitControls. Visual world XZ placement/Y elevation and yaw rotation stay separate from endpoints. Requests coalesce via RAF, pause for zero size/hidden/context loss, and dispose all frame/listener/control/GPU resources on unmount. Ghosts are reused while moving and release instance buffers when canceled.
+
+Ribbon supports native drag/drop and click-to-place. Commands implement select/move/rotate/delete/wire/unwire/snap/undo/redo. Move previews geometry then records one history step on release; cancellation restores graph geometry. Delete cascades incident edges; Undo restores both. Failed/no-op edits do not change history or validation. Connections use explicit named ports and reject duplicate edges, wrong direction/width and additional input drivers, while allowing fanout. Unknown imported metadata is retained; guards reject duplicate IDs, dangling module references, malformed geometry/memory before mutation.
+
+Inspector supports selected-module coordinates/rotation/metadata configuration, keyboard placement/selection/connect/disconnect, existing project/station/validation/console. Hex Editor Apply/Load/Save and Undo/Redo operate on local graph images; asynchronous load verifies draft/selection again before mutation. Run/Stop/Step and instrument acquisition/output remain unavailable until execution contracts exist.
+
+## Phase 2 verification and review
+
+- Baseline: npm 31/31 outside sandbox. New graph/catalog/memory/scene interfaces were RED before implementation, then GREEN.
+- Final-review regressions: InstancedMesh disposal and ghost identity reproduced RED; corrected. Palette/DOM-port Escape reproduced RED in browser; shared capture handler corrected both focus paths while preserving floating-window closure.
+- Final frontend suite: **43/43 PASS**; production build **PASS**. Full Python regression: **56/56 PASS**, including canonical editor provenance and memory schema; three existing dependency warnings. `check_context.py` PASS. Exact final evidence: `verification/2026-10-09-interactive-workspace-browser.md`.
+- Browser verified native breadboard drag/drop, switch/LED placement and wiring, Move with exactly one Undo, rotation, unwire/delete cascade/restore, JSON Save/New/Open preserving rotation/edges/memory, valid/invalid Hex Apply and Undo/Redo.
+- All 17 model families rendered/configured; functional 74HC08 and 8-bit memory/display connections succeed, width mismatch fails without adding a wire. Graph structural validation and WebSocket remain connected.
+- Browser pointer precision prompted a wire picking-margin regression (RED → fix). Invisible line targets use a camera-scaled margin while displayed wire geometry and graph endpoints remain unchanged.
+- Responsive: 1920×1080, 1440×900, 1366×768, 1280×720 PASS; no horizontal body overflow and both open floating windows stay inside workspace. No browser warning/error logs in the tested session.
+- Build and final repository/context checks are recorded in the Phase 2 browser report. CI workflow paths include memory/catalog changes; no hosted CI run or push is claimed.
+
+Ruling: keep one demand-driven RAF rendering path without damping/animation because Phase 2 has no simulation engine; Phase 3 may extend scheduling for real signals. Use functional catalog defaults as local configuration, not physical ratings. Keep graph schema 1.0: optional rotation was already accepted by the extensible module schema and is now explicitly typed. Retain unknown imports with fallback visuals instead of inventing mappings.
+
+One fresh read-only final reviewer found two Important issues, both reproduced and fixed as described above; no Critical/Minor findings were reported. No commit/push/deployment was requested or performed.
+
+## Historical Phase 1 record
+
+The following migration evidence describes the earlier shell-only state, before the Phase 2 implementation above.
 
 ## Source analysis and migration
 
@@ -73,7 +102,7 @@ Scope retained: editing/execution/capture are explicit Phase 2+ features; the ro
 - Physical holes/visual coordinates do not imply independent routing channels or electrical nodes.
 - Frontend never imports hardware drivers or accesses device registers directly.
 
-## Known limitations
+## Historical Phase 1 limitations
 
 Phase 1 provides the shell/grid; it does not place, pick, render or wire logical modules. Tools select an editor mode, not a completed graph-edit action. Run/Stop/Step, acquisition/output, waveform measurements and supported memory editing are unavailable until real contracts/models exist. Projects remain local to the session unless downloaded. Window resizing/minimizing is future work. Vite's large-chunk advisory remains non-blocking.
 
@@ -83,12 +112,12 @@ Device-library coverage is small. gRPC generated bindings/handlers, exact SDRAM/
 
 ### What changed
 
-Single Workspace source, shared windows, lifecycle, icon pipeline, state/file actions, regression/boundary tests and current documentation. Preserve historical superseded design/plan files.
+Phase 2 canonical catalog, separate memory contract, graph command/history layer, scene/models/picking/wires/camera controls, pointer/drag/keyboard interactions, selected Inspector/Hex Editor, lifecycle fixes, tests and Markdown. Preserve historical specs/verification and supplied artwork/axis gizmo.
 
 ### Next recommended task
 
-Phase 2 first slice: use canonical device metadata to place one logical module, render its visual separately, pick/select it and route every graph mutation through undo/redo. Avoid inferring electrical connectivity from the visual grid.
+Phase 3: define event-driven simulation and clock, functional catalog/evaluator adapters, output/measurement delivery and memory runtime semantics. Do not treat structural API approval, geometry, local initial bytes or visual sources as execution/electrical truth.
 
 ### Required context
 
-Read CONTEXT, ARCHITECTURE, ROADMAP, this log, SOURCE_ANALYSIS_SINGLE_WORKSPACE, the approved 2026-10-09 spec and implementation plan, then relevant source/tests/contracts. No commit/push/deployment was performed for this task.
+Read CONTEXT, ARCHITECTURE, ROADMAP, this log, SOURCE_ANALYSIS_INTERACTIVE_WORKSPACE, Phase 2 spec/plan/browser report, canonical editor/memory contracts and related source/tests. Current limitations: simulation/acquisition/generator output and persistence remain unimplemented; active/controller/notation and dual/quad segment contracts remain pending; physical datasheets/topology/ratings remain unconfirmed. Vite's existing large-chunk advisory is nonblocking.

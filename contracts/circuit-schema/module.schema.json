@@ -12,6 +12,7 @@
       "properties": {"x": {"type": "number"}, "y": {"type": "number"}, "z": {"type": "number"}},
       "additionalProperties": false
     },
+    "rotation": {"type": "number", "description": "Optional editor yaw in degrees around world Y; no electrical meaning."},
     "properties": {"type": "object"}
   },
   "additionalProperties": true

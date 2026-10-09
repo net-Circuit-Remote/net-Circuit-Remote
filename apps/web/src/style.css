@@ -2,6 +2,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
 button, input, select { font: inherit; }
+textarea { font: 12px/1.8 Consolas, monospace; width: 100%; color: #d5e6ed; background: #121d2a; border: 1px solid #3b4c61; resize: vertical; padding: 8px; }
 button { color: inherit; background: #253345; border: 1px solid #3b4b60; border-radius: 4px; cursor: pointer; min-height: 28px; }
 button:hover:not(:disabled) { background: #34475d; border-color: #6f8b9f; }
 button:disabled { opacity: .43; cursor: default; }
@@ -55,6 +56,38 @@ code { font-family: Consolas, monospace; }
 .palette-art svg { width: 35px; height: 35px; color: #9fb9c8; }
 .palette-items strong { font-size: 11px; font-weight: 500; }
 .palette-items small { font-size: 9px; color: #7fbeaF; }
+.palette-entry { flex-shrink: 0; width: 120px; display: flex; flex-direction: column; gap: 4px; }
+.palette-entry > button { width: 100%; flex: 1; }
+.palette-entry > .palette-info { min-height: 24px; padding: 3px; flex: 0; font-size: 10px; color: #a7c5d6; }
+.palette-entry > button[draggable=true] { cursor: grab; }
+.scene-ports { position: absolute; inset: 0; pointer-events: none; }
+.port-anchor { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; min-height: 18px; font: 9px/1.2 Consolas, monospace; padding: 2px 4px; border-radius: 3px; color: #baf0e5; border-color: #6bbcae; background: #142a2cf0; }
+.port-anchor.output { color: #f1d597; border-color: #b99d5d; background: #302a1bf0; }
+.port-anchor.pending { box-shadow: 0 0 0 3px #a5e8bc8a; }
+.scene-inventory { position: absolute; top: 64px; left: 22px; max-width: 240px; background: #172534ea; border: 1px solid #344c60; border-radius: 4px; font-size: 11px; }
+.scene-inventory summary { padding: 7px 9px; cursor: pointer; color: #9fbaca; }
+.scene-inventory > div { display: flex; flex-direction: column; gap: 3px; padding: 5px; max-height: 210px; overflow: auto; }
+.scene-inventory button { font-size: 10px; text-align: left; padding: 4px 6px; }
+.scene-inventory button[aria-pressed=true] { border-color: #6ac6b5; }
+.selection-actions { position: absolute; left: 50%; top: 64px; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 5px 7px; background: #203447f0; border: 1px solid #456576; border-radius: 4px; font-size: 10px; max-width: 55%; }
+.selection-actions strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.selection-actions button { padding: 3px 6px; font-size: 10px; }
+.selection-actions .workbench-icon { width: 15px; height: 15px; }
+.snap-toggle { display: flex; flex-direction: row; gap: 4px; align-items: center; font-size: 10px; padding-inline: 5px; }
+.snap-toggle input, input[type=checkbox] { width: auto; accent-color: var(--accent); }
+.editor-error { position: absolute; bottom: 65px; left: 22px; padding: 8px 10px; max-width: calc(100% - 44px); color: #f2b7aa; background: #462b32ee; border: 1px solid #8b5759; border-radius: 4px; font-size: 11px; }
+.editor-error button { margin-left: 10px; }
+.property-coordinates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.component-edit-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+.connection-list { list-style: none; padding: 0; margin: 8px 0; }
+.connection-list li { display: flex; align-items: center; gap: 6px; justify-content: space-between; padding-block: 5px; border-bottom: 1px solid #34485b; }
+.connection-list code { font-size: 10px; overflow-wrap: anywhere; }
+.hex-row { display: grid; grid-template-columns: 55px minmax(0, 1fr) 70px; gap: 7px; font-size: 11px; padding: 4px 0; }
+.hex-input { margin-top: 12px; }
+.view-options { position: absolute; right: 20px; top: 64px; z-index: 2; background: #172534ea; border: 1px solid #344c60; border-radius: 4px; font-size: 10px; }
+.view-options summary { cursor: pointer; padding: 7px 9px; color: #a3baca; }
+.view-options > div { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; padding: 5px; }
+.view-options button { font-size: 10px; padding: 4px 7px; }
 .workbench-body { display: flex; flex: 1; min-height: 0; }
 .tool-rail { width: 66px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; background: #1c2836; border-right: 1px solid #35465a; padding: 12px 6px 10px; }
 .rail-label { font-size: 8px; letter-spacing: 1px; color: #7f95a9; margin-bottom: 13px; }

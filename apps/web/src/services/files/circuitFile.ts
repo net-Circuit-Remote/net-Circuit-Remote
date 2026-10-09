@@ -1,4 +1,5 @@
 import type { CircuitGraph } from '../../types/circuit'
+import { parseMemoryImage } from './memoryImage'
 
 export const MAX_CIRCUIT_FILE_BYTES = 2_000_000
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value)
@@ -16,12 +17,17 @@ export function parseCircuitFile(contents: string): CircuitGraph {
   if (!object(value) || !keys(value, ['schema_version', 'circuit_id', 'modules', 'connections', 'metadata']) || value.schema_version !== '1.0' || !text(value.circuit_id) || !Array.isArray(value.modules) || !Array.isArray(value.connections) || !optionalObject(value.metadata)) return invalid()
   for (const module of value.modules) {
     if (!object(module) || !text(module.id) || !text(module.type) || !optionalObject(module.properties)) return invalid()
+    if (module.rotation !== undefined && (typeof module.rotation !== 'number' || !Number.isFinite(module.rotation))) return invalid()
+    if (module.type === 'MEMORY' && object(module.properties) && module.properties.memory !== undefined) parseMemoryImage(JSON.stringify(module.properties.memory))
     if (module.position !== undefined) {
       if (!object(module.position) || !keys(module.position, ['x', 'y', 'z']) || !Object.values(module.position).every((coordinate) => typeof coordinate === 'number' && Number.isFinite(coordinate))) return invalid()
     }
   }
+  const ids = new Set(value.modules.map((module) => module.id))
+  if (ids.size !== value.modules.length) throw new Error('Module IDs must be unique.')
   for (const connection of value.connections) {
     if (!object(connection) || !keys(connection, ['source', 'destination', 'metadata']) || !endpoint(connection.source) || !endpoint(connection.destination) || !optionalObject(connection.metadata)) return invalid()
+    if (!ids.has((connection.source as string).split('.')[0]) || !ids.has((connection.destination as string).split('.')[0])) throw new Error('Connection references a missing module.')
   }
   return value as unknown as CircuitGraph
 }

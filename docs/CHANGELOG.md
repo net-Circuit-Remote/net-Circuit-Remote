@@ -4,6 +4,16 @@ All notable project changes will be documented in this file. The project follows
 
 ## [Unreleased]
 
+### Implemented — 2026-10-09 Interactive Circuit Workspace
+
+- Added canonical functional catalog and verified browser snapshot for 17 placeable models; supplied icons and Single Workspace architecture retained.
+- Added Three.js lights/models/labels/port anchors/logical wires/picking, orbit/pan/snap/zoom/reset and context/visibility/resize lifecycle.
+- Added graph-backed placement, selection, move preview/commit/cancel, rotation, cascade delete, wire/unwire and bounded Undo/Redo. Import checks unique IDs, references, geometry and local memory images; unknown types/ports are retained.
+- Added selected-component Inspector, keyboard edit/wiring equivalents and local Memory Hex Editor with validated Apply/Load/Save, instance isolation and history.
+- Documented optional numeric editor rotation within graph schema 1.0 and a separate memory image 1.0 contract. Structural visuals have no ports; arithmetic has no fabricated part number; physical pinouts/power and execution are not inferred.
+- Fixed final-review GPU instance-buffer disposal and Escape across ribbon/port focus. Ghost models are reused during placement motion.
+- Extended frontend CI paths/provenance/behavior checks. Exact verification and browser evidence are in DEV_LOG.
+
 ### Implemented — 2026-10-09 Single Workspace shell
 
 - Replaced App's page shell with SingleWorkspaceShell. Legacy/unknown URLs redirect to `/`; deleted seven routed pages and five legacy sidebar/workspace/dock components.

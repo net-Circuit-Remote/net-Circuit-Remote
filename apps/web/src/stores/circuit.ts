@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
-import type { CircuitGraph } from '../types/circuit'
+import type { CircuitGraph, CircuitModule } from '../types/circuit'
+import type { MemoryImage } from '../types/memory'
+import { getDefinition, getPort, validateProperties } from '../data/editorCatalog'
+import { createMemoryImage, parseMemoryImage } from '../services/files/memoryImage'
 import type { CircuitValidation } from '../types/api'
 import { circuitsApi } from '../services/api/circuits'
 import { errorMessage } from '../services/api/client'
@@ -22,6 +25,69 @@ export const useCircuitStore = defineStore('circuit', {
     dirty(): boolean { return !!this.current && this.saved[this.current.id] !== JSON.stringify(this.current) },
   },
   actions: {
+    commitGraph(graph: CircuitGraph) {
+      if (!this.current || JSON.stringify(graph) === JSON.stringify(this.graph)) return
+      this.recordChange(); this.current.graph = graph; this.clearValidation()
+    },
+    placeModule(type: string, position: Required<NonNullable<CircuitModule['position']>>): string {
+      if (!this.graph) throw new Error('Create a circuit first.')
+      const definition = getDefinition(type)
+      if (!definition) throw new Error('Placement metadata is unavailable for this type.')
+      if (!Object.values(position).every(Number.isFinite)) throw new Error('Position must be finite.')
+      let serial = 1
+      while (this.graph.modules.some((module) => module.id === `${type}_${serial}`)) serial++
+      const id = `${type}_${serial}`
+      const properties = structuredClone(definition.defaults)
+      if (definition.memoryContract) properties.memory = createMemoryImage()
+      this.commitGraph({ ...this.graph, modules: [...this.graph.modules, { id, type, position: { ...position }, rotation: 0, properties }] })
+      return id
+    },
+    moveModule(id: string, position: Required<NonNullable<CircuitModule['position']>>) {
+      if (!Object.values(position).every(Number.isFinite)) throw new Error('Position must be finite.')
+      if (!this.graph?.modules.some((module) => module.id === id)) return
+      this.commitGraph({ ...this.graph, modules: this.graph.modules.map((module) => module.id === id ? { ...module, position: { ...position } } : module) })
+    },
+    rotateModule(id: string, degrees = 90) {
+      if (!Number.isFinite(degrees)) throw new Error('Rotation must be finite.')
+      if (!this.graph?.modules.some((module) => module.id === id)) return
+      this.commitGraph({ ...this.graph, modules: this.graph.modules.map((module) => module.id === id ? { ...module, rotation: (((module.rotation ?? 0) + degrees) % 360 + 360) % 360 } : module) })
+    },
+    removeModule(id: string) {
+      if (!this.graph?.modules.some((module) => module.id === id)) return
+      this.commitGraph({ ...this.graph, modules: this.graph.modules.filter((module) => module.id !== id), connections: this.graph.connections.filter((wire) => wire.source.split('.')[0] !== id && wire.destination.split('.')[0] !== id) })
+    },
+    connectPorts(first: string, second: string) {
+      if (!this.graph) throw new Error('Create a circuit first.')
+      let source = first, destination = second
+      let a = getPort(this.graph.modules, source), b = getPort(this.graph.modules, destination)
+      if (!a || !b) throw new Error('Choose two known logical ports. Visual structures have no electrical terminals.')
+      if (source === destination) throw new Error('Choose different ports.')
+      if (a.direction === 'input' || b.direction === 'output') { [source, destination] = [destination, source]; [a, b] = [b, a] }
+      if (a.direction === 'input' || b.direction === 'output') throw new Error('Connect an output/terminal to an input/terminal.')
+      if ((a.width ?? 1) !== (b.width ?? 1)) throw new Error('Logical port widths must match; use an explicit adapter.')
+      if (this.graph.connections.some((wire) => (wire.source === source && wire.destination === destination) || (wire.source === destination && wire.destination === source))) throw new Error('These ports are already connected.')
+      if (b.direction === 'input' && this.graph.connections.some((wire) => wire.destination === destination || wire.source === destination)) throw new Error('This input already has a driver. Disconnect it first.')
+      this.commitGraph({ ...this.graph, connections: [...this.graph.connections, { source, destination }] })
+    },
+    disconnectPorts(source: string, destination: string) {
+      if (!this.graph) return
+      this.commitGraph({ ...this.graph, connections: this.graph.connections.filter((wire) => wire.source !== source || wire.destination !== destination) })
+    },
+    updateModuleProperties(id: string, patch: Record<string, unknown>) {
+      const module = this.graph?.modules.find((module) => module.id === id)
+      if (!module || !this.graph) return
+      const definition = getDefinition(module.type)
+      if (Object.keys(patch).some((key) => !definition?.parameters.some((parameter) => parameter.key === key))) throw new Error('Unsupported component parameter.')
+      const properties = { ...definition?.defaults, ...module.properties, ...patch }
+      validateProperties(module.type, properties)
+      this.commitGraph({ ...this.graph, modules: this.graph.modules.map((item) => item.id === id ? { ...item, properties } : item) })
+    },
+    setMemoryImage(id: string, image: MemoryImage) {
+      const module = this.graph?.modules.find((module) => module.id === id)
+      if (!this.graph || !module || !getDefinition(module.type)?.memoryContract) throw new Error('Select a supported memory component.')
+      const copy = parseMemoryImage(JSON.stringify(image))
+      this.commitGraph({ ...this.graph, modules: this.graph.modules.map((item) => item.id === id ? { ...item, properties: { ...item.properties, memory: copy } } : item) })
+    },
     snapshot(): string { return JSON.stringify({ drafts: this.drafts, activeId: this.activeId }) },
     recordChange() {
       this.past.push(this.snapshot())

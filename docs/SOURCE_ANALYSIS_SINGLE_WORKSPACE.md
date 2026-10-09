@@ -1,5 +1,7 @@
 # Source analysis — Single Workspace migration
 
+Historical Phase 1 analysis. Current interactive editor source is analyzed in `SOURCE_ANALYSIS_INTERACTIVE_WORKSPACE.md`; see DEV_LOG for Phase 2 status.
+
 Analyzed on 2026-10-09 against the actual repository, including frontend source/tests, backend contracts, device metadata, simulator and CI. This report complements the approved Single Workspace spec.
 
 ## Before migration
