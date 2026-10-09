@@ -20,11 +20,11 @@ From repository root: `python -m pytest -q tests/frontend`. Node 22 is the CI ba
 | New / Open / Save | Independent session drafts; schema 1.0 JSON download/import; shared 2 MB UTF-8 limit. Imports check geometry, unique IDs, module references and local memory images before mutation. |
 | Undo / Redo | Last 50 project/graph command snapshots. One move gesture commits one step. Failed/no-op commands preserve history. |
 | Ribbon | Twelve families with supplied SVG artwork. Drag a supported component to the surface, or click it then click the surface. Info opens metadata. Unsupported future entries remain previews; instruments open windows. |
-| Select | Pick a module or wire. Component inventory and Inspector provide keyboard selection. |
-| Move | Drag selected geometry and connected wires as preview; release commits position. Cancel restores graph geometry. |
+| Select | Click a module/wire to select it; dragging a model does not move it or the camera. Left drag empty surface to pan. Component inventory and Inspector provide keyboard selection. |
+| Move | The only tool that permits direct model dragging, including Breadboard/Board: preview geometry and connected wires; release commits one position command. Cancel restores graph geometry. Click/jitter below 4 px creates no move/history. |
 | Rotate / Delete | Click a module; Rotate adds 90°. Delete cascades connected edges. Delete also removes a picked wire. |
 | Wire | Click two named logical ports; pending source is highlighted. Inspector offers Source/Destination selectors and Disconnect. |
-| View | Right drag orbit; middle drag pan; wheel dolly. Zoom/reset/snap controls, plus View controls for keyboard orbit/pan. XZ ground plane; Y elevation. Snap step is 0.5 world units. |
+| View | Left drag empty surface to grab/pan the XZ plane in any direction; right drag orbit; middle drag also pans; wheel dolly. Camera-oriented XYZ gizmo with six nearby orbit/pan buttons replaces View controls. Pan buttons follow the camera's ground-plane heading. Zoom/reset/snap remain; snap step is 0.5 world units. |
 | Inspector | Add at origin, select, edit coordinates/rotation/metadata parameters, connect/disconnect, project/session, backend validation, station target, console. |
 | Hex Editor | Select generic MEMORY; edit initial bytes, load/save image JSON, Apply and Undo/Redo. Memory v1.0: 8-bit words, 1–256 bytes; new instance explicitly starts with 32 zero bytes. |
 | Scope / Probe tools | Select a graph component and open an instrument shell. Acquisition is not connected. |
@@ -33,6 +33,8 @@ From repository root: `python -m pytest -q tests/frontend`. Node 22 is the CI ba
 Canvas keyboard: R rotates, Delete/Backspace removes selection, arrow keys move by snap step (0.1 with snap off). Escape cancels placement, wiring and move preview even when focus is on ribbon/DOM ports; floating-window Escape still closes the window. Ctrl/Meta+N/O/S/Z, Shift+Z/Y work outside form fields. Floating-window headers support arrow movement and focus restoration.
 
 Projects remain session-local. Save before reload/closing; no server persistence yet. Geometry, overlap, snap and decorative breadboard contacts never create electrical connectivity. API structural validation does not imply electrical approval or execution support.
+
+Navigation correction: see [algorithm/source analysis](../../docs/SOURCE_ANALYSIS_WORKSPACE_NAVIGATION.md) and [current Move-only browser evidence](../../docs/verification/2026-10-09-move-tool-browser.md). With Move selected, model dragging uses a horizontal plane through the picked surface, so a visible model remains draggable near a low camera. Its stored Y elevation, rotation and named connections stay intact. Pan changes camera/target only, retains selection/pending wire while dragging and records no circuit history; a blank click clears selection. During left gestures, other camera input is locked until release/cancel. Escape, tool/graph changes, hidden tabs and context loss cancel model previews.
 
 ## Models and contracts
 

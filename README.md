@@ -369,6 +369,8 @@ npm run build
 
 Phase 1 và Phase 2 **Single Workspace** đã được triển khai ngày 2026-10-09: `/` mở workbench, có 17 model theo metadata, kéo/đặt/chọn/di chuyển/xoay/xóa, nối/ngắt dây logic, zoom/pan/orbit/snap và Undo/Redo graph. Memory dùng contract byte image riêng với Hex Editor cục bộ. Artwork SVG, file bar, ribbon, tool rail, status bar, cửa sổ nổi, typed API/WebSocket và 6 store được giữ. Hình học/breadboard/power-supply visual không xác nhận electrical truth hoặc phần cứng. Tiếp theo là Phase 3 simulator/event/model. Xem [hướng dẫn web](apps/web/README.md), [phân tích Phase 2](docs/SOURCE_ANALYSIS_INTERACTIVE_WORKSPACE.md) và [bằng chứng](docs/DEV_LOG.md).
 
+Bổ sung UX điều hướng: chuột trái kéo nền để pan XZ; chỉ khi chọn Move mới kéo trực tiếp model/breadboard, Select chỉ chọn. Chuột phải orbit và XYZ theo camera. Các nút orbit/pan nằm cạnh gizmo, khung View controls đã bỏ. Mỗi lần kéo model có một Undo, pan không đổi circuit graph. Xem [phân tích thuật toán](docs/SOURCE_ANALYSIS_WORKSPACE_NAVIGATION.md) và [kiểm chứng hiện tại](docs/verification/2026-10-09-move-tool-browser.md).
+
 ### Khởi động nhanh — Backend ứng dụng
 
 ```bash

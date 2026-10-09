@@ -6,7 +6,8 @@ import type { CircuitGraph, CircuitModule } from '../types/circuit'
 
 export interface SceneRenderer { setSize(width: number, height: number, updateStyle?: boolean): void; render(scene: Scene, camera: PerspectiveCamera): void; dispose(): void }
 interface SceneOptions { renderer: SceneRenderer; canvas?: HTMLCanvasElement; onRender?: () => void; requestFrame?: (callback: FrameRequestCallback) => number; cancelFrame?: (id: number) => void }
-export type PickResult = { kind: 'module'; id: string } | { kind: 'port'; id: string; endpoint: string } | { kind: 'wire'; source: string; destination: string }
+export type PickResult = ({ kind: 'module'; id: string } | { kind: 'port'; id: string; endpoint: string } | { kind: 'wire'; source: string; destination: string }) & { point: Vector3 }
+export interface OrientationAxis { label: 'X' | 'Y' | 'Z'; x: number; y: number; depth: number; color: string }
 
 // Geometry is a projection of graph IDs and named logical ports, never a source of nets.
 export function createSceneManager({ renderer, canvas, onRender, requestFrame = requestAnimationFrame, cancelFrame = cancelAnimationFrame }: SceneOptions) {
@@ -19,7 +20,7 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
   const wires = new Group(), content = new Group(), models = new Map<string, Group>()
   scene.add(grid, ambient, light, fillLight, content, wires)
   const raycaster = new Raycaster(), plane = new Plane(new Vector3(0, 1, 0), 0)
-  let width = 1, height = 1, frame: number | null = null, disposed = false, visible = false, suspended = false
+  let width = 1, height = 1, frame: number | null = null, disposed = false, visible = false, suspended = false, pointerLocked = false
   let graph: CircuitGraph | null = null, ghost: Group | null = null
   const schedule = () => {
     if (disposed || !visible || suspended || frame !== null) return
@@ -52,6 +53,7 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
     }
   }
   const ray = (x: number, y: number) => { camera.updateMatrixWorld(); raycaster.params.Line.threshold = camera.position.distanceTo(controls?.target ?? viewTarget) * 2 * Math.tan(camera.fov * Math.PI / 360) / (height * camera.zoom) * 6; raycaster.setFromCamera(new Vector2(x / width * 2 - 1, -(y / height) * 2 + 1), camera) }
+  const translateView = (delta: Vector3) => { camera.position.add(delta); (controls?.target ?? viewTarget).add(delta); camera.updateMatrixWorld(); controls?.update(); schedule() }
   return {
     scene, camera, grid, models, wires,
     endpointPosition,
@@ -103,18 +105,40 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
         if (hit.object.userData.ignorePick) continue
         let object = hit.object
         while (object.parent && !object.userData.kind) object = object.parent
-        if (object.userData.kind) return object.userData as PickResult
+        if (object.userData.kind) return { ...object.userData, point: hit.point.clone() } as PickResult
       }
       return null
     },
-    groundPoint(x: number, y: number) { if (disposed) return null; ray(x, y); return raycaster.ray.intersectPlane(plane, new Vector3()) },
+    groundPoint(x: number, y: number, elevation = 0) { if (disposed) return null; ray(x, y); plane.constant = -elevation; return raycaster.ray.intersectPlane(plane, new Vector3()) },
+    panGrab(anchor: Vector3, x: number, y: number) {
+      if (disposed || suspended) return
+      ray(x, y); plane.constant = 0
+      const current = raycaster.ray.intersectPlane(plane, new Vector3())
+      if (current) translateView(anchor.clone().sub(current).setY(0))
+    },
+    lockPointer(value: boolean) { pointerLocked = value; if (controls) controls.enabled = !disposed && !suspended && !pointerLocked },
+    orientationAxes(): OrientationAxis[] {
+      const inverse = camera.quaternion.clone().invert()
+      const axes = [
+        { label: 'X' as const, direction: new Vector3(1, 0, 0), color: '#ff5a43' },
+        { label: 'Y' as const, direction: new Vector3(0, 1, 0), color: '#00e676' },
+        { label: 'Z' as const, direction: new Vector3(0, 0, 1), color: '#398bff' },
+      ]
+      return axes.map(({ label, direction, color }) => { direction.applyQuaternion(inverse); return { label, x: direction.x, y: -direction.y, depth: direction.z, color } }).sort((a, b) => a.depth - b.depth)
+    },
     project(point: Vector3) { camera.updateMatrixWorld(); const p = point.clone().project(camera); return { x: (p.x + 1) * width / 2, y: (1 - p.y) * height / 2, visible: p.z >= -1 && p.z <= 1 && Math.abs(p.x) < 1 && Math.abs(p.y) < 1 } },
     resize(w: number, h: number) { if (disposed) return; visible = w > 0 && h > 0; if (!visible) { if (frame !== null) cancelFrame(frame); frame = null; return }; width = w; height = h; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); schedule() },
     setZoom(percent: number) { if (disposed) return; camera.zoom = Math.min(200, Math.max(50, percent)) / 100; camera.updateProjectionMatrix(); schedule() },
     orbit(degrees: number) { if (disposed || !Number.isFinite(degrees)) return; const target = controls?.target ?? viewTarget; camera.position.sub(target).applyAxisAngle(new Vector3(0, 1, 0), degrees * Math.PI / 180).add(target); camera.lookAt(target); controls?.update(); schedule() },
-    pan(horizontal: number, forward: number) { if (disposed || !Number.isFinite(horizontal) || !Number.isFinite(forward)) return; camera.updateMatrixWorld(); const delta = new Vector3().setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(horizontal); delta.y = 0; delta.add(new Vector3(0, 0, forward)); camera.position.add(delta); (controls?.target ?? viewTarget).add(delta); camera.lookAt(controls?.target ?? viewTarget); controls?.update(); schedule() },
+    pan(horizontal: number, forward: number) {
+      if (disposed || !Number.isFinite(horizontal) || !Number.isFinite(forward)) return
+      camera.updateMatrixWorld()
+      const right = new Vector3().setFromMatrixColumn(camera.matrixWorld, 0).setY(0).normalize()
+      const ahead = new Vector3().crossVectors(new Vector3(0, 1, 0), right)
+      translateView(right.multiplyScalar(horizontal).add(ahead.multiplyScalar(-forward)))
+    },
     resetView() { if (disposed) return; controls?.reset(); viewTarget.set(0, 0, 0); camera.position.set(0, 11, 10); controls?.target.set(0, 0, 0); camera.lookAt(0, 0, 0); camera.zoom = 1; camera.updateProjectionMatrix(); controls?.update(); schedule() },
-    suspend(value: boolean) { suspended = value; if (value && frame !== null) { cancelFrame(frame); frame = null }; if (controls) controls.enabled = !value; if (!value) schedule() },
+    suspend(value: boolean) { suspended = value; if (value && frame !== null) { cancelFrame(frame); frame = null }; if (controls) controls.enabled = !disposed && !value && !pointerLocked; if (!value) schedule() },
     dispose() { if (disposed) return; disposed = true; if (frame !== null) cancelFrame(frame); frame = null; controls?.removeEventListener('change', schedule); controls?.dispose(); disposeObject(scene); models.clear(); scene.clear(); renderer.dispose() },
   }
 }

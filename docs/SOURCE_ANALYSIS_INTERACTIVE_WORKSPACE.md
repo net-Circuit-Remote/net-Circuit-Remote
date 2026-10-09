@@ -2,6 +2,8 @@
 
 ## Kết luận kiến trúc
 
+**Bổ sung UX hiện hành:** lỗi chuột trái pan/kéo model và XYZ tĩnh đã được phân tích riêng trong [SOURCE_ANALYSIS_WORKSPACE_NAVIGATION.md](SOURCE_ANALYSIS_WORKSPACE_NAVIGATION.md). Báo cáo Phase 2 dưới đây giữ nội dung lịch sử; theo yêu cầu mới nhất, chỉ Move kéo model trực tiếp, Select chỉ chọn. Kéo nền pan XZ, chuột phải orbit và gizmo theo camera, với các nút điều hướng cạnh XYZ.
+
 Shell Phase 1, transport typed và sáu Pinia store được giữ. Phase 2 bổ sung editor theo metadata, một lớp command cập nhật Circuit Graph, scene biểu diễn graph và bộ điều khiển tương tác. Workflow vẫn ở `/`; không dùng router để chọn công cụ hoặc chuyển lab. Không có import driver/hardware vào frontend.
 
 ## Các khoảng trống đã xác định trong source trước khi sửa

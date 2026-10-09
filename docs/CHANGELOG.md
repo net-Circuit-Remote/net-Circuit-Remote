@@ -4,6 +4,19 @@ All notable project changes will be documented in this file. The project follows
 
 ## [Unreleased]
 
+### Changed — 2026-10-09 Move-only model dragging
+
+- Per the latest user request, only Move permits direct dragging of breadboards and other models. Select selects without moving geometry/camera or recording history.
+- Updated workspace hints/cursor and current docs. Regression tests cover Select on breadboard/LED, Move drag/Undo and cancellation when switching to Select; npm 54/54 and production build PASS. Native browser confirms Select cannot drag and Move can; see `verification/2026-10-09-move-tool-browser.md`.
+
+### Fixed — 2026-10-09 Workspace navigation (earlier behavior)
+
+- Initially enabled left-drag model movement in Select; superseded by the Move-only rule above. Empty-surface left drag pans freely on XZ without circuit history changes.
+- XYZ directions follow camera orbit through inverse-quaternion projection. Six adjacent accessible orbit/pan buttons replace the View controls box; directional pan follows camera heading.
+- Added pointer capture/4 px drag threshold, single move commit and cancellation/hidden-context cleanup. Model elevation/rotation and logical connections are preserved.
+- Fixed visible-model dragging at low camera angles using the picked surface's horizontal interaction plane. Passive gizmo regions let mouse gestures reach the canvas.
+- Added real editor/graph/camera regression tests, genuine right-button OrbitControls pointer integration, source analysis and browser evidence. Verification details are recorded in DEV_LOG.
+
 ### Implemented — 2026-10-09 Interactive Circuit Workspace
 
 - Added canonical functional catalog and verified browser snapshot for 17 placeable models; supplied icons and Single Workspace architecture retained.

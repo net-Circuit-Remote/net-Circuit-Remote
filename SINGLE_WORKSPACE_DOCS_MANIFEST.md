@@ -37,3 +37,10 @@ Twenty supplied SVG icons are consumed through committed derivatives generated b
 - Canonical `device-library/editor/components.json`, generated editor snapshot, graph commands, models/scene/interaction bridge, Inspector/Hex Editor and regression/provenance checks.
 
 Current implementation status is in DEV_LOG; historical Phase 1 reports stay unchanged.
+
+## Navigation UX correction
+
+- `docs/SOURCE_ANALYSIS_WORKSPACE_NAVIGATION.md`
+- `docs/verification/2026-10-09-workspace-navigation-browser.md` and screenshot
+- `docs/verification/2026-10-09-move-tool-browser.md` and screenshot record the latest Move-only rule.
+- Only Move allows direct model dragging; Select only selects. Empty-surface left pan, camera-oriented XYZ, adjacent orbit/pan buttons and regression tests remain. Circuit schema/electrical boundaries stay unchanged; current controls are documented in the Web README and DEV_LOG.

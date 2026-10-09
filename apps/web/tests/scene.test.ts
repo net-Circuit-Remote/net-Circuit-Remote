@@ -125,3 +125,59 @@ test('thin wires have a picking margin for normal pointer precision', () => {
   assert.equal(manager.pick(point.x, point.y + 4)?.kind, 'wire')
   manager.dispose()
 })
+
+test('axis directions follow camera orientation, ignore translation and reset with the view', () => {
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} })
+  try {
+    const read = () => (manager as typeof manager & { orientationAxes?: () => { label: string; x: number; y: number; depth: number }[] }).orientationAxes?.()
+    const initial = read()
+    assert.ok(initial, 'scene must expose camera-oriented world axes')
+    const x = initial.find((axis) => axis.label === 'X')!
+    assert.ok(Math.abs(x.x - 1) < 0.001 && Math.abs(x.y) < 0.001)
+    manager.orbit(90)
+    const orbit = read()!
+    assert.ok(Math.abs(orbit.find((axis) => axis.label === 'X')!.x) < 0.001)
+    assert.ok(Math.abs(orbit.find((axis) => axis.label === 'Z')!.x) > 0.99)
+    manager.pan(2, 3); manager.setZoom(160)
+    for (const axis of orbit) {
+      const panned = read()!.find((item) => item.label === axis.label)!
+      assert.ok(Math.abs(axis.x - panned.x) < 0.001 && Math.abs(axis.y - panned.y) < 0.001)
+    }
+    manager.resetView()
+    for (const axis of initial) {
+      const reset = read()!.find((item) => item.label === axis.label)!
+      assert.ok(Math.abs(axis.x - reset.x) < 0.001 && Math.abs(axis.y - reset.y) < 0.001)
+    }
+  } finally { manager.dispose() }
+})
+
+test('right-button OrbitControls pointer drag redraws axes, including after a left gesture lock', () => {
+  const root = new EventTarget(), capture = new Set<number>()
+  const canvas = Object.assign(new EventTarget(), {
+    style: { touchAction: '' }, clientWidth: 1000, clientHeight: 700,
+    getRootNode: () => root, setPointerCapture: (id: number) => capture.add(id), releasePointerCapture: (id: number) => capture.delete(id),
+  })
+  let frame: FrameRequestCallback | undefined, renders = 0
+  let renderedX = 1
+  const manager = createSceneManager({ canvas: canvas as unknown as HTMLCanvasElement, renderer: { setSize() {}, render() {}, dispose() {} },
+    requestFrame: (callback) => { frame = callback; return 1 }, cancelFrame: () => { frame = undefined },
+    onRender: () => { renders++; renderedX = manager.orientationAxes().find((axis) => axis.label === 'X')!.x },
+  })
+  const pointer = (type: string, button: number, x: number, y: number) => canvas.dispatchEvent(Object.assign(new Event(type), { button, pointerId: 1, pointerType: 'mouse', clientX: x, clientY: y }))
+  try {
+    manager.resize(1000, 700); frame?.(0)
+    manager.lockPointer(true)
+    const before = manager.camera.quaternion.clone()
+    pointer('pointerdown', 2, 500, 350); pointer('pointermove', 2, 650, 420); pointer('pointerup', 2, 650, 420)
+    assert.ok(manager.camera.quaternion.angleTo(before) < 0.0001)
+    manager.lockPointer(false)
+    pointer('pointerdown', 2, 500, 350); pointer('pointermove', 2, 650, 420); pointer('pointerup', 2, 650, 420)
+    assert.ok(manager.camera.quaternion.angleTo(before) > 0.2)
+    frame?.(0)
+    assert.ok(renderedX < 0.5)
+    assert.equal(renders, 2)
+    assert.equal(capture.size, 0)
+    manager.resetView(); frame?.(0)
+    assert.ok(Math.abs(renderedX - 1) < 0.001)
+  } finally { manager.dispose() }
+})

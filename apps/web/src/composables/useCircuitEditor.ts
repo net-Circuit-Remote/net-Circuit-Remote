@@ -7,11 +7,14 @@ import { useWorkspaceStore } from '../stores/workspace'
 import { useUiStore } from '../stores/ui'
 type Manager = ReturnType<typeof createSceneManager>
 type Position = { x: number; y: number; z: number }
-interface MoveGesture { pointer: number; id: string; draft: string | null; offset: Position; position: Position }
+interface DragGesture { pointer: number; start: { x: number; y: number }; dragged: boolean }
+interface MoveGesture extends DragGesture { kind: 'move'; id: string; draft: string | null; planeHeight: number; offset: Position; position: Position }
+interface PanGesture extends DragGesture { kind: 'pan'; anchor: Vector3 }
 
 export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, manager: () => Manager | undefined) {
   const circuit = useCircuitStore(), workspace = useWorkspaceStore(), ui = useUiStore()
-  let gesture: MoveGesture | null = null
+  let gesture: MoveGesture | PanGesture | null = null
+  const dragging = ref<'move' | 'pan' | null>(null)
   const ports = ref<{ endpoint: string; x: number; y: number; direction: string }[]>([])
   const selected = computed(() => circuit.graph?.modules.find((module) => module.id === workspace.selectedModuleId))
   const attempt = (action: () => void) => { try { action(); workspace.editError = '' } catch (error) { workspace.editError = error instanceof Error ? error.message : 'Circuit edit failed.' } }
@@ -32,7 +35,7 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   }
   function sync() { manager()?.syncGraph(circuit.graph); manager()?.highlight(workspace.selectedModuleId, workspace.selectedWire); updatePorts() }
   function cancel() {
-    if (gesture) { const pointer = gesture.pointer; gesture = null; if (canvas.value?.hasPointerCapture(pointer)) canvas.value.releasePointerCapture(pointer); sync() }
+    if (gesture) { const pointer = gesture.pointer; gesture = null; dragging.value = null; manager()?.lockPointer(false); if (canvas.value?.hasPointerCapture(pointer)) canvas.value.releasePointerCapture(pointer); sync() }
     manager()?.setGhost(null)
   }
   function connect(endpoint: string) {
@@ -43,7 +46,7 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   }
   function place(type: string, position: Position) { attempt(() => { const id = circuit.placeModule(type, position); workspace.selectModule(id); manager()?.setGhost(null); sync() }) }
   function pointerDown(event: PointerEvent) {
-    if (event.button !== 0 || !manager() || !canvas.value) return
+    if (event.button !== 0 || gesture || !manager() || !canvas.value) return
     canvas.value.focus(); const { x, y } = coordinates(event), point = manager()!.groundPoint(x, y)
     if (workspace.placementType) { if (point) place(workspace.placementType, snap(point)); return }
     const hit = manager()!.pick(x, y)
@@ -53,32 +56,51 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
       if (workspace.tool === 'delete') attempt(() => circuit.disconnectPorts(hit.source, hit.destination))
       sync(); return
     }
-    if (!hit) { workspace.clearSelection(); sync(); return }
+    if (!hit) {
+      if (point) {
+        gesture = { kind: 'pan', pointer: event.pointerId, start: { x, y }, dragged: false, anchor: point }
+        manager()!.lockPointer(true); canvas.value.setPointerCapture(event.pointerId)
+      } else { workspace.clearSelection(); sync() }
+      return
+    }
     workspace.selectModule(hit.id)
     if (workspace.tool === 'rotate') attempt(() => circuit.rotateModule(hit.id))
     else if (workspace.tool === 'delete') attempt(() => circuit.removeModule(hit.id))
     else if (workspace.tool === 'scope' || workspace.tool === 'probe') ui.openWindow(workspace.tool === 'scope' ? 'oscilloscope' : 'monitor')
-    else if (workspace.tool === 'move' && point) {
+    else if (workspace.tool === 'move') {
       const module = selected.value!, position = { x: module.position?.x ?? 0, y: module.position?.y ?? 0, z: module.position?.z ?? 0 }
-      gesture = { pointer: event.pointerId, id: hit.id, draft: circuit.activeId, offset: { x: position.x - point.x, y: position.y, z: position.z - point.z }, position }
+      // Drag through the picked surface, including bodies above a low camera's ground horizon.
+      const dragPoint = manager()!.groundPoint(x, y, hit.point.y)
+      if (!dragPoint) { sync(); return }
+      gesture = { kind: 'move', pointer: event.pointerId, start: { x, y }, dragged: false, id: hit.id, draft: circuit.activeId, planeHeight: hit.point.y, offset: { x: position.x - dragPoint.x, y: position.y, z: position.z - dragPoint.z }, position }
+      manager()!.lockPointer(true)
       canvas.value.setPointerCapture(event.pointerId)
     }
     sync()
   }
   function pointerMove(event: PointerEvent) {
     if (!manager() || !canvas.value) return
-    const { x, y } = coordinates(event), point = manager()!.groundPoint(x, y)
+    const { x, y } = coordinates(event)
+    if (gesture) {
+      if (event.pointerId !== gesture.pointer) return
+      if (!gesture.dragged && Math.hypot(x - gesture.start.x, y - gesture.start.y) < 4) return
+      gesture.dragged = true; dragging.value = gesture.kind
+      if (gesture.kind === 'pan') { manager()!.panGrab(gesture.anchor, x, y); return }
+    }
+    const point = manager()!.groundPoint(x, y, gesture?.kind === 'move' ? gesture.planeHeight : 0)
     if (!point) return
-    if (gesture && event.pointerId === gesture.pointer) {
+    if (gesture?.kind === 'move') {
       point.x += gesture.offset.x; point.z += gesture.offset.z
       gesture.position = snap(point, gesture.offset.y); manager()!.previewMove(gesture.id, gesture.position); updatePorts()
     } else if (workspace.placementType) manager()!.setGhost(workspace.placementType, point.set(snap(point).x, 0, snap(point).z))
   }
   function pointerUp(event: PointerEvent) {
     if (!gesture || event.pointerId !== gesture.pointer) return
-    const completed = gesture; gesture = null
+    pointerMove(event)
+    const completed = gesture; gesture = null; dragging.value = null; manager()?.lockPointer(false)
     if (canvas.value?.hasPointerCapture(event.pointerId)) canvas.value.releasePointerCapture(event.pointerId)
-    if (completed.draft === circuit.activeId) attempt(() => circuit.moveModule(completed.id, completed.position))
+    if (completed.kind === 'move' && completed.dragged && completed.draft === circuit.activeId) attempt(() => circuit.moveModule(completed.id, completed.position))
+    else if (completed.kind === 'pan' && !completed.dragged) workspace.clearSelection()
     sync()
   }
   function drop(event: DragEvent) {
@@ -113,5 +135,5 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   watch(() => [workspace.tool, workspace.placementType], () => { cancel(); updatePorts() })
   watch(() => [workspace.selectedModuleId, workspace.selectedWire], () => { manager()?.highlight(workspace.selectedModuleId, workspace.selectedWire); updatePorts() })
   onUnmounted(cancel)
-  return { ports, selected, updatePorts, sync, cancel, connect, pointerDown, pointerMove, pointerUp, drop, keydown, selectModule }
+  return { ports, selected, dragging, updatePorts, sync, cancel, connect, pointerDown, pointerMove, pointerUp, drop, keydown, selectModule }
 }

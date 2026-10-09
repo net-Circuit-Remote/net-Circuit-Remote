@@ -1,6 +1,6 @@
 ---
 project: net-Circuit-Remote
-current_phase: interactive-circuit-workspace-complete
+current_phase: interactive-circuit-workspace-navigation-complete
 status: verified
 last_updated: 2026-10-09
 next_task: phase-3-simulator-event-clock-model-integration
@@ -14,6 +14,28 @@ fpga_development_started: false
 ## Current Goal
 
 Phase 2 **Interactive Circuit Workspace** is implemented, preserving Phase 1 shell and transport boundaries. Next: Phase 3 simulator/event/clock/model adapters and real output/capture data.
+
+## Move-only model dragging — 2026-10-09
+
+Latest user rule: direct mouse dragging of breadboard and every other model requires the Move button. `useCircuitEditor` now creates a model gesture only for `workspace.tool === 'move'`; Select still picks/highlights without capture or preview. Empty-surface pan, right orbit, camera-oriented XYZ and nearby navigation buttons remain. Workspace help/hints and grab cursor match the active tool. Inspector coordinate edits and keyboard movement retain their existing behavior.
+
+TDD evidence: the new Select regression failed before the guard change because a breadboard preview moved to X=1.5/Z=1. After correction, **npm 54/54 PASS**, including Select breadboard/LED geometry/camera/history invariants, Move preview/commit/Undo/Redo, low-angle dragging and Move-to-Select cancellation. **Production build PASS** (113 modules; existing Vite chunk advisory). Native browser: the same breadboard drag leaves X=1.5/Y=0/Z=1.5 in Select, moves to X=3/Y=0/Z=2.5 in Move, and one Undo restores the original pose; three components/one named wire remain. Browser warning/error logs are empty. See `verification/2026-10-09-move-tool-browser.md` and screenshot.
+
+Current README/architecture/context/roadmap/spec/analysis/changelog/manifest reflect Move-only. Earlier navigation results below are historical and describe the superseded Select drag behavior.
+
+## Historical workspace navigation correction — 2026-10-09
+
+User requested direct left-drag pan/model movement and camera-oriented XYZ with adjacent navigation controls. Root causes: OrbitControls LEFT disabled without editor pan handler, model gesture gated on Move tool, and static SVG independent of camera. Source/algorithm analysis across frontend graph/render/transport and backend/simulator/hardware boundaries is in `SOURCE_ANALYSIS_WORKSPACE_NAVIGATION.md`.
+
+Default Select and Move now left-drag any model, including Breadboard/Board; empty-surface left-drag grabs/pans the XZ plane. A 4 px threshold distinguishes click/jitter from drag. Model previews preserve elevation/rotation/endpoints and commit one history command on release. Pan translates camera/target only, retains selection/pending wire and records no graph history. Capture identity/release/cancel and camera input lock respect hidden/context loss. Wire/Rotate/Delete/instrument click meanings remain intact.
+
+`WorkspaceNavigator` replaces View controls and the static axis. It projects fixed world bases through inverse camera quaternion, sorts depth and updates in the existing render callback. Six accessible local SVG buttons sit beside XYZ; pan buttons follow camera XZ heading. Passive gizmo regions pass events to the canvas.
+
+Fresh read-only review found one Important low-camera case and one Minor overlay issue. A visible model could be picked while its ray missed Y=0; moves now intersect a horizontal plane through the actual hit, preserving module Y. A regression was RED with the old ground gate and GREEN after correction. Navigator root ignores pointer events; actual buttons receive them, with browser hit-test confirmation.
+
+Verification: **npm 53/53 PASS**, **production build PASS** (113 modules); **full Python 56/56 PASS** with three existing dependency deprecations; `check_context.py` and `git diff --check` PASS. Existing Vite chunk-size advisory remains. Native browser verified Select breadboard/switch dragging, diagonal pan before/after orbit, connected wires, single Undo/Redo, XYZ update, six buttons and four desktop sizes (1920×1080, 1440×900, 1366×768, 1280×720), with no overflow/hint overlap and no warning/error logs. Right-button rotation is verified with genuine OrbitControls pointer-sequence/render integration; CUA native right-drag is unavailable and is not claimed. Exact evidence: `verification/2026-10-09-workspace-navigation-browser.md` and screenshot.
+
+Updated current README/architecture/context/roadmap/spec/analysis/changelog/manifest; historical browser reports retained. No dependency/contract/driver changes, commit/push/deployment or hosted CI run. Phase 3 remains next.
 
 ## Phase 2 source and behavior — 2026-10-09
 

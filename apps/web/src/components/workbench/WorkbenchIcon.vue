@@ -25,6 +25,12 @@ const paths: Record<string, string> = {
   monitor: 'M3 4h18v14H3z M8 22h8 M12 18v4 M5 12h4V8h5v4h5',
   tag: 'M3 3h9l9 9-9 9-9-9z M7 7h.01',
   chevron: 'M7 10l5 5 5-5',
+  'orbit-left': 'M5 8a8 8 0 1 1 0 8 M5 3v5h5',
+  'orbit-right': 'M19 8a8 8 0 1 0 0 8 M19 3v5h-5',
+  'pan-left': 'M20 12H4 M10 6l-6 6 6 6',
+  'pan-right': 'M4 12h16 M14 6l6 6-6 6',
+  'pan-forward': 'M12 20V4 M6 10l6-6 6 6',
+  'pan-back': 'M12 4v16 M6 14l6 6 6-6',
 }
 </script>
 <template><svg class="workbench-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="paths[name] || paths.chip" /></svg></template>

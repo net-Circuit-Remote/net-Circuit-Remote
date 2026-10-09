@@ -12,7 +12,7 @@ The canonical editor catalog in device-library defines types, port directions, d
 
 Ribbon drag/drop or click then canvas click places a module. Select, Move, Rotate, Delete and Wire operate on explicit IDs. Wire connects named functional ports; Inspector offers keyboard equivalents and disconnect. Move previews geometry during a captured pointer gesture and commits exactly once on release. Escape/cancel restores graph geometry. Every committed graph mutation invalidates prior API validation and enters bounded undo/redo history; failed/no-op changes do neither. Delete cascades incident connections.
 
-Right drag orbits, middle drag pans, wheel zooms; controls also expose zoom/reset and snap. Imported unknown modules/ports remain in the graph with fallback visuals and cannot silently acquire fabricated pin maps. Import rejects duplicate IDs and dangling module references.
+Current navigation correction (2026-10-09, latest user rule): left drag empty surface pans XZ; only Move permits direct model dragging, while Select only selects. Right drag orbits, middle drag also pans, wheel zooms. XYZ follows camera orientation; six adjacent orbit/pan buttons replace the View controls box. Model dragging preserves Y and uses the picked surface's horizontal plane even near a low camera. Controls also expose zoom/reset and snap. Imported unknown modules/ports remain in the graph with fallback visuals and cannot silently acquire fabricated pin maps. Import rejects duplicate IDs and dangling module references. See `docs/SOURCE_ANALYSIS_WORKSPACE_NAVIGATION.md` for the algorithm and current evidence.
 
 ## Graphics lifecycle
 
