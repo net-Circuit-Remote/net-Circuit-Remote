@@ -1,9 +1,10 @@
-import { AmbientLight, BufferGeometry, Color, DirectionalLight, GridHelper, Group, Line, LineBasicMaterial, Mesh, MeshStandardMaterial, MOUSE, PerspectiveCamera, Plane, Raycaster, Scene, TubeGeometry, Vector2, Vector3, QuadraticBezierCurve3 } from 'three'
+import { AmbientLight, BufferGeometry, Color, DirectionalLight, Group, Line, LineBasicMaterial, Mesh, MeshStandardMaterial, MOUSE, PerspectiveCamera, Plane, Raycaster, Scene, TubeGeometry, Vector2, Vector3, QuadraticBezierCurve3 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { applyPose, buildComponent, disposeObject, portAnchor } from './ComponentModel'
 import { getDefinition } from '../data/editorCatalog'
 import type { CircuitGraph, CircuitModule } from '../types/circuit'
 import { createSelectionOutline, updateSelectionOutline } from './SelectionOutline'
+import { createTechnicalGrid, updateTechnicalGrid } from './TechnicalGrid'
 
 export interface SceneRenderer { setSize(width: number, height: number, updateStyle?: boolean): void; render(scene: Scene, camera: PerspectiveCamera): void; dispose(): void }
 interface SceneOptions { renderer: SceneRenderer; canvas?: HTMLCanvasElement; onRender?: () => void; requestFrame?: (callback: FrameRequestCallback) => number; cancelFrame?: (id: number) => void }
@@ -14,7 +15,7 @@ export interface OrientationAxis { label: 'X' | 'Y' | 'Z'; x: number; y: number;
 export function createSceneManager({ renderer, canvas, onRender, requestFrame = requestAnimationFrame, cancelFrame = cancelAnimationFrame }: SceneOptions) {
   const scene = new Scene(); scene.background = new Color('#101925')
   const camera = new PerspectiveCamera(42, 1, 0.1, 150); camera.position.set(0, 11, 10); camera.lookAt(0, 0, 0); camera.updateMatrixWorld()
-  const grid = new GridHelper(30, 60, '#415a70', '#253747'); grid.position.y = -0.01
+  const grid = createTechnicalGrid()
   const ambient = new AmbientLight('#c9def4', 1.1)
   const light = new DirectionalLight('#fff5dc', 1.9); light.position.set(-5, 10, 5)
   const fillLight = new DirectionalLight('#a8c7e8', 0.75); fillLight.position.set(6, 8, -6)
@@ -25,7 +26,17 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
   let graph: CircuitGraph | null = null, ghost: Group | null = null
   const schedule = () => {
     if (disposed || !visible || suspended || frame !== null) return
-    frame = requestFrame(() => { frame = null; if (!disposed && visible && !suspended) { scene.updateMatrixWorld(true); if (activeOutline) updateSelectionOutline(activeOutline.group, camera.position); renderer.render(scene, camera); onRender?.() } })
+    frame = requestFrame(() => {
+      frame = null
+      if (!disposed && visible && !suspended) {
+        const target = controls?.target ?? viewTarget
+        const focus = highlightedId ? models.get(highlightedId)?.position ?? target : target
+        updateTechnicalGrid(grid, camera, target, focus, height)
+        scene.updateMatrixWorld(true)
+        if (activeOutline) updateSelectionOutline(activeOutline.group, camera.position, width, height)
+        renderer.render(scene, camera); onRender?.()
+      }
+    })
   }
   const controls = canvas ? new OrbitControls(camera, canvas) : undefined
   const viewTarget = new Vector3()

@@ -277,6 +277,23 @@ test('active 3D model placement places on left click and exits on right click', 
   } finally { h.dispose() }
 })
 
+test('Component Info closes when selection is cleared, placement starts or the selected model is deleted', async () => {
+  const h = setup()
+  try {
+    const id = h.circuit.placeModule('BREADBOARD', { x: 0, y: 0, z: 0 })
+    const ui = useUiStore()
+    await nextTick(); h.workspace.selectModule(id); await nextTick()
+    const info = () => ui.windows.find((window) => window.kind === 'component-info')
+    assert.equal(info()?.open, true)
+    h.workspace.clearSelection(); await nextTick()
+    assert.equal(info()?.open, false, 'blank workspace must have no Info panel')
+    h.workspace.selectModule(id); await nextTick(); h.workspace.armPlacement('BREADBOARD_630'); await nextTick()
+    assert.equal(info()?.open, false, 'library placement preview is not a selected 3D model')
+    h.workspace.selectModule(id); await nextTick(); h.circuit.removeModule(id); await nextTick()
+    assert.equal(info()?.open, false, 'deleting the selected model must hide Info')
+  } finally { h.dispose() }
+})
+
 test('breadboard magnetic docking snaps adjacent boards seamlessly without gaps and avoids overlapping', () => {
   const bb1 = { id: 'bb1', type: 'BREADBOARD_630', position: { x: 0, y: 0, z: 0 }, rotation: 0 }
   const modules = [bb1]

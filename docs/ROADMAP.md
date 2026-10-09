@@ -54,6 +54,7 @@ UI migration completed on 2026-10-09; evidence in `DEV_LOG.md`:
 - [x] Zoom/pan/orbit/picking/reset/snap, with keyboard view controls.
 - [x] Navigation UX correction: Move-only direct model dragging, Select selection, empty-surface left pan, camera-oriented XYZ and adjacent orbit/pan buttons; low-angle drag regression covered.
 - [x] Selection refinement: subtle shape-following yellow contours, recessed breadboard housing and one upper-right Component Info introduction/Add panel; graph/history and Move-only drag retained.
+- [x] Technical workspace refinement: 2px Medium Gold contours, real socket cavities and matching deck openings, joint/bevel clearance, selection-only Info with contained artwork, adaptive minor/major faded grid and no canvas caption. Evidence: `verification/2026-10-09-technical-workbench-browser.md`.
 - [x] Undo/redo graph commands; one committed step per drag; canceled preview changes no graph.
 - [x] Circuit Graph updates independent of geometry; cascade deletion and JSON round trip.
 - [x] Local JSON save/open project UX in the Single Workspace (server persistence remains Phase 4).

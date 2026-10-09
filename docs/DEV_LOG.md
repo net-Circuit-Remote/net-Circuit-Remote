@@ -15,6 +15,14 @@ fpga_development_started: false
 
 Phase 2 **Interactive Circuit Workspace** is implemented, preserving Phase 1 shell and transport boundaries. Next: Phase 3 simulator/event/clock/model adapters and real output/capture data.
 
+## Technical grid, socket depth and 2px selection — 2026-10-09
+
+Replaced native one-pixel contours with LineSegments2 screen strokes (2 CSS px, Medium Gold #d4af37) while retaining housing silhouettes and safe disposal. Replaced capped/painted socket squares with perforated deck/decal plus one instanced cavity geometry per 830/630/100 board: tapered entrance, walls and dark recessed floor. Shared contact coordinates keep openings aligned. Enlarged female-key clearances; an independent review found the remaining outward bevel overlap at straight docking edges, reproduced with a failing raycast and corrected with inward bevelOffset -0.008.
+
+Component Info is selection-only, closes when selection disappears/placement starts/model is deleted, and contains artwork without CSS rotation. Ribbon Info respects selection. Removed WORKSPACE/project caption. TechnicalGrid replaces GridHelper with quiet minor lines, majors every five cells, projected-pixel detail suppression, distance/focus fade and light X/Z axes in the existing coalesced RAF.
+
+Final npm **68/68 PASS** (six new RED-to-GREEN regressions); documentation/frontend/context checks **17/17 PASS**, context integrity and diff whitespace PASS. Browser verified real WebGL cavities/seams, 2px border, Add/selection clearing, artwork for all three boards, orbit/zoom and four desktop sizes; final warning/error logs empty. Production build passed TypeScript but Vite realpath is blocked by sandbox EPERM; previous build elevation decline is respected, so no final bundle claim. See `SOURCE_ANALYSIS_TECHNICAL_WORKBENCH.md` and `verification/2026-10-09-technical-workbench-browser.md`. The following sections record earlier implementations.
+
 ## Selection contours and Component Info — 2026-10-09
 
 Latest request uses the last two reference images as design inspiration: subtle yellow contours around selected/moving models and an upper-right introduction/Add panel. Removed the twelve emissive box bars and body selection tint. `SelectionOutline` uses the actual breadboard profile; generic housing triangles are welded into adjacency edges and select camera silhouette/visible creases. One LineSegments object follows each selected model; updates run in the existing coalesced render callback. Outline resources are detached/disposed before rebuilding a model. `BreadboardHousing` now extrudes integrated joints and actual recessed channels with matched surface UVs; original dimensions and 830/630/100 contact instances remain. Scene lighting is reduced for readable cavities and edges.

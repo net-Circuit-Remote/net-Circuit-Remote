@@ -50,3 +50,9 @@ Current implementation status is in DEV_LOG; historical Phase 1 reports stay unc
 - `docs/SOURCE_ANALYSIS_SELECTION_AND_COMPONENT_INFO.md`
 - `docs/verification/2026-10-09-component-information-browser.md` and screenshot
 - Shape-following thin yellow contours, recessed breadboard housing and a single upper-right introduction/Add panel. Shared UI state and Move-only dragging remain; older selection action-card/window reports are historical.
+
+## Current technical workbench refinement
+
+- `docs/SOURCE_ANALYSIS_TECHNICAL_WORKBENCH.md`
+- `docs/verification/2026-10-09-technical-workbench-browser.md` and two screenshots
+- Supersedes one-pixel selection and preview-based Info: 2px Medium Gold, real socket cavities, joint/bevel clearance, selected-model-only Info, contained artwork and adaptive faded minor/major grid. Graph, Move-only dragging and electrical boundaries remain.

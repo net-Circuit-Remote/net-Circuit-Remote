@@ -288,7 +288,11 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
     sync()
   }, { deep: true })
   watch(() => [workspace.tool, workspace.placementType], () => { cancel(); updatePorts() })
-  watch(() => [workspace.selectedModuleId, workspace.selectedWire], () => { manager()?.highlight(workspace.selectedModuleId, workspace.selectedWire); updatePorts(); if (selected.value) ui.openWindow('component-info', { activate: false }) })
+  watch(() => [workspace.selectedModuleId, workspace.selectedWire], () => { manager()?.highlight(workspace.selectedModuleId, workspace.selectedWire); updatePorts() })
+  watch(() => selected.value?.id, (id) => {
+    if (id) ui.openWindow('component-info', { activate: false })
+    else ui.closeWindow('component-info')
+  }, { immediate: true })
   onUnmounted(cancel)
   return { ports, selected, dragging, updatePorts, sync, cancel, connect, pointerDown, pointerMove, pointerUp, drop, keydown, selectModule }
 }

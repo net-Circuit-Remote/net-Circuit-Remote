@@ -3,10 +3,13 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ribbonGroups, iconUrl, type LibraryComponent } from '../../data/ribbon'
 import { useUiStore } from '../../stores/ui'
 import { useWorkspaceStore } from '../../stores/workspace'
+import { useCircuitStore } from '../../stores/circuit'
 import WorkbenchIcon from './WorkbenchIcon.vue'
 import { getDefinition } from '../../data/editorCatalog'
 const ui = useUiStore()
 const workspace = useWorkspaceStore()
+const circuit = useCircuitStore()
+const selectedType = computed(() => circuit.graph?.modules.find((module) => module.id === workspace.selectedModuleId)?.type)
 const root = ref<HTMLElement>()
 const active = computed(() => ribbonGroups.find((group) => group.id === ui.activeRibbonGroup))
 function choose(item: LibraryComponent) {
@@ -15,7 +18,7 @@ function choose(item: LibraryComponent) {
   if (item.window) ui.openWindow(item.window)
   else if (item.type === 'JUMPER') workspace.setTool('wire')
   else if (getDefinition(item.type)) workspace.armPlacement(item.type)
-  else { workspace.preview(item.type); ui.openWindow('component-info') }
+  else { workspace.preview(item.type); workspace.editError = item.name + ' has no placeable editor model yet.' }
   ui.activeRibbonGroup = null
 }
 function drag(event: DragEvent, item: LibraryComponent) {
@@ -26,7 +29,8 @@ function drag(event: DragEvent, item: LibraryComponent) {
 }
 function info(item: LibraryComponent) {
   root.value?.querySelector<HTMLButtonElement>(`[data-group="${ui.activeRibbonGroup}"]`)?.focus()
-  workspace.preview(item.type); ui.openWindow('component-info'); ui.activeRibbonGroup = null
+  if (selectedType.value !== item.type) return
+  ui.openWindow('component-info'); ui.activeRibbonGroup = null
 }
 function outside(event: PointerEvent) { if (event.target instanceof Node && !root.value?.contains(event.target)) ui.activeRibbonGroup = null }
 function escape(event: KeyboardEvent) { if (event.key === 'Escape' && ui.activeRibbonGroup) { root.value?.querySelector<HTMLButtonElement>(`[data-group="${ui.activeRibbonGroup}"]`)?.focus(); ui.activeRibbonGroup = null } }
@@ -43,7 +47,7 @@ onUnmounted(() => { document.removeEventListener('pointerdown', outside); docume
     </div>
     <div v-if="active" id="ribbon-palette" class="ribbon-palette" :aria-label="active.label + ' components'">
       <div class="palette-heading"><strong>{{ active.label }}</strong><span>{{ active.items.length }} entries · functional models / visuals</span></div>
-      <div class="palette-items"><div v-for="item in active.items" :key="item.type" class="palette-entry"><button :draggable="!!getDefinition(item.type)" @dragstart="drag($event, item)" @click="choose(item)"><span class="palette-art"><img v-if="item.icon" :src="iconUrl(item.icon)" alt="" width="58" height="58" /><WorkbenchIcon v-else :name="item.glyph || 'chip'" /></span><strong>{{ item.name }}</strong><small>{{ item.window ? 'Open window' : getDefinition(item.type) ? 'Place component' : item.type === 'JUMPER' ? 'Connect ports' : 'Metadata preview' }}</small></button><button class="palette-info" :aria-label="'Information about ' + item.name" @click="info(item)">Info</button></div></div>
+      <div class="palette-items"><div v-for="item in active.items" :key="item.type" class="palette-entry"><button :draggable="!!getDefinition(item.type)" @dragstart="drag($event, item)" @click="choose(item)"><span class="palette-art"><img v-if="item.icon" :src="iconUrl(item.icon)" alt="" width="58" height="58" /><WorkbenchIcon v-else :name="item.glyph || 'chip'" /></span><strong>{{ item.name }}</strong><small>{{ item.window ? 'Open window' : getDefinition(item.type) ? 'Place component' : item.type === 'JUMPER' ? 'Connect ports' : 'Model unavailable' }}</small></button><button class="palette-info" :disabled="selectedType !== item.type" title="Select a placed component to view its information" :aria-label="'Information about ' + item.name" @click="info(item)">Info</button></div></div>
     </div>
   </section>
 </template>

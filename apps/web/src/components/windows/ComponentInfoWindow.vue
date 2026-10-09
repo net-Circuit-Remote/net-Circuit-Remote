@@ -9,7 +9,8 @@ import WorkbenchIcon from '../workbench/WorkbenchIcon.vue'
 const workspace = useWorkspaceStore(), circuit = useCircuitStore(), ui = useUiStore()
 const header = ref<HTMLElement>()
 const window = computed(() => ui.windows.find((entry) => entry.kind === 'component-info'))
-const type = computed(() => circuit.graph?.modules.find((module) => module.id === workspace.selectedModuleId)?.type || workspace.previewType)
+const selected = computed(() => circuit.graph?.modules.find((module) => module.id === workspace.selectedModuleId))
+const type = computed(() => selected.value?.type)
 const definition = computed(() => type.value ? getDefinition(type.value) : undefined)
 const item = computed(() => libraryComponents.find((entry) => entry.type === type.value))
 const name = computed(() => definition.value?.name || item.value?.name || type.value || 'Component')
@@ -26,7 +27,7 @@ function close() { ui.closeWindow('component-info'); void nextTick(() => documen
 watch(() => window.value?.activation, (activation) => { if (activation) void nextTick(() => header.value?.focus()) })
 </script>
 <template>
-  <aside v-if="window?.open" class="component-information" aria-labelledby="component-information-title" :style="{ zIndex: window.z }" @pointerdown="ui.focusWindow('component-info')" @focusin="ui.focusWindow('component-info')" @keydown.esc.stop.prevent="close">
+  <aside v-if="window?.open && selected" class="component-information" aria-labelledby="component-information-title" :style="{ zIndex: window.z }" @pointerdown="ui.focusWindow('component-info')" @focusin="ui.focusWindow('component-info')" @keydown.esc.stop.prevent="close">
     <header ref="header" class="component-information-header" tabindex="0">
       <WorkbenchIcon name="chip" /><strong id="component-information-title">Component Info</strong>
       <button aria-label="Close Component Info" @click="close"><WorkbenchIcon name="close" /></button>

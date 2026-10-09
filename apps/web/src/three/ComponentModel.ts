@@ -1,4 +1,4 @@
-import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Object3D, SphereGeometry, Sprite, SpriteMaterial, Vector3 } from 'three'
+import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, InstancedMesh, Mesh, MeshStandardMaterial, Object3D, SphereGeometry, Sprite, SpriteMaterial, Vector3 } from 'three'
 import { getDefinition, type LogicalPort } from '../data/editorCatalog'
 import type { CircuitModule } from '../types/circuit'
 import { addBreadboardHousing } from './BreadboardHousing'
@@ -129,51 +129,7 @@ function createBreadboardTexture(): CanvasTexture | null {
     }
   }
 
-  // Sockets drawing helper (square beveled funnel with dark cavity)
-  const drawSocket = (cx: number, cy: number) => {
-    ctx.fillStyle = '#f1f5f9'
-    ctx.fillRect(cx - 10, cy - 10, 20, 20)
-    ctx.strokeStyle = '#cbd5e1'
-    ctx.lineWidth = 1
-    ctx.strokeRect(cx - 9.5, cy - 9.5, 19, 19)
-    ctx.fillStyle = '#1e293b'
-    ctx.fillRect(cx - 6, cy - 6, 12, 12)
-    ctx.fillStyle = '#475569'
-    ctx.fillRect(cx - 2, cy - 4, 1, 8)
-    ctx.fillRect(cx + 2, cy - 4, 1, 8)
-  }
-
-  // Terminal sockets (63 cols x 10 rows = 630 sockets)
-  for (let c = 0; c < 63; c++) {
-    const [cx] = toPx(colsX[c], 0)
-    for (const rz of rowZUpper) {
-      const [, cy] = toPx(0, rz)
-      drawSocket(cx, cy)
-    }
-    for (const rz of rowZLower) {
-      const [, cy] = toPx(0, rz)
-      drawSocket(cx, cy)
-    }
-  }
-
-  // Power rail sockets (50 cols x 4 rows = 200 sockets)
-  const powerCols: number[] = []
-  for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(g * 6 + i)
-  for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(34 + g * 6 + i)
-
-  const powerZTop = [-1.18, -1.05]
-  const powerZBot = [1.05, 1.18]
-  for (const ci of powerCols) {
-    const [cx] = toPx(colsX[ci], 0)
-    for (const pz of powerZTop) {
-      const [, cy] = toPx(0, pz)
-      drawSocket(cx, cy)
-    }
-    for (const pz of powerZBot) {
-      const [, cy] = toPx(0, pz)
-      drawSocket(cx, cy)
-    }
-  }
+  // Socket openings, bevels and cavity floors are rendered as real geometry.
 
   const texture = new CanvasTexture(canvas)
   texture.anisotropy = 16
@@ -260,32 +216,7 @@ function createBreadboard630Texture(): CanvasTexture | null {
     }
   }
 
-  // Sockets drawing helper (square beveled funnel with dark cavity)
-  const drawSocket = (cx: number, cy: number) => {
-    ctx.fillStyle = '#f1f5f9'
-    ctx.fillRect(cx - 10, cy - 10, 20, 20)
-    ctx.strokeStyle = '#cbd5e1'
-    ctx.lineWidth = 1
-    ctx.strokeRect(cx - 9.5, cy - 9.5, 19, 19)
-    ctx.fillStyle = '#1e293b'
-    ctx.fillRect(cx - 6, cy - 6, 12, 12)
-    ctx.fillStyle = '#475569'
-    ctx.fillRect(cx - 2, cy - 4, 1, 8)
-    ctx.fillRect(cx + 2, cy - 4, 1, 8)
-  }
-
-  // Terminal sockets (63 cols x 10 rows = 630 sockets)
-  for (let c = 0; c < 63; c++) {
-    const [cx] = toPx(colsX[c], 0)
-    for (const rz of rowZUpper) {
-      const [, cy] = toPx(0, rz)
-      drawSocket(cx, cy)
-    }
-    for (const rz of rowZLower) {
-      const [, cy] = toPx(0, rz)
-      drawSocket(cx, cy)
-    }
-  }
+  // Socket openings, bevels and cavity floors are rendered as real geometry.
 
   const texture = new CanvasTexture(canvas)
   texture.anisotropy = 16
@@ -348,39 +279,7 @@ function createBreadboard100Texture(): CanvasTexture | null {
     ctx.fillStyle = '#0284c7'; ctx.fillText('-', sx, cyBlue)
   }
 
-  // 63 column coordinates with uniform pitch
-  const colsX: number[] = []
-  for (let i = 0; i < 63; i++) colsX.push(-spanX / 2 + i * pitch)
-
-  const powerCols: number[] = []
-  for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(g * 6 + i)
-  for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(34 + g * 6 + i)
-
-  const pzTop = -0.065
-  const pzBot = 0.065
-  const [, cyTop] = toPx(0, pzTop)
-  const [, cyBot] = toPx(0, pzBot)
-
-  // Sockets drawing helper
-  const drawSocket = (cx: number, cy: number) => {
-    ctx.fillStyle = '#f1f5f9'
-    ctx.fillRect(cx - 10, cy - 10, 20, 20)
-    ctx.strokeStyle = '#cbd5e1'
-    ctx.lineWidth = 1
-    ctx.strokeRect(cx - 9.5, cy - 9.5, 19, 19)
-    ctx.fillStyle = '#1e293b'
-    ctx.fillRect(cx - 6, cy - 6, 12, 12)
-    ctx.fillStyle = '#475569'
-    ctx.fillRect(cx - 2, cy - 4, 1, 8)
-    ctx.fillRect(cx + 2, cy - 4, 1, 8)
-  }
-
-  // Power rail sockets (50 cols x 2 rows = 100 sockets)
-  for (const ci of powerCols) {
-    const [cx] = toPx(colsX[ci], 0)
-    drawSocket(cx, cyTop)
-    drawSocket(cx, cyBot)
-  }
+  // Socket openings, bevels and cavity floors are rendered as real geometry.
 
   const texture = new CanvasTexture(canvas)
   texture.anisotropy = 16
@@ -420,112 +319,10 @@ export function buildComponent(module: CircuitModule): Group {
     if (definition.visual === 'led') { const dome = new Mesh(new SphereGeometry(w * 0.35, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), material(color)); dome.userData.selectionSurface = true; dome.position.y = h; group.add(dome) }
   } else if (definition?.visual === 'breadboard') {
     addBreadboardHousing(group, [w, h, d], color, createBreadboardTexture(), true, true)
-
-    // Exactly 1 InstancedMesh with 830 contacts (630 terminal + 200 power rails)
-    const pitch = 0.13
-    const spanX = 62 * pitch
-    const colsX: number[] = []
-    for (let i = 0; i < 63; i++) colsX.push(-spanX / 2 + i * pitch)
-    const rowZUpper = [-pitch * 5.5, -pitch * 4.5, -pitch * 3.5, -pitch * 2.5, -pitch * 1.5]
-    const rowZLower = [pitch * 1.5, pitch * 2.5, pitch * 3.5, pitch * 4.5, pitch * 5.5]
-    const powerCols: number[] = []
-    for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(g * 6 + i)
-    for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(34 + g * 6 + i)
-    const powerZTop = [-1.18, -1.05]
-    const powerZBot = [1.05, 1.18]
-
-    const holeGeom = new BoxGeometry(0.046, 0.012, 0.046)
-    const holeMat = new MeshStandardMaterial({ color: '#161e27', roughness: 0.35, metalness: 0.65 })
-    const holes = new InstancedMesh(holeGeom, holeMat, 830)
-    let idx = 0
-    const matrix = new Matrix4()
-
-    for (let c = 0; c < 63; c++) {
-      const hx = colsX[c]
-      for (const hz of rowZUpper) {
-        matrix.makeTranslation(hx, h + 0.021, hz)
-        holes.setMatrixAt(idx++, matrix)
-      }
-      for (const hz of rowZLower) {
-        matrix.makeTranslation(hx, h + 0.021, hz)
-        holes.setMatrixAt(idx++, matrix)
-      }
-    }
-
-    for (const ci of powerCols) {
-      const hx = colsX[ci]
-      for (const hz of powerZTop) {
-        matrix.makeTranslation(hx, h + 0.021, hz)
-        holes.setMatrixAt(idx++, matrix)
-      }
-      for (const hz of powerZBot) {
-        matrix.makeTranslation(hx, h + 0.021, hz)
-        holes.setMatrixAt(idx++, matrix)
-      }
-    }
-
-    holes.instanceMatrix.needsUpdate = true
-    group.add(holes)
   } else if (definition?.visual === 'breadboard_630') {
     addBreadboardHousing(group, [w, h, d], color, createBreadboard630Texture(), true, false)
-
-    // Exactly 1 InstancedMesh with 630 contacts (63 cols x 10 rows)
-    const pitch = 0.13
-    const spanX = 62 * pitch
-    const colsX: number[] = []
-    for (let i = 0; i < 63; i++) colsX.push(-spanX / 2 + i * pitch)
-    const rowZUpper = [-pitch * 5.5, -pitch * 4.5, -pitch * 3.5, -pitch * 2.5, -pitch * 1.5]
-    const rowZLower = [pitch * 1.5, pitch * 2.5, pitch * 3.5, pitch * 4.5, pitch * 5.5]
-
-    const holeGeom = new BoxGeometry(0.046, 0.012, 0.046)
-    const holeMat = new MeshStandardMaterial({ color: '#161e27', roughness: 0.35, metalness: 0.65 })
-    const holes = new InstancedMesh(holeGeom, holeMat, 630)
-    let idx = 0
-    const matrix = new Matrix4()
-
-    for (let c = 0; c < 63; c++) {
-      const hx = colsX[c]
-      for (const hz of rowZUpper) {
-        matrix.makeTranslation(hx, h + 0.021, hz)
-        holes.setMatrixAt(idx++, matrix)
-      }
-      for (const hz of rowZLower) {
-        matrix.makeTranslation(hx, h + 0.021, hz)
-        holes.setMatrixAt(idx++, matrix)
-      }
-    }
-
-    holes.instanceMatrix.needsUpdate = true
-    group.add(holes)
   } else if (definition?.visual === 'breadboard_100') {
     addBreadboardHousing(group, [w, h, d], color, createBreadboard100Texture(), false, false)
-
-    // Exactly 1 InstancedMesh with 100 contacts (50 cols x 2 rows)
-    const pitch = 0.13
-    const spanX = 62 * pitch
-    const colsX: number[] = []
-    for (let i = 0; i < 63; i++) colsX.push(-spanX / 2 + i * pitch)
-    const powerCols: number[] = []
-    for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(g * 6 + i)
-    for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(34 + g * 6 + i)
-    const powerZ = [-0.065, 0.065]
-
-    const holeGeom = new BoxGeometry(0.046, 0.012, 0.046)
-    const holeMat = new MeshStandardMaterial({ color: '#161e27', roughness: 0.35, metalness: 0.65 })
-    const holes = new InstancedMesh(holeGeom, holeMat, 100)
-    let idx = 0
-    const matrix = new Matrix4()
-
-    for (const ci of powerCols) {
-      const hx = colsX[ci]
-      for (const hz of powerZ) {
-        matrix.makeTranslation(hx, h + 0.021, hz)
-        holes.setMatrixAt(idx++, matrix)
-      }
-    }
-
-    holes.instanceMatrix.needsUpdate = true
-    group.add(holes)
   } else {
     box(0, h / 2 + 0.02, 0, w, h, d, color)
     if (definition?.visual === 'button') box(0, h + 0.12, 0, w * 0.65, 0.25, d * 0.65, module.properties?.state ? '#d7b58e' : '#835f87')

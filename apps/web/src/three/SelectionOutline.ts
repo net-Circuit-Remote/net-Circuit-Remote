@@ -1,9 +1,16 @@
-import { BufferGeometry, Float32BufferAttribute, Group, LineBasicMaterial, LineSegments, Mesh, Vector3 } from 'three'
+import { Group, InterleavedBufferAttribute, Mesh, Vector3 } from 'three'
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
 interface Face { normal: Vector3; center: Vector3 }
 interface ContourEdge { a: Vector3; b: Vector3; faces: Face[] }
 const updates = new WeakMap<Group, (camera: Vector3) => void>()
-export function updateSelectionOutline(outline: Group, camera: Vector3) { updates.get(outline)?.(camera) }
+export function updateSelectionOutline(outline: Group, camera: Vector3, width: number, height: number) {
+  const stroke = outline.children[0] as LineSegments2
+  stroke.material.resolution.set(width, height)
+  updates.get(outline)?.(camera)
+}
 
 // Weld triangle positions across UV/normal seams; keep only silhouette and visible creases.
 function surfaceEdges(model: Group): ContourEdge[] {
@@ -45,13 +52,18 @@ export function createSelectionOutline(model: Group): Group {
       edge([x, bottom, z], [x, top, z])
     }
   }
-  const geometry = new BufferGeometry().setAttribute('position', new Float32BufferAttribute(positions, 3))
-  const line = new LineSegments(geometry, new LineBasicMaterial({ color: '#e6c86e', transparent: true, opacity: 0.86, depthTest: true, depthWrite: false, toneMapped: false }))
+  const geometry = new LineSegmentsGeometry()
+  if (profile) geometry.setPositions(positions)
+  const line = new LineSegments2(geometry, new LineMaterial({ color: '#d4af37', linewidth: 2, worldUnits: false, transparent: true, opacity: 1, depthTest: true, depthWrite: false, toneMapped: false }))
   line.userData.ignorePick = true
+  // Render-only strokes must never compete with the component's picking surface.
+  line.raycast = () => {}
   outline.add(line)
   if (!profile) {
-    const edges = surfaceEdges(model), attribute = new Float32BufferAttribute(new Float32Array(edges.length * 6), 3)
-    geometry.setAttribute('position', attribute)
+    const edges = surfaceEdges(model)
+    geometry.setPositions(new Float32Array(edges.length * 6))
+    const starts = geometry.getAttribute('instanceStart') as InterleavedBufferAttribute
+    const ends = geometry.getAttribute('instanceEnd') as InterleavedBufferAttribute
     let lastView = ''
     const update = (camera: Vector3) => {
       const view = model.worldToLocal(camera.clone()), signature = view.toArray().map((value) => value.toFixed(6)).join(',')
@@ -63,9 +75,10 @@ export function createSelectionOutline(model: Group): Group {
         const silhouette = front.some(Boolean) && (edge.faces.length === 1 || front.some((value) => !value))
         const crease = front.every(Boolean) && edge.faces.length === 2 && edge.faces[0].normal.dot(edge.faces[1].normal) < Math.cos(35 * Math.PI / 180)
         if (!silhouette && !crease) continue
-        for (const point of [edge.a, edge.b]) attribute.setXYZ(count++, point.x * 1.004, point.y * 1.004, point.z * 1.004)
+        starts.setXYZ(count, edge.a.x * 1.004, edge.a.y * 1.004, edge.a.z * 1.004)
+        ends.setXYZ(count++, edge.b.x * 1.004, edge.b.y * 1.004, edge.b.z * 1.004)
       }
-      attribute.needsUpdate = true; geometry.setDrawRange(0, count); geometry.computeBoundingSphere()
+      starts.data.needsUpdate = true; geometry.instanceCount = count; geometry.computeBoundingSphere()
     }
     updates.set(outline, update)
     // Initial geometry is ready even before the first scheduled frame.

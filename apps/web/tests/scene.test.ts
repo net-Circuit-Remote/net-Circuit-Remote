@@ -1,7 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createSceneManager, type SceneRenderer } from '../src/three/SceneManager'
-import { InstancedMesh, LineSegments, Mesh, MeshStandardMaterial, Raycaster, Vector3 } from 'three'
+import { InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Raycaster, ShaderMaterial, Vector3 } from 'three'
+import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { buildComponent, disposeObject } from '../src/three/ComponentModel'
 import type { CircuitGraph } from '../src/types/circuit'
 
@@ -195,13 +196,13 @@ test('selection uses thin geometry contours, retains body color and follows prev
     manager.highlight('B')
     const outline = body.children.find((child) => child.userData.isOutline)!
     assert.ok(outline)
-    assert.ok(outline.children.every((child) => child instanceof LineSegments), 'outline must be a thin contour, not a mesh cage')
-    const line = outline.children[0] as LineSegments
+    assert.ok(outline.children.every((child) => child instanceof LineSegments2), 'outline must be a screen-space contour, not a mesh cage')
+    const line = outline.children[0] as LineSegments2
     assert.equal(line.userData.ignorePick, true)
     line.geometry.computeBoundingBox()
     assert.ok(line.geometry.boundingBox!.max.x > 4.5, 'contour must follow the actual end tab, not only catalog bounds')
     const selectedColors: string[] = []
-    body.traverse((object) => { if (object instanceof Mesh) selectedColors.push((object.material as MeshStandardMaterial).emissive.getHexString()) })
+    body.traverse((object) => { if (object instanceof Mesh && !object.userData.ignorePick) selectedColors.push((object.material as MeshStandardMaterial).emissive.getHexString()) })
     assert.deepEqual(selectedColors, colors)
     manager.previewMove('B', { x: 2, y: 0.25, z: 3 })
     assert.equal(outline.parent, body)
@@ -237,12 +238,12 @@ test('selection outline is rebuilt and disposed safely when a selected model cha
     manager.syncGraph(graph); manager.highlight('A')
     const original = manager.models.get('A')!.children.find((child) => child.userData.isOutline)!
     let disposed = 0
-    original.traverse((child) => { if (child instanceof LineSegments) child.geometry.addEventListener('dispose', () => disposed++) })
+    original.traverse((child) => { if (child instanceof LineSegments2) child.geometry.addEventListener('dispose', () => disposed++) })
     manager.syncGraph({ ...graph, modules: [{ id: 'A', type: 'LED', properties: { label: 'changed' } }] })
     const replacement = manager.models.get('A')!.children.find((child) => child.userData.isOutline)
     assert.ok(replacement && replacement !== original)
     assert.equal(disposed, 1)
-    assert.ok(replacement.children.every((child) => child instanceof LineSegments))
+    assert.ok(replacement.children.every((child) => child instanceof LineSegments2))
   } finally { manager.dispose() }
 })
 
@@ -254,11 +255,11 @@ test('curved model contours follow the camera silhouette when orbiting', () => {
     manager.syncGraph({ schema_version: '1.0', circuit_id: 'curve', modules: [{ id: 'L', type: 'LED' }], connections: [] })
     manager.highlight('L'); frame?.(0)
     const outline = manager.models.get('L')!.children.find((child) => child.userData.isOutline)!
-    const line = outline.children[0] as LineSegments
-    const before = Array.from(line.geometry.getAttribute('position').array)
+    const line = outline.children[0] as LineSegments2
+    const before = Array.from(line.geometry.getAttribute('instanceStart').array)
     assert.ok(before.length > 0)
     manager.orbit(75); frame?.(0)
-    assert.notDeepEqual(Array.from(line.geometry.getAttribute('position').array), before, 'curved surfaces need view-dependent silhouette edges')
+    assert.notDeepEqual(Array.from(line.geometry.getAttribute('instanceStart').array), before, 'curved surfaces need view-dependent silhouette edges')
   } finally { manager.dispose() }
 })
 
@@ -268,11 +269,12 @@ test('decorative resistor bands do not occlude its long selection contours', () 
     manager.syncGraph({ schema_version: '1.0', circuit_id: 'resistor', modules: [{ id: 'R', type: 'RESISTOR' }], connections: [] }); manager.highlight('R')
     manager.scene.updateMatrixWorld(true)
     const model = manager.models.get('R')!, outline = model.children.find((child) => child.userData.isOutline)!
-    const line = outline.children[0] as LineSegments, positions = line.geometry.getAttribute('position')
+    const line = outline.children[0] as LineSegments2
+    const starts = line.geometry.getAttribute('instanceStart'), ends = line.geometry.getAttribute('instanceEnd')
     let samples = 0, hidden = 0
     const ray = new Raycaster()
-    for (let i = 0; i < line.geometry.drawRange.count; i += 2) {
-      const a = new Vector3().fromBufferAttribute(positions, i), b = new Vector3().fromBufferAttribute(positions, i + 1)
+    for (let i = 0; i < line.geometry.instanceCount; i++) {
+      const a = new Vector3().fromBufferAttribute(starts, i), b = new Vector3().fromBufferAttribute(ends, i)
       if (a.distanceTo(b) < 0.7) continue
       for (let step = 1; step < 100; step++) {
         const point = model.localToWorld(a.clone().lerp(b, step / 100)), distance = point.distanceTo(manager.camera.position)
@@ -285,4 +287,91 @@ test('decorative resistor bands do not occlude its long selection contours', () 
     assert.ok(samples > 100)
     assert.equal(hidden, 0, 'decorative bands must stay behind the outer selection contour')
   } finally { manager.dispose() }
+})
+
+test('selection has a two CSS pixel medium gold stroke through resize and zoom', () => {
+  let frame: FrameRequestCallback | undefined
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: (callback) => { frame = callback; return 1 }, cancelFrame() {} })
+  try {
+    manager.resize(1280, 720)
+    manager.syncGraph({ schema_version: '1.0', circuit_id: 'gold', modules: [{ id: 'B', type: 'BREADBOARD' }], connections: [] }); manager.highlight('B'); frame?.(0)
+    const stroke = manager.models.get('B')!.children.find((child) => child.userData.isOutline)!.children[0]
+    assert.ok(stroke instanceof LineSegments2, 'native WebGL one-pixel lines cannot render the requested 2px border')
+    assert.equal(stroke.material.linewidth, 2)
+    assert.equal(stroke.material.worldUnits, false)
+    assert.equal(stroke.material.color.getHexString(), 'd4af37')
+    assert.deepEqual(stroke.material.resolution.toArray(), [1280, 720])
+    manager.resize(900, 600); manager.setZoom(50); frame?.(0)
+    assert.deepEqual(stroke.material.resolution.toArray(), [900, 600])
+    assert.equal(stroke.material.linewidth, 2)
+  } finally { manager.dispose() }
+})
+
+test('breadboard socket centers are genuinely recessed below the deck on all three sizes', () => {
+  for (const type of ['BREADBOARD', 'BREADBOARD_630', 'BREADBOARD_100']) {
+    const board = buildComponent({ id: 'B', type })
+    try {
+      board.updateMatrixWorld(true)
+      const contacts = board.children.find((child) => child instanceof InstancedMesh) as InstancedMesh
+      const top = Number(board.userData.size[1]) + 0.03
+      for (const index of [0, Math.floor(contacts.count / 2), contacts.count - 1]) {
+        const matrix = new Matrix4(); contacts.getMatrixAt(index, matrix)
+        const center = new Vector3().setFromMatrixPosition(matrix)
+        const ray = new Raycaster(new Vector3(center.x, top + 1, center.z), new Vector3(0, -1, 0))
+        const hit = ray.intersectObject(board, true)[0]
+        assert.ok(hit, 'a socket needs a visible cavity floor')
+        assert.ok(hit.point.y < top - 0.05, `${type} socket ${index} must not be a flat painted square or capped box`)
+      }
+      const normals = contacts.geometry.getAttribute('normal')
+      assert.ok(Array.from({length: normals.count}, (_, i) => Math.abs(normals.getY(i))).some((y) => y > 0.05 && y < 0.95), 'socket entrances need sloped inner walls')
+    } finally { disposeObject(board) }
+  }
+})
+
+test('technical grid suppresses minor detail at distant zoom and preserves major spacing', () => {
+  let frame: FrameRequestCallback | undefined
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: (callback) => { frame = callback; return 1 }, cancelFrame() {} })
+  try {
+    manager.resize(1280, 720); frame?.(0)
+    const material = manager.grid.material
+    assert.ok(material instanceof ShaderMaterial, 'uniform-brightness GridHelper must be replaced')
+    assert.equal(material.uniforms.minorStep.value, 0.5)
+    assert.equal(material.uniforms.majorStep.value, 2.5)
+    assert.ok(material.uniforms.minorVisibility.value > 0.8)
+    manager.camera.position.multiplyScalar(3); manager.setZoom(50); frame?.(0)
+    assert.equal(material.uniforms.minorVisibility.value, 0)
+    assert.equal(material.uniforms.majorStep.value, 2.5)
+    manager.resetView(); frame?.(0)
+    assert.ok(material.uniforms.minorVisibility.value > 0.8)
+    assert.equal(material.depthWrite, false)
+  } finally { manager.dispose() }
+})
+
+test('modular breadboards share mating keys with clearance for beveled joints', () => {
+  for (const type of ['BREADBOARD', 'BREADBOARD_630', 'BREADBOARD_100']) {
+    const board = buildComponent({ id: 'B', type })
+    try {
+      const profile = board.userData.selectionProfile as [number, number][]
+      const halfDepth = Number(board.userData.size[2]) / 2
+      const tab = -halfDepth - Math.min(...profile.map(([, z]) => z))
+      const notch = halfDepth - Math.min(...profile.filter(([x, z]) => Math.abs(x) < 0.2 && z > 0).map(([, z]) => z))
+      assert.ok(notch > tab + 0.004, `${type} tab must fit its neighbor's notch without bevel collision`)
+      assert.equal(profile.filter(([, z]) => z < -halfDepth).length, 6, 'all strips share the same three mating keys')
+    } finally { disposeObject(board) }
+  }
+})
+
+test('docked breadboard bevels stay within their nominal mating edges', () => {
+  for (const [first, second] of [['BREADBOARD', 'BREADBOARD'], ['BREADBOARD_630', 'BREADBOARD_100'], ['BREADBOARD_100', 'BREADBOARD_100']]) {
+    const a = buildComponent({ id: 'A', type: first }), b = buildComponent({ id: 'B', type: second })
+    try {
+      const spacing = (Number(a.userData.size[2]) + Number(b.userData.size[2])) / 2
+      b.position.z = spacing; b.updateMatrixWorld(true)
+      // A straight portion between the keyed joints, below the socket floors.
+      const aHit = new Raycaster(new Vector3(1, 0.2, 5), new Vector3(0, 0, -1)).intersectObject(a, true)[0]
+      const bHit = new Raycaster(new Vector3(1, 0.2, -5), new Vector3(0, 0, 1)).intersectObject(b, true)[0]
+      assert.ok(aHit && bHit)
+      assert.ok(aHit.point.z <= bHit.point.z + 0.00001, `${first}/${second} housing bevels must not interpenetrate at the docked seam`)
+    } finally { disposeObject(a); disposeObject(b) }
+  }
 })

@@ -4,6 +4,14 @@ All notable project changes will be documented in this file. The project follows
 
 ## [Unreleased]
 
+### Changed — 2026-10-09 Technical Workbench refinement
+
+- Selection border now uses 2 CSS pixels, Medium Gold #d4af37 and camera-dependent housing contours.
+- Breadboards have perforated deck/decal and real instanced socket cavities with tapered entrances/walls/floors. Shared keys have clearance; inward bevels prevent straight docking-edge overlap.
+- Component Info is visible only for an existing selected model; artwork stays within its frame. Removed canvas WORKSPACE/project caption.
+- Adaptive technical grid replaces uniform GridHelper with dark minors, majors every five cells, distance fade and zoom/derivative minor suppression.
+- Final npm tests 68/68 PASS; WebGL/desktop verification and build sandbox limitation recorded in `verification/2026-10-09-technical-workbench-browser.md`.
+
 ### Changed — 2026-10-09 Selection contours and Component Info
 
 - Replaced the thick emissive box cage with a subtle yellow shape contour; body colors stay unchanged. Curved model silhouette edges follow the camera within the existing render lifecycle.

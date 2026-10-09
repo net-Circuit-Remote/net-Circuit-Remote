@@ -1,5 +1,7 @@
 # Phân tích selection, breadboard và Component Info — 2026-10-09
 
+Historical refinement: phần LineSegments 1px, socket trang trí và Info theo preview bên dưới đã được thay thế bởi [Technical Workbench](SOURCE_ANALYSIS_TECHNICAL_WORKBENCH.md): viền 2px Medium Gold, cavity thật, selection-only Info và adaptive grid. Giữ bản này để đối chiếu nguyên nhân và quá trình kiểm chứng.
+
 ## Yêu cầu hiện hành
 
 Ảnh thứ tư và cuối là tham khảo về bố cục giới thiệu/Add và nét vàng quanh thân mô hình. Không sao chép thương hiệu, artwork hoặc giao diện phần mềm tham khảo. Dùng artwork SVG đã có trong project và ngôn ngữ giao diện workbench hiện tại: màu tối ổn định, chữ dễ đọc, đường phân cách gọn, không glow/glass quanh panel.
