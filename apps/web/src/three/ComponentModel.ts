@@ -287,12 +287,6 @@ export function buildComponent(module: CircuitModule): Group {
     group.add(holes)
   } else {
     box(0, h / 2 + 0.02, 0, w, h, d, color)
-    if (definition?.visual === 'board') {
-      const holes = new InstancedMesh(new CylinderGeometry(0.04, 0.04, 0.015, 6), material('#52626b'), 160)
-      for (let i = 0; i < 160; i++) holes.setMatrixAt(i, new Matrix4().makeTranslation((i % 20 - 9.5) * w / 22, h + 0.035, (Math.floor(i / 20) - 3.5) * d / 10))
-      group.add(holes)
-      box(0, h + 0.024, 0, w * 0.95, 0.012, 0.12, '#899699')
-    }
     if (definition?.visual === 'button') box(0, h + 0.12, 0, w * 0.65, 0.25, d * 0.65, module.properties?.state ? '#d7b58e' : '#835f87')
     if (definition?.visual === 'toggle') { const lever = box(0, h + 0.25, 0, 0.15, 0.55, 0.2, '#c0d1db'); lever.rotation.z = module.properties?.state ? -0.4 : 0.4 }
     if (definition?.visual === 'dip') for (let i = 0; i < 4; i++) box((i - 1.5) * 0.38, h + 0.08, ((Number(module.properties?.value ?? 0) >> i) & 1) ? -0.2 : 0.2, 0.22, 0.18, 0.3, '#e6dac4')
@@ -307,7 +301,7 @@ export function buildComponent(module: CircuitModule): Group {
     anchor.userData = { kind: 'port', id: module.id, endpoint: `${module.id}.${port.id}` }
     group.add(anchor)
   }
-  if (typeof document !== 'undefined' && definition?.visual !== 'breadboard' && definition?.visual !== 'board') {
+  if (typeof document !== 'undefined' && definition?.visual !== 'breadboard') {
     const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 80
     const context = canvas.getContext('2d')
     if (context) {

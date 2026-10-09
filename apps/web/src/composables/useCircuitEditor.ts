@@ -46,6 +46,15 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   }
   function place(type: string, position: Position) { attempt(() => { const id = circuit.placeModule(type, position); workspace.selectModule(id); manager()?.setGhost(null); sync() }) }
   function pointerDown(event: PointerEvent) {
+    if (event.button === 2 && workspace.placementType) {
+      event.preventDefault?.()
+      event.stopPropagation?.()
+      event.stopImmediatePropagation?.()
+      cancel()
+      workspace.cancelPlacement()
+      workspace.editError = ''
+      return
+    }
     if (event.button !== 0 || gesture || !manager() || !canvas.value) return
     canvas.value.focus(); const { x, y } = coordinates(event), point = manager()!.groundPoint(x, y)
     if (workspace.placementType) { if (point) place(workspace.placementType, snap(point)); return }

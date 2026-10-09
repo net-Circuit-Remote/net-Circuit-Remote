@@ -223,3 +223,37 @@ test('Select picks breadboards and other models without dragging geometry, camer
     } finally { h.dispose() }
   }
 })
+
+test('active 3D model placement places on left click and exits on right click', async () => {
+  const h = setup()
+  try {
+    h.workspace.armPlacement('RESISTOR')
+    assert.equal(h.workspace.placementType, 'RESISTOR')
+    const center = h.manager.project(new Vector3(0, 0, 0))
+    h.editor.pointerMove(h.pointer(center.x, center.y))
+    assert.ok(h.manager.scene.children.some((child) => child.userData.id === 'PLACE'))
+
+    let prevented = false, stopped = false
+    const rightClick = {
+      clientX: center.x,
+      clientY: center.y,
+      pointerId: 1,
+      button: 2,
+      preventDefault() { prevented = true },
+      stopPropagation() { stopped = true },
+      stopImmediatePropagation() { stopped = true },
+    } as unknown as PointerEvent
+    h.editor.pointerDown(rightClick)
+    assert.equal(h.workspace.placementType, null)
+    assert.ok(!h.manager.scene.children.some((child) => child.userData.id === 'PLACE'))
+    assert.equal(h.circuit.graph!.modules.length, 0)
+
+    h.workspace.armPlacement('RESISTOR')
+    assert.equal(h.workspace.placementType, 'RESISTOR')
+    const leftClick = h.pointer(center.x, center.y, 1, 0)
+    h.editor.pointerDown(leftClick)
+    assert.equal(h.workspace.placementType, null)
+    assert.equal(h.circuit.graph!.modules.length, 1)
+    assert.equal(h.circuit.graph!.modules[0].type, 'RESISTOR')
+  } finally { h.dispose() }
+})
