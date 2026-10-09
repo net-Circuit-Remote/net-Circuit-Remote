@@ -329,7 +329,7 @@ Inspector
 Hex Editor
 ```
 
-### Acceptance Phase 1
+### Acceptance Phase 1 [X]
 
 ```text
 / mở workbench
@@ -346,7 +346,7 @@ browser verification PASS
 
 ---
 
-## PHASE 2 — Interactive Circuit Workspace
+## PHASE 2 — Interactive Circuit Workspace [X]
 
 ### 2.1 Scene
 

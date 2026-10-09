@@ -44,3 +44,9 @@ Current implementation status is in DEV_LOG; historical Phase 1 reports stay unc
 - `docs/verification/2026-10-09-workspace-navigation-browser.md` and screenshot
 - `docs/verification/2026-10-09-move-tool-browser.md` and screenshot record the latest Move-only rule.
 - Only Move allows direct model dragging; Select only selects. Empty-surface left pan, camera-oriented XYZ, adjacent orbit/pan buttons and regression tests remain. Circuit schema/electrical boundaries stay unchanged; current controls are documented in the Web README and DEV_LOG.
+
+## Selection and introduction panel refinement
+
+- `docs/SOURCE_ANALYSIS_SELECTION_AND_COMPONENT_INFO.md`
+- `docs/verification/2026-10-09-component-information-browser.md` and screenshot
+- Shape-following thin yellow contours, recessed breadboard housing and a single upper-right introduction/Add panel. Shared UI state and Move-only dragging remain; older selection action-card/window reports are historical.

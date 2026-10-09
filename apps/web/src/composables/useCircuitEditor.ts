@@ -206,6 +206,7 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
       return
     }
     workspace.selectModule(hit.id)
+    ui.openWindow('component-info', { activate: false })
     if (workspace.tool === 'rotate') attempt(() => circuit.rotateModule(hit.id))
     else if (workspace.tool === 'delete') attempt(() => circuit.removeModule(hit.id))
     else if (workspace.tool === 'scope' || workspace.tool === 'probe') ui.openWindow(workspace.tool === 'scope' ? 'oscilloscope' : 'monitor')
@@ -287,7 +288,7 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
     sync()
   }, { deep: true })
   watch(() => [workspace.tool, workspace.placementType], () => { cancel(); updatePorts() })
-  watch(() => [workspace.selectedModuleId, workspace.selectedWire], () => { manager()?.highlight(workspace.selectedModuleId, workspace.selectedWire); updatePorts() })
+  watch(() => [workspace.selectedModuleId, workspace.selectedWire], () => { manager()?.highlight(workspace.selectedModuleId, workspace.selectedWire); updatePorts(); if (selected.value) ui.openWindow('component-info', { activate: false }) })
   onUnmounted(cancel)
   return { ports, selected, dragging, updatePorts, sync, cancel, connect, pointerDown, pointerMove, pointerUp, drop, keydown, selectModule }
 }

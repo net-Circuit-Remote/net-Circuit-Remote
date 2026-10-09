@@ -9,6 +9,8 @@
 
 **Phase 2 implementation:** interactive metadata-backed scene/graph editing and local memory image editor are implemented on 2026-10-09. Current boundaries are in `2026-10-09-interactive-workspace-design.md`, source analysis and DEV_LOG. Simulation/execution/capture remain later work.
 
+**Latest selection UI refinement:** Component Info is now one upper-right introduction panel with supplied artwork and Add +; the selected-component Delete/Rotate/Properties/Info & Pinout card is removed. Thin yellow contours follow selected/moving housing. Direct model dragging requires Move. This supersedes older selection-window descriptions below; see `docs/SOURCE_ANALYSIS_SELECTION_AND_COMPONENT_INFO.md`.
+
 Implementation notes: use the user's exact twelve ribbon groups (Structure through Notation, without an extra Interaction group); retain Vue Router only for address compatibility, with App rendering its shell directly. Local JSON/project history provides the five file actions, with a shared 2 MB round-trip limit. Shared windows restore focus to stable ribbon controls and focus on repeated activation. Supplied embedded-raster SVGs are preserved and consumed through small provenance-checked SVG derivatives. Three.js lifecycle currently renders a disposable visual grid; placement, wiring, acquisition/output and memory editing remain future integrations.
 
 ## 1. Intent

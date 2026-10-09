@@ -17,7 +17,7 @@ export const useUiStore = defineStore('ui', {
       this.viewport = { width: Math.max(0, width), height: Math.max(0, height) }
       for (const window of this.windows) bound(window, this.viewport.width, this.viewport.height)
     },
-    openWindow(kind: WindowKind) {
+    openWindow(kind: WindowKind, options: { activate?: boolean } = {}) {
       let window = this.windows.find((entry) => entry.kind === kind)
       if (!window) {
         const index = this.windows.length
@@ -27,7 +27,7 @@ export const useUiStore = defineStore('ui', {
       window.open = true
       bound(window, this.viewport.width, this.viewport.height)
       this.focusWindow(kind)
-      window.activation++
+      if (options.activate !== false) window.activation++
     },
     closeWindow(kind: WindowKind) { const window = this.windows.find((entry) => entry.kind === kind); if (window) window.open = false },
     focusWindow(kind: WindowKind) {

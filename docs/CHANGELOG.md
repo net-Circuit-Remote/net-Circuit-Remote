@@ -4,6 +4,13 @@ All notable project changes will be documented in this file. The project follows
 
 ## [Unreleased]
 
+### Changed — 2026-10-09 Selection contours and Component Info
+
+- Replaced the thick emissive box cage with a subtle yellow shape contour; body colors stay unchanged. Curved model silhouette edges follow the camera within the existing render lifecycle.
+- Rebuilt breadboard housing with beveled joints and recessed channels, retaining 830/630/100 visual contact instances and docking dimensions. Reduced excessive scene illumination so housing details remain readable.
+- Replaced the selected-component action card and metadata-heavy Info window with one upper-right introduction panel using supplied artwork and Add +. Automatic opening preserves canvas focus/capture; Add arms placement and closing returns canvas focus. Unsupported entries cannot add a model.
+- Added regression coverage for contours/materials/pose/disposal, real channel geometry, curved silhouette, unobstructed resistor contours and passive Info opening. Fixed the introduction fallback for supported Board models. Final npm tests 62/62 PASS; browser verified Add/Move/Undo/Select and four desktop sizes. Final bundling remains unverified because Vite realpath was blocked by the sandbox after build elevation was declined; an earlier build passed. Details: `SOURCE_ANALYSIS_SELECTION_AND_COMPONENT_INFO.md` and `verification/2026-10-09-component-information-browser.md`.
+
 ### Changed — 2026-10-09 Move-only model dragging
 
 - Per the latest user request, only Move permits direct dragging of breadboards and other models. Select selects without moving geometry/camera or recording history.

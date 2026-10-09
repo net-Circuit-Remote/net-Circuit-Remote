@@ -1,8 +1,9 @@
-import { AmbientLight, BoxGeometry, BufferGeometry, Color, DirectionalLight, GridHelper, Group, Line, LineBasicMaterial, Mesh, MeshStandardMaterial, MOUSE, PerspectiveCamera, Plane, Raycaster, Scene, TubeGeometry, Vector2, Vector3, QuadraticBezierCurve3 } from 'three'
+import { AmbientLight, BufferGeometry, Color, DirectionalLight, GridHelper, Group, Line, LineBasicMaterial, Mesh, MeshStandardMaterial, MOUSE, PerspectiveCamera, Plane, Raycaster, Scene, TubeGeometry, Vector2, Vector3, QuadraticBezierCurve3 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { applyPose, buildComponent, disposeObject, portAnchor } from './ComponentModel'
 import { getDefinition } from '../data/editorCatalog'
 import type { CircuitGraph, CircuitModule } from '../types/circuit'
+import { createSelectionOutline, updateSelectionOutline } from './SelectionOutline'
 
 export interface SceneRenderer { setSize(width: number, height: number, updateStyle?: boolean): void; render(scene: Scene, camera: PerspectiveCamera): void; dispose(): void }
 interface SceneOptions { renderer: SceneRenderer; canvas?: HTMLCanvasElement; onRender?: () => void; requestFrame?: (callback: FrameRequestCallback) => number; cancelFrame?: (id: number) => void }
@@ -14,9 +15,9 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
   const scene = new Scene(); scene.background = new Color('#101925')
   const camera = new PerspectiveCamera(42, 1, 0.1, 150); camera.position.set(0, 11, 10); camera.lookAt(0, 0, 0); camera.updateMatrixWorld()
   const grid = new GridHelper(30, 60, '#415a70', '#253747'); grid.position.y = -0.01
-  const ambient = new AmbientLight('#c9def4', 2)
-  const light = new DirectionalLight('#fff5dc', 3); light.position.set(-5, 10, 5)
-  const fillLight = new DirectionalLight('#a8c7e8', 1.2); fillLight.position.set(6, 8, -6)
+  const ambient = new AmbientLight('#c9def4', 1.1)
+  const light = new DirectionalLight('#fff5dc', 1.9); light.position.set(-5, 10, 5)
+  const fillLight = new DirectionalLight('#a8c7e8', 0.75); fillLight.position.set(6, 8, -6)
   const wires = new Group(), content = new Group(), models = new Map<string, Group>()
   scene.add(grid, ambient, light, fillLight, content, wires)
   const raycaster = new Raycaster(), plane = new Plane(new Vector3(0, 1, 0), 0)
@@ -24,7 +25,7 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
   let graph: CircuitGraph | null = null, ghost: Group | null = null
   const schedule = () => {
     if (disposed || !visible || suspended || frame !== null) return
-    frame = requestFrame(() => { frame = null; if (!disposed && visible && !suspended) { scene.updateMatrixWorld(true); renderer.render(scene, camera); onRender?.() } })
+    frame = requestFrame(() => { frame = null; if (!disposed && visible && !suspended) { scene.updateMatrixWorld(true); if (activeOutline) updateSelectionOutline(activeOutline.group, camera.position); renderer.render(scene, camera); onRender?.() } })
   }
   const controls = canvas ? new OrbitControls(camera, canvas) : undefined
   const viewTarget = new Vector3()
@@ -62,44 +63,13 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
       activeOutline = null
     }
   }
-  const createSelectionOutline = (size: [number, number, number]): Group => {
-    const [w, h, d] = size
-    const outline = new Group()
-    outline.userData = { ignorePick: true, isOutline: true }
-    const pad = 0.02
-    const W = w + pad * 2, D = d + pad * 2
-    const yBot = 0.015, yTop = h + 0.025
-    const H = Math.max(0.05, yTop - yBot), yMid = (yTop + yBot) / 2
-    const t = 0.038
-    const outlineMat = new MeshStandardMaterial({
-      color: '#fbbf24',
-      emissive: '#f59e0b',
-      emissiveIntensity: 1.0,
-      roughness: 0.25,
-      metalness: 0.15
-    })
-    const addBar = (x: number, y: number, z: number, sx: number, sy: number, sz: number) => {
-      const mesh = new Mesh(new BoxGeometry(sx, sy, sz), outlineMat)
-      mesh.position.set(x, y, z)
-      mesh.userData = { ignorePick: true }
-      outline.add(mesh)
+  let highlightedId: string | null = null
+  const attachOutline = () => {
+    const model = highlightedId && models.get(highlightedId)
+    if (model && !activeOutline) {
+      const group = createSelectionOutline(model)
+      model.add(group); activeOutline = { id: highlightedId!, group }
     }
-    // Top perimeter loop
-    addBar(0, yTop, -D / 2, W + t, t, t)
-    addBar(0, yTop, D / 2, W + t, t, t)
-    addBar(-W / 2, yTop, 0, t, t, D + t)
-    addBar(W / 2, yTop, 0, t, t, D + t)
-    // Bottom perimeter loop
-    addBar(0, yBot, -D / 2, W + t, t, t)
-    addBar(0, yBot, D / 2, W + t, t, t)
-    addBar(-W / 2, yBot, 0, t, t, D + t)
-    addBar(W / 2, yBot, 0, t, t, D + t)
-    // 4 Vertical corner posts
-    addBar(-W / 2, yMid, -D / 2, t, H, t)
-    addBar(W / 2, yMid, -D / 2, t, H, t)
-    addBar(-W / 2, yMid, D / 2, t, H, t)
-    addBar(W / 2, yMid, D / 2, t, H, t)
-    return outline
   }
   return {
     scene, camera, grid, models, wires,
@@ -108,24 +78,15 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
       if (disposed) return
       graph = next
       const ids = new Set(next?.modules.map((module) => module.id))
-      for (const [id, model] of models) if (!ids.has(id)) { disposeObject(model); content.remove(model); models.delete(id) }
+      for (const [id, model] of models) if (!ids.has(id)) { if (activeOutline?.id === id) removeActiveOutline(); if (highlightedId === id) highlightedId = null; disposeObject(model); content.remove(model); models.delete(id) }
       for (const module of next?.modules ?? []) {
         let model = models.get(module.id)
         const signature = JSON.stringify([module.type, module.properties])
-        if (model && model.userData.signature !== signature) { disposeObject(model); content.remove(model); models.delete(module.id); model = undefined }
+        if (model && model.userData.signature !== signature) { if (activeOutline?.id === module.id) removeActiveOutline(); disposeObject(model); content.remove(model); models.delete(module.id); model = undefined }
         if (!model) { model = buildComponent(module); models.set(module.id, model); content.add(model) }
         applyPose(model, module)
       }
-      if (activeOutline) {
-        if (!next || !next.modules.some((module) => module.id === activeOutline?.id)) {
-          removeActiveOutline()
-        } else {
-          const model = models.get(activeOutline.id)
-          if (model && !model.children.includes(activeOutline.group)) {
-            model.add(activeOutline.group)
-          }
-        }
-      }
+      attachOutline()
       refreshWires(); schedule()
     },
     previewMove(id: string, position: Required<NonNullable<CircuitModule['position']>>) { const model = models.get(id); if (model && !disposed) { model.position.set(position.x, position.y, position.z); model.updateMatrixWorld(true); refreshWires(); schedule() } },
@@ -146,22 +107,8 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
     },
     highlight(id: string | null, wire?: { source: string; destination: string } | null) {
       if (activeOutline && activeOutline.id !== id) removeActiveOutline()
-      if (id && (!activeOutline || activeOutline.id !== id)) {
-        const model = models.get(id)
-        if (model) {
-          const size = (model.userData.size as [number, number, number] | undefined) ?? [1.5, 0.5, 1]
-          const outline = createSelectionOutline(size)
-          model.add(outline)
-          activeOutline = { id, group: outline }
-        }
-      }
-      models.forEach((model, key) => model.traverse((object) => {
-        if (object instanceof Mesh && !object.userData.ignorePick) {
-          const mats = Array.isArray(object.material) ? object.material : [object.material]
-          const isBreadboard = typeof model.userData.type === 'string' && model.userData.type.startsWith('breadboard')
-          mats.forEach((m) => { if ('emissive' in m) (m as MeshStandardMaterial).emissive.set(key === id ? (isBreadboard ? '#151311' : '#244639') : '#000000') })
-        }
-      }))
+      highlightedId = id
+      attachOutline()
       wires.children.forEach((object) => { const mesh = object as Mesh; (mesh.material as MeshStandardMaterial).color.set(wire && object.userData.source === wire.source && object.userData.destination === wire.destination ? '#f1cd77' : '#71b3ce') })
       schedule()
     },

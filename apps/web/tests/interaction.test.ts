@@ -7,6 +7,7 @@ import { useCircuitEditor, snapPosition } from '../src/composables/useCircuitEdi
 import { useCircuitStore } from '../src/stores/circuit'
 import { useWorkspaceStore, type WorkspaceTool } from '../src/stores/workspace'
 import { createSceneManager } from '../src/three/SceneManager'
+import { useUiStore } from '../src/stores/ui'
 
 // Only the DOM/canvas host and GPU boundary are replaced; picking, camera math,
 // Vue lifecycle, graph commands and history use the production implementations.
@@ -222,6 +223,24 @@ test('Select picks breadboards and other models without dragging geometry, camer
       assert.equal(h.circuit.past.length, 0)
     } finally { h.dispose() }
   }
+})
+
+test('picking a model opens one passive Component Info panel without interrupting Move capture', async () => {
+  const h = setup('move')
+  try {
+    const id = h.circuit.placeModule('BREADBOARD', { x: 0, y: 0, z: 0 })
+    await nextTick(); h.circuit.past = []
+    const p = h.manager.project(new Vector3(0, 0.32, 0.3))
+    h.editor.pointerDown(h.pointer(p.x, p.y)); await nextTick()
+    const ui = useUiStore(), info = ui.windows.find((window) => window.kind === 'component-info')
+    assert.ok(info?.open, 'selection must open Component Info')
+    assert.equal(info.activation, 0, 'automatic information must not steal canvas focus')
+    assert.equal(h.captured.size, 1)
+    assert.equal(h.workspace.selectedModuleId, id)
+    h.editor.pointerMove(h.pointer(p.x + 100, p.y + 50)); h.editor.pointerUp(h.pointer(p.x + 100, p.y + 50)); await nextTick()
+    assert.equal(h.circuit.past.length, 1)
+    assert.equal(ui.windows.filter((window) => window.kind === 'component-info').length, 1)
+  } finally { h.dispose() }
 })
 
 test('active 3D model placement places on left click and exits on right click', async () => {

@@ -1,6 +1,7 @@
-import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Object3D, PlaneGeometry, SphereGeometry, Sprite, SpriteMaterial, Vector3 } from 'three'
+import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Object3D, SphereGeometry, Sprite, SpriteMaterial, Vector3 } from 'three'
 import { getDefinition, type LogicalPort } from '../data/editorCatalog'
 import type { CircuitModule } from '../types/circuit'
+import { addBreadboardHousing } from './BreadboardHousing'
 
 export function disposeObject(root: Object3D) {
   root.traverse((object) => {
@@ -401,51 +402,24 @@ export function buildComponent(module: CircuitModule): Group {
   group.userData = { kind: 'module', id: module.id, type: module.type, size: [w, h, d], signature: JSON.stringify([module.type, module.properties]) }
   const material = (color: string) => new MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.12 })
   const box = (x: number, y: number, z: number, sx: number, sy: number, sz: number, color: string) => {
-    const mesh = new Mesh(new BoxGeometry(sx, sy, sz), material(color)); mesh.position.set(x, y, z); group.add(mesh); return mesh
+    const mesh = new Mesh(new BoxGeometry(sx, sy, sz), material(color)); mesh.userData.selectionSurface = true; mesh.position.set(x, y, z); group.add(mesh); return mesh
   }
-  const cylinder = (radius: number, height: number, color: string) => new Mesh(new CylinderGeometry(radius, radius, height, 20), material(color))
+  const cylinder = (radius: number, height: number, color: string) => { const mesh = new Mesh(new CylinderGeometry(radius, radius, height, 20), material(color)); mesh.userData.selectionSurface = true; return mesh }
   const color = definition?.color ?? '#72829a'
 
   if (definition?.visual === 'resistor') {
     const body = cylinder(0.23, w * 0.7, color); body.rotation.z = Math.PI / 2; body.position.y = h / 2 + 0.08; group.add(body)
-    for (const [x, band] of [[-0.4, '#6c4434'], [-0.15, '#272528'], [0.15, '#b64137'], [0.4, '#c8a150']] as const) { const ring = cylinder(0.235, 0.07, band); ring.rotation.z = Math.PI / 2; ring.position.set(x, h / 2 + 0.08, 0); group.add(ring) }
+    for (const [x, band] of [[-0.4, '#6c4434'], [-0.15, '#272528'], [0.15, '#b64137'], [0.4, '#c8a150']] as const) {
+      const ring = cylinder(0.23, 0.07, band)
+      // Flush paint bands retain the body silhouette; offset their depth to avoid flicker.
+      ring.material.polygonOffset = true; ring.material.polygonOffsetFactor = -1; ring.material.polygonOffsetUnits = -1
+      ring.userData.selectionSurface = false; ring.rotation.z = Math.PI / 2; ring.position.set(x, h / 2 + 0.08, 0); group.add(ring)
+    }
   } else if (definition?.visual === 'capacitor' || definition?.visual === 'led') {
     const body = cylinder(w * 0.35, h, color); body.position.y = h / 2 + 0.05; group.add(body)
-    if (definition.visual === 'led') { const dome = new Mesh(new SphereGeometry(w * 0.35, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), material(color)); dome.position.y = h; group.add(dome) }
+    if (definition.visual === 'led') { const dome = new Mesh(new SphereGeometry(w * 0.35, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), material(color)); dome.userData.selectionSurface = true; dome.position.y = h; group.add(dome) }
   } else if (definition?.visual === 'breadboard') {
-    // Photorealistic MB-102 830-tie-point solderless breadboard
-    box(0, h / 2 + 0.02, 0, w, h, d, color)
-
-    const texture = createBreadboardTexture()
-    if (texture) {
-      const decal = new Mesh(new PlaneGeometry(w, d), new MeshStandardMaterial({ map: texture, roughness: 0.5, metalness: 0.05 }))
-      decal.rotation.x = -Math.PI / 2
-      decal.position.set(0, h + 0.0205, 0)
-      group.add(decal)
-    }
-
-    // Bottom double-sided foam tape backing layer
-    const tape = new Mesh(new BoxGeometry(w * 0.995, 0.02, d * 0.995), material('#f0e9d2'))
-    tape.position.set(0, 0.01, 0)
-    group.add(tape)
-
-    // Dovetail interlocking tabs and notches matching real MB-102
-    const tabColor = '#fafbfc'
-    const notchColor = '#cbd5e1'
-    for (const tx of [-2.7, 0, 2.7]) {
-      const tabZ = new Mesh(new BoxGeometry(0.30, h * 0.70, 0.10), material(tabColor))
-      tabZ.position.set(tx, h / 2 + 0.02, -d / 2 - 0.05)
-      group.add(tabZ)
-      const notchZ = new Mesh(new BoxGeometry(0.32, h * 0.72, 0.05), material(notchColor))
-      notchZ.position.set(tx, h / 2 + 0.02, d / 2 - 0.025)
-      group.add(notchZ)
-    }
-    const tabX = new Mesh(new BoxGeometry(0.10, h * 0.70, 0.35), material(tabColor))
-    tabX.position.set(w / 2 + 0.05, h / 2 + 0.02, 0)
-    group.add(tabX)
-    const notchX = new Mesh(new BoxGeometry(0.05, h * 0.72, 0.37), material(notchColor))
-    notchX.position.set(-w / 2 + 0.025, h / 2 + 0.02, 0)
-    group.add(notchX)
+    addBreadboardHousing(group, [w, h, d], color, createBreadboardTexture(), true, true)
 
     // Exactly 1 InstancedMesh with 830 contacts (630 terminal + 200 power rails)
     const pitch = 0.13
@@ -493,39 +467,7 @@ export function buildComponent(module: CircuitModule): Group {
     holes.instanceMatrix.needsUpdate = true
     group.add(holes)
   } else if (definition?.visual === 'breadboard_630') {
-    // Photorealistic 630-tie-point terminal breadboard
-    box(0, h / 2 + 0.02, 0, w, h, d, color)
-
-    const texture = createBreadboard630Texture()
-    if (texture) {
-      const decal = new Mesh(new PlaneGeometry(w, d), new MeshStandardMaterial({ map: texture, roughness: 0.5, metalness: 0.05 }))
-      decal.rotation.x = -Math.PI / 2
-      decal.position.set(0, h + 0.0205, 0)
-      group.add(decal)
-    }
-
-    // Bottom double-sided foam tape backing layer
-    const tape = new Mesh(new BoxGeometry(w * 0.995, 0.02, d * 0.995), material('#f0e9d2'))
-    tape.position.set(0, 0.01, 0)
-    group.add(tape)
-
-    // Dovetail interlocking tabs and notches matching MB-102 series
-    const tabColor = '#fafbfc'
-    const notchColor = '#cbd5e1'
-    for (const tx of [-2.7, 0, 2.7]) {
-      const tabZ = new Mesh(new BoxGeometry(0.30, h * 0.70, 0.10), material(tabColor))
-      tabZ.position.set(tx, h / 2 + 0.02, -d / 2 - 0.05)
-      group.add(tabZ)
-      const notchZ = new Mesh(new BoxGeometry(0.32, h * 0.72, 0.05), material(notchColor))
-      notchZ.position.set(tx, h / 2 + 0.02, d / 2 - 0.025)
-      group.add(notchZ)
-    }
-    const tabX = new Mesh(new BoxGeometry(0.10, h * 0.70, 0.35), material(tabColor))
-    tabX.position.set(w / 2 + 0.05, h / 2 + 0.02, 0)
-    group.add(tabX)
-    const notchX = new Mesh(new BoxGeometry(0.05, h * 0.72, 0.37), material(notchColor))
-    notchX.position.set(-w / 2 + 0.025, h / 2 + 0.02, 0)
-    group.add(notchX)
+    addBreadboardHousing(group, [w, h, d], color, createBreadboard630Texture(), true, false)
 
     // Exactly 1 InstancedMesh with 630 contacts (63 cols x 10 rows)
     const pitch = 0.13
@@ -556,33 +498,7 @@ export function buildComponent(module: CircuitModule): Group {
     holes.instanceMatrix.needsUpdate = true
     group.add(holes)
   } else if (definition?.visual === 'breadboard_100') {
-    // Photorealistic 100-tie-point power distribution breadboard
-    box(0, h / 2 + 0.02, 0, w, h, d, color)
-
-    const texture = createBreadboard100Texture()
-    if (texture) {
-      const decal = new Mesh(new PlaneGeometry(w, d), new MeshStandardMaterial({ map: texture, roughness: 0.5, metalness: 0.05 }))
-      decal.rotation.x = -Math.PI / 2
-      decal.position.set(0, h + 0.0205, 0)
-      group.add(decal)
-    }
-
-    // Bottom double-sided foam tape backing layer
-    const tape = new Mesh(new BoxGeometry(w * 0.995, 0.02, d * 0.995), material('#f0e9d2'))
-    tape.position.set(0, 0.01, 0)
-    group.add(tape)
-
-    // Dovetail interlocking tabs and notches to latch onto breadboards
-    const tabColor = '#fafbfc'
-    const notchColor = '#cbd5e1'
-    for (const tx of [-2.7, 0, 2.7]) {
-      const tabZ = new Mesh(new BoxGeometry(0.30, h * 0.70, 0.10), material(tabColor))
-      tabZ.position.set(tx, h / 2 + 0.02, -d / 2 - 0.05)
-      group.add(tabZ)
-      const notchZ = new Mesh(new BoxGeometry(0.32, h * 0.72, 0.05), material(notchColor))
-      notchZ.position.set(tx, h / 2 + 0.02, d / 2 - 0.025)
-      group.add(notchZ)
-    }
+    addBreadboardHousing(group, [w, h, d], color, createBreadboard100Texture(), false, false)
 
     // Exactly 1 InstancedMesh with 100 contacts (50 cols x 2 rows)
     const pitch = 0.13

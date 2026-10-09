@@ -1,12 +1,42 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useWorkspaceStore } from '../../stores/workspace'
 import { useCircuitStore } from '../../stores/circuit'
+import { useUiStore } from '../../stores/ui'
 import { libraryComponents, iconUrl } from '../../data/ribbon'
+import { getDefinition } from '../../data/editorCatalog'
 import WorkbenchIcon from '../workbench/WorkbenchIcon.vue'
-const workspace = useWorkspaceStore(), circuit = useCircuitStore()
+const workspace = useWorkspaceStore(), circuit = useCircuitStore(), ui = useUiStore()
+const header = ref<HTMLElement>()
+const window = computed(() => ui.windows.find((entry) => entry.kind === 'component-info'))
 const type = computed(() => circuit.graph?.modules.find((module) => module.id === workspace.selectedModuleId)?.type || workspace.previewType)
-const item = computed(() => libraryComponents.find((item) => item.type === type.value))
-const format = (value: unknown) => value === null ? 'Not configured' : typeof value === 'object' ? JSON.stringify(value) : String(value)
+const definition = computed(() => type.value ? getDefinition(type.value) : undefined)
+const item = computed(() => libraryComponents.find((entry) => entry.type === type.value))
+const name = computed(() => definition.value?.name || item.value?.name || type.value || 'Component')
+const introductions: Record<string, string> = {
+  BREADBOARD: 'A solderless work surface with two terminal fields, a recessed IC channel and separate rail strips. Arrange modular boards and components before connecting logical ports.',
+  BREADBOARD_630: 'A terminal strip with two fields of contacts separated by a recessed IC channel. Combine it with rail strips to organize a circuit on the work surface.',
+  BREADBOARD_100: 'A narrow power rail strip for arranging a modular breadboard assembly. Place it alongside a terminal board to extend the work surface.',
+}
+const description = computed(() => type.value && introductions[type.value] || item.value?.description || (definition.value ? definition.value.visualOnly ? 'A visual work surface for arranging circuit components. Add another board and choose its position on the surface.' : 'An editor component with named logical ports. Arrange it on the surface before connecting its ports.' : 'An imported component. Its original properties are retained; no model contract is available for adding another instance.'))
+const note = computed(() => definition.value?.visualOnly ? 'Visual structure. Placement creates no electrical source or connection.' : definition.value ? 'Editor model with named logical ports. Physical pin mapping and execution support are separate.' : 'This entry has no placeable editor model yet.')
+function add() { if (definition.value && type.value) { workspace.armPlacement(type.value); ui.activeRibbonGroup = null } }
+function close() { ui.closeWindow('component-info'); void nextTick(() => document.querySelector<HTMLCanvasElement>('canvas[aria-label="Three-dimensional circuit workspace"]')?.focus()) }
+// Explicit ribbon Info activation receives focus; automatic selection remains on canvas.
+watch(() => window.value?.activation, (activation) => { if (activation) void nextTick(() => header.value?.focus()) })
 </script>
-<template><template v-if="item"><div class="component-preview"><img v-if="item.icon" :src="iconUrl(item.icon)" :alt="item.name + ' supplied artwork'" width="130" height="80" /><WorkbenchIcon v-else :name="item.glyph || 'chip'" /><div><small>COMPONENT INFORMATION</small><h2>{{ item.name }}</h2><code>{{ item.type }}</code></div></div><p class="component-description">{{ item.description }}</p><dl v-if="item.metadata" class="metadata-list"><template v-for="(value, key) in item.metadata" :key="key"><dt>{{ key }}</dt><dd>{{ format(value) }}</dd></template></dl><p v-else class="window-note">No device metadata is connected for this entry. Pin labels and electrical parameters are unavailable.</p><p class="window-note">Named functional ports are editor abstractions, not package pin numbers. Placement does not confirm physical hardware or simulation support.</p></template><p v-else class="window-note">Choose a component from the ribbon to inspect its supplied artwork and available metadata.</p></template>
+<template>
+  <aside v-if="window?.open" class="component-information" aria-labelledby="component-information-title" :style="{ zIndex: window.z }" @pointerdown="ui.focusWindow('component-info')" @focusin="ui.focusWindow('component-info')" @keydown.esc.stop.prevent="close">
+    <header ref="header" class="component-information-header" tabindex="0">
+      <WorkbenchIcon name="chip" /><strong id="component-information-title">Component Info</strong>
+      <button aria-label="Close Component Info" @click="close"><WorkbenchIcon name="close" /></button>
+    </header>
+    <div class="component-information-content">
+      <div class="component-information-art"><img v-if="item?.icon" :src="iconUrl(item.icon)" :alt="name + ' preview'" width="250" height="110" /><WorkbenchIcon v-else :name="item?.glyph || 'chip'" /></div>
+      <div class="component-information-heading"><small>INFORMATION</small><h2>{{ name }}</h2></div>
+      <p class="component-information-introduction">{{ description }}</p>
+      <p class="component-information-note">{{ note }}</p>
+    </div>
+    <footer class="component-information-footer"><span>{{ definition ? 'Choose a position on the surface' : 'Model unavailable' }}</span><button :disabled="!definition" :aria-label="'Add ' + name" @click="add">Add <span aria-hidden="true">+</span></button></footer>
+  </aside>
+</template>

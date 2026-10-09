@@ -16,6 +16,8 @@ Current navigation correction (2026-10-09, latest user rule): left drag empty su
 
 ## Graphics lifecycle
 
+Current selection/Info refinement (2026-10-09): thin yellow contours follow actual geometry without recoloring the body or surrounding it with a box cage. Breadboard housing has recessed channels and integrated joints, retaining visual contact counts and canonical docking dimensions. Generic curved silhouette edges update with the camera through the existing render callback. One anchored upper-right Component Info panel replaces the selection action card and metadata-heavy window; it shows supplied artwork, name, introduction and Add +. Automatic selection does not take canvas focus/capture. Add only arms supported placement; a surface click commits the existing graph command. Other instrument/Inspector/Hex windows remain movable. See `docs/SOURCE_ANALYSIS_SELECTION_AND_COMPONENT_INFO.md`.
+
 SceneManager owns camera, lights, work surface, models, wires, picking and resource disposal. Vue bridges pointer/drag/resize/visibility/context lifecycle. OrbitControls listeners and requestAnimationFrame are disposed on unmount. GPU/context failures retain Inspector/file access to the logical graph. Rendering stays outside Pinia.
 
 ## Verification

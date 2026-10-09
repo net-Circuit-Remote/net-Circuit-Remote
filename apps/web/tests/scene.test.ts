@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createSceneManager, type SceneRenderer } from '../src/three/SceneManager'
-import { InstancedMesh, Vector3 } from 'three'
+import { InstancedMesh, LineSegments, Mesh, MeshStandardMaterial, Raycaster, Vector3 } from 'three'
 import { buildComponent, disposeObject } from '../src/three/ComponentModel'
 import type { CircuitGraph } from '../src/types/circuit'
 
@@ -181,5 +181,108 @@ test('right-button OrbitControls pointer drag redraws axes, including after a le
     assert.equal(capture.size, 0)
     manager.resetView(); frame?.(0)
     assert.ok(Math.abs(renderedX - 1) < 0.001)
+  } finally { manager.dispose() }
+})
+
+test('selection uses thin geometry contours, retains body color and follows preview/rotation', () => {
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} })
+  try {
+    const graph: CircuitGraph = { schema_version: '1.0', circuit_id: 'outline', modules: [{ id: 'B', type: 'BREADBOARD', rotation: 90 }], connections: [] }
+    manager.syncGraph(graph)
+    const body = manager.models.get('B')!
+    const colors: string[] = []
+    body.traverse((object) => { if (object instanceof Mesh) colors.push((object.material as MeshStandardMaterial).emissive.getHexString()) })
+    manager.highlight('B')
+    const outline = body.children.find((child) => child.userData.isOutline)!
+    assert.ok(outline)
+    assert.ok(outline.children.every((child) => child instanceof LineSegments), 'outline must be a thin contour, not a mesh cage')
+    const line = outline.children[0] as LineSegments
+    assert.equal(line.userData.ignorePick, true)
+    line.geometry.computeBoundingBox()
+    assert.ok(line.geometry.boundingBox!.max.x > 4.5, 'contour must follow the actual end tab, not only catalog bounds')
+    const selectedColors: string[] = []
+    body.traverse((object) => { if (object instanceof Mesh) selectedColors.push((object.material as MeshStandardMaterial).emissive.getHexString()) })
+    assert.deepEqual(selectedColors, colors)
+    manager.previewMove('B', { x: 2, y: 0.25, z: 3 })
+    assert.equal(outline.parent, body)
+    assert.deepEqual(outline.getWorldPosition(new Vector3()).toArray(), [2, 0.25, 3])
+    assert.ok(Math.abs(outline.getWorldQuaternion(body.quaternion.clone()).angleTo(body.quaternion)) < 0.001)
+    let released = 0
+    line.geometry.addEventListener('dispose', () => released++)
+    manager.highlight(null)
+    assert.equal(released, 1)
+    assert.equal(body.children.includes(outline), false)
+  } finally { manager.dispose() }
+})
+
+test('breadboard housing has a recessed channel and retains visual contact counts', () => {
+  for (const [type, count] of [['BREADBOARD', 830], ['BREADBOARD_630', 630], ['BREADBOARD_100', 100]] as const) {
+    const board = buildComponent({ id: 'B', type })
+    try {
+      const contacts = board.children.find((child) => child instanceof InstancedMesh) as InstancedMesh
+      assert.equal(contacts.count, count)
+      if (type !== 'BREADBOARD_100') {
+        const deck = board.children.find((child) => child.userData.breadboardDeck) as Mesh | undefined
+        assert.ok(deck, 'terminal strip must have an actual recessed IC channel')
+        assert.equal(deck.geometry.type, 'ExtrudeGeometry')
+      }
+    } finally { disposeObject(board) }
+  }
+})
+
+test('selection outline is rebuilt and disposed safely when a selected model changes', () => {
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} })
+  try {
+    const graph: CircuitGraph = { schema_version: '1.0', circuit_id: 'outline', modules: [{ id: 'A', type: 'LED' }], connections: [] }
+    manager.syncGraph(graph); manager.highlight('A')
+    const original = manager.models.get('A')!.children.find((child) => child.userData.isOutline)!
+    let disposed = 0
+    original.traverse((child) => { if (child instanceof LineSegments) child.geometry.addEventListener('dispose', () => disposed++) })
+    manager.syncGraph({ ...graph, modules: [{ id: 'A', type: 'LED', properties: { label: 'changed' } }] })
+    const replacement = manager.models.get('A')!.children.find((child) => child.userData.isOutline)
+    assert.ok(replacement && replacement !== original)
+    assert.equal(disposed, 1)
+    assert.ok(replacement.children.every((child) => child instanceof LineSegments))
+  } finally { manager.dispose() }
+})
+
+test('curved model contours follow the camera silhouette when orbiting', () => {
+  let frame: FrameRequestCallback | undefined
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: (callback) => { frame = callback; return 1 }, cancelFrame() {} })
+  try {
+    manager.resize(1000, 700)
+    manager.syncGraph({ schema_version: '1.0', circuit_id: 'curve', modules: [{ id: 'L', type: 'LED' }], connections: [] })
+    manager.highlight('L'); frame?.(0)
+    const outline = manager.models.get('L')!.children.find((child) => child.userData.isOutline)!
+    const line = outline.children[0] as LineSegments
+    const before = Array.from(line.geometry.getAttribute('position').array)
+    assert.ok(before.length > 0)
+    manager.orbit(75); frame?.(0)
+    assert.notDeepEqual(Array.from(line.geometry.getAttribute('position').array), before, 'curved surfaces need view-dependent silhouette edges')
+  } finally { manager.dispose() }
+})
+
+test('decorative resistor bands do not occlude its long selection contours', () => {
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} })
+  try {
+    manager.syncGraph({ schema_version: '1.0', circuit_id: 'resistor', modules: [{ id: 'R', type: 'RESISTOR' }], connections: [] }); manager.highlight('R')
+    manager.scene.updateMatrixWorld(true)
+    const model = manager.models.get('R')!, outline = model.children.find((child) => child.userData.isOutline)!
+    const line = outline.children[0] as LineSegments, positions = line.geometry.getAttribute('position')
+    let samples = 0, hidden = 0
+    const ray = new Raycaster()
+    for (let i = 0; i < line.geometry.drawRange.count; i += 2) {
+      const a = new Vector3().fromBufferAttribute(positions, i), b = new Vector3().fromBufferAttribute(positions, i + 1)
+      if (a.distanceTo(b) < 0.7) continue
+      for (let step = 1; step < 100; step++) {
+        const point = model.localToWorld(a.clone().lerp(b, step / 100)), distance = point.distanceTo(manager.camera.position)
+        ray.set(manager.camera.position, point.clone().sub(manager.camera.position).normalize())
+        const hit = ray.intersectObjects(model.children, true).find((hit) => hit.object instanceof Mesh)
+        samples++
+        if (hit && hit.distance < distance - 0.0001) hidden++
+      }
+    }
+    assert.ok(samples > 100)
+    assert.equal(hidden, 0, 'decorative bands must stay behind the outer selection contour')
   } finally { manager.dispose() }
 })
