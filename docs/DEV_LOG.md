@@ -1,6 +1,6 @@
 ---
 project: net-Circuit-Remote
-current_phase: interactive-workspace-transform-gizmo
+current_phase: interactive-workspace-ribbon-gizmo-supply-refinement
 status: implemented-tests-browser-verified-build-unverified
 last_updated: 2026-10-09
 next_task: phase-3-simulator-event-clock-model-integration
@@ -14,6 +14,16 @@ fpga_development_started: false
 ## Current Goal
 
 Phase 2 **Interactive Circuit Workspace** is implemented, preserving Phase 1 shell and transport boundaries. Next: Phase 3 simulator/event/clock/model adapters and real output/capture data.
+
+## Ribbon, rotating grip and upright Power Supply — 2026-10-09
+
+Removed the per-entry Info rows and entry-count jargon from ribbon menus. Palettes anchor under the triggering family, clamp within the ribbon and update on scroll/resize; keyboard focus and dismissal remain. Embedded/Controller uses intrinsic button width and stays on one line.
+
+Gizmo has thicker coral X/blue Z arrows, an ivory framed free-move diamond and a gold arc/grip with dark backing. Its Y subgroup follows live model yaw and picking uses the real grip position; world X/Z constraints remain fixed. Unposed visual bounds prevent overly inflated projections after yaw; selected-model clearance and stronger viewport margins keep tall-model controls and small-canvas handles usable. Body drag remains Move-only, preview stays separate from graph and a gesture commits one Undo.
+
+Replaced the squat four-knob/three-terminal supply with an upright metal case, portrait V/A/W unknown/OFF screen, two Voltage/Ampe knobs, two Vcc/Gnd binding posts, I/O switch, vents, screws and feet, without USB. Canonical/generated visual dimensions are now [2.4, 2.8, 3.2]; zero electrical ports remain. Added an original matching SVG preview and updated Component Info. Independent review found capped socket bores; a front-ray regression failed, then passed after replacing the closed base with an open cylinder/annular flange. Two user-added PNG references are untouched.
+
+Final frontend tests **82/82 PASS**, UTF-8 frontend/docs/context **17/17 PASS**, context and diff whitespace PASS. Native browser verifies Y 0→120° with one Undo/Redo, X 0→1 with unchanged Y/Z, and free X/Z (0,0)→(0.5,0.5), all in Select via explicit handles. Five viewport measurements confirm anchored menus, single-line label and no page overflow; fresh warning/error logs are empty. Final production TypeScript PASS; Vite sandbox realpath EPERM prevents bundling and the prior elevation decline is respected. Full evidence: `verification/2026-10-09-ribbon-gizmo-supply-browser.md`; algorithms: `SOURCE_ANALYSIS_RIBBON_GIZMO_SUPPLY.md`. No commit/push/deployment or hosted CI run. Earlier sections below record previous refinements.
 
 ## Component Transform Gizmo and status view tools — 2026-10-09
 

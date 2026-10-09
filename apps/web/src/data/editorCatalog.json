@@ -73,10 +73,10 @@
       "visual": "supply",
       "size": [
         2.4,
-        1.2,
-        1.5
+        2.8,
+        3.2
       ],
-      "color": "#8095a6",
+      "color": "#a1aab4",
       "ports": [],
       "defaults": {},
       "parameters": [],

@@ -1,0 +1,106 @@
+{
+  "freshLoad": "2026-10-09T15:44:13.705Z",
+  "layouts": [
+    {
+      "choices": 1,
+      "horizontalPageOverflow": false,
+      "infoButtons": 0,
+      "labelLines": 1,
+      "paletteInside": true,
+      "paletteLeft": 1406.7125244140625,
+      "paletteRight": 1552.7125244140625,
+      "triggerLeft": 1406.7125244140625,
+      "unnecessaryPaletteScroll": false,
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "choices": 1,
+      "horizontalPageOverflow": false,
+      "infoButtons": 0,
+      "labelLines": 1,
+      "paletteInside": true,
+      "paletteLeft": 1046.7125244140625,
+      "paletteRight": 1192.7125244140625,
+      "triggerLeft": 1046.7125244140625,
+      "unnecessaryPaletteScroll": false,
+      "viewport": [
+        1440,
+        900
+      ]
+    },
+    {
+      "choices": 1,
+      "horizontalPageOverflow": false,
+      "infoButtons": 0,
+      "labelLines": 1,
+      "paletteInside": true,
+      "paletteLeft": 991.5,
+      "paletteRight": 1137.5,
+      "triggerLeft": 991.5,
+      "unnecessaryPaletteScroll": false,
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "choices": 1,
+      "horizontalPageOverflow": false,
+      "infoButtons": 0,
+      "labelLines": 1,
+      "paletteInside": true,
+      "paletteLeft": 926.7000122070312,
+      "paletteRight": 1072.7000122070312,
+      "triggerLeft": 926.7000122070312,
+      "unnecessaryPaletteScroll": false,
+      "viewport": [
+        1280,
+        720
+      ]
+    },
+    {
+      "choices": 1,
+      "horizontalPageOverflow": false,
+      "infoButtons": 0,
+      "labelLines": 1,
+      "paletteInside": true,
+      "paletteLeft": 505.6000061035156,
+      "paletteRight": 651.6000061035156,
+      "triggerLeft": 546.7999877929688,
+      "unnecessaryPaletteScroll": false,
+      "viewport": [
+        662,
+        622
+      ]
+    }
+  ],
+  "native": {
+    "yaw": {
+      "before": 0,
+      "after": 120,
+      "undo": 0,
+      "redo": 120
+    },
+    "x": {
+      "before": 0,
+      "after": 1,
+      "y": 0,
+      "z": 0
+    },
+    "free": {
+      "before": [
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0.5,
+        0,
+        0.5
+      ]
+    }
+  }
+}

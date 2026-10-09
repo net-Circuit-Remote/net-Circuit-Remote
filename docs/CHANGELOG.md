@@ -4,6 +4,14 @@ All notable project changes will be documented in this file. The project follows
 
 ## [Unreleased]
 
+### Changed — 2026-10-09 Ribbon, gizmo and upright Power Supply
+
+- Removed ribbon Info rows; palettes follow the clicked family and clamp/update on resize/scroll. Embedded/Controller stays on one line.
+- Strengthened X/Z/free/Y tool colors, strokes and backing. Y grip follows live object rotation; world movement constraints, cancellation, one Undo and Move-only body dragging remain.
+- Added selected-model projection/viewport clearance using cached unposed geometry bounds.
+- Replaced the supply with an upright metallic case, portrait V/A/W unknown/OFF screen, two Voltage/Ampe knobs, two recessed Vcc/Gnd sockets and an I/O switch; no USB or electrical ports. Canonical visual size and original SVG preview match the new model.
+- Frontend tests 82/82 PASS, including rotating/pickable Y grip, tall/small-canvas clearance and open socket depth. See `verification/2026-10-09-ribbon-gizmo-supply-browser.md` for exact native browser/static/build evidence and limitations.
+
 ### Changed — 2026-10-09 Component Transform Gizmo
 
 - Replaced Perspective/tool-title overlays with defined status-bar-right Zoom In/Out, Zoom To View Entire Circuit and Workspace Object Snap.

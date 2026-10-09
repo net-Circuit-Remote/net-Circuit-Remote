@@ -32,7 +32,7 @@ UI migration completed on 2026-10-09; evidence in `DEV_LOG.md`:
 - [x] Replace routed multi-page shell with one `/` Single Workspace shell.
 - [x] Remove visible main-page navigation.
 - [x] Add application/file-action bar: New / Open / Save / Undo / Redo (local JSON/project history).
-- [x] Add top component ribbon with twelve groups and supplied SVG artwork thumbnails.
+- [x] Add top component ribbon with twelve groups and supplied SVG artwork thumbnails; choice-only palettes anchored to their family and single-line labels.
 - [x] Add left interaction tool rail with seven shared modes.
 - [x] Add central workspace shell occupying most of the viewport.
 - [x] Add status-bar-right Zoom In/Out/Fit Entire Circuit and Workspace Object Snap with definitions (supersedes Perspective overlay/reset).
@@ -47,7 +47,7 @@ UI migration completed on 2026-10-09; evidence in `DEV_LOG.md`:
 
 - [x] Three.js scene/camera/lights/grid/models/picking and disposable render/resize/context lifecycle.
 - [x] Breadboard/board/power-supply visual models, without invented electrical nodes or sources.
-- [x] Canonical metadata-driven palette and generated browser catalog (17 functional editor types).
+- [x] Canonical metadata-driven palette and generated browser catalog (19 editor types, including visual structures).
 - [x] Drag/drop and click-to-place from ribbon.
 - [x] Component select/move/rotate/delete; keyboard equivalents in Inspector/canvas.
 - [x] Explicit logical wire/unwire, duplicate/direction/width/input-driver checks.
@@ -56,6 +56,7 @@ UI migration completed on 2026-10-09; evidence in `DEV_LOG.md`:
 - [x] Selection refinement: subtle shape-following yellow contours, recessed breadboard housing and one upper-right Component Info introduction/Add panel; graph/history and Move-only drag retained.
 - [x] Technical workspace refinement: 2px Medium Gold contours, real socket cavities and matching deck openings, joint/bevel clearance, selection-only Info with contained artwork, adaptive minor/major faded grid and no canvas caption. Evidence: `verification/2026-10-09-technical-workbench-browser.md`.
 - [x] Adjacent Component Transform Gizmo: X/Z/free movement, Y rotation, hover/live wires, stable active pixel scale, obstacle avoidance, one Undo/cancel; Move-only body dragging retained. Original bench Power Supply model and no tool-title overlay. Evidence: `verification/2026-10-09-component-transform-gizmo-browser.md`; final bundling still limited by sandbox.
+- [x] Ribbon/gizmo/supply refinement: anchored choice-only palettes, one-line Embedded/Controller, clear handles with live rotating Y grip, tall-model/small-canvas clearance, upright metal two-knob/two-post supply without USB. Evidence: `verification/2026-10-09-ribbon-gizmo-supply-browser.md`; unknown/OFF visual-only source boundary retained.
 - [x] Undo/redo graph commands; one committed step per drag; canceled preview changes no graph.
 - [x] Circuit Graph updates independent of geometry; cascade deletion and JSON round trip.
 - [x] Local JSON save/open project UX in the Single Workspace (server persistence remains Phase 4).

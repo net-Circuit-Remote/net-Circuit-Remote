@@ -1,4 +1,4 @@
-import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, InstancedMesh, Mesh, MeshStandardMaterial, Object3D, SphereGeometry, Sprite, SpriteMaterial, Vector3 } from 'three'
+import { Box3, BoxGeometry, CanvasTexture, CylinderGeometry, Group, InstancedMesh, Mesh, MeshStandardMaterial, Object3D, SphereGeometry, Sprite, SpriteMaterial, Vector3 } from 'three'
 import { getDefinition, type LogicalPort } from '../data/editorCatalog'
 import type { CircuitModule } from '../types/circuit'
 import { addBreadboardHousing } from './BreadboardHousing'
@@ -351,6 +351,10 @@ export function buildComponent(module: CircuitModule): Group {
       const label = new Sprite(new SpriteMaterial({ map: new CanvasTexture(canvas), depthTest: false, transparent: true })); label.position.set(0, h + 0.7, 0); label.scale.set(3.2, 0.5, 1); label.userData.ignorePick = true; group.add(label)
     }
   }
+  // Cache unposed visual bounds once, before rotation/translation. Projecting a
+  // world AABB again after yaw needlessly inflates the silhouette of tall models.
+  const visualBounds = new Box3().setFromObject(group)
+  group.userData.visualBounds = [visualBounds.min.toArray(), visualBounds.max.toArray()]
   applyPose(group, module)
   return group
 }

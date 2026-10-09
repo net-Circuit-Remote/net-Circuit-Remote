@@ -1,4 +1,4 @@
-import { BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, PerspectiveCamera, Raycaster, TorusGeometry, Vector3 } from 'three'
+import { Box3, BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, PerspectiveCamera, Raycaster, TorusGeometry, Vector3 } from 'three'
 
 export type TransformHandle = 'x' | 'z' | 'xz' | 'rotate-y'
 export interface GizmoObstacle { left: number; top: number; right: number; bottom: number }
@@ -8,30 +8,36 @@ export function createComponentTransformGizmo() {
   const root = new Group(); root.name = 'component-transform-gizmo'; root.visible = false
   const handles = new Map<TransformHandle, Group>(), markers = new Map<TransformHandle, Vector3>()
   let selectedId: string | null = null, hovered: TransformHandle | null = null, active: TransformHandle | null = null, lockedOffset: Vector3 | null = null
-  const material = (color: string, pickOnly = false) => new MeshBasicMaterial({ color, depthTest: false, depthWrite: false, transparent: pickOnly, opacity: pickOnly ? 0 : 1 })
+  const material = (color: string, pickOnly = false) => new MeshBasicMaterial({ color, depthTest: false, depthWrite: false, toneMapped: false, transparent: pickOnly, opacity: pickOnly ? 0 : 1 })
   const handle = (id: TransformHandle, color: string, point: Vector3) => {
     const group = new Group(); group.userData.transformHandle = id; group.userData.color = color
     handles.set(id, group); markers.set(id, point); root.add(group); return group
   }
   const add = (group: Group, mesh: Mesh, pickOnly = false) => { mesh.renderOrder = 20; mesh.userData.pickOnly = pickOnly; group.add(mesh); return mesh }
   for (const id of ['x', 'z'] as const) {
-    const color = id === 'x' ? '#d8b09a' : '#9dbedf', group = handle(id, color, new Vector3(id === 'x' ? 0.95 : 0, 0, id === 'z' ? 0.95 : 0))
-    const stem = add(group, new Mesh(new CylinderGeometry(0.027, 0.027, 0.66, 8), material(color)))
-    const tip = add(group, new Mesh(new ConeGeometry(0.14, 0.32, 3), material(color)))
+    const color = id === 'x' ? '#ff8668' : '#54baff', group = handle(id, color, new Vector3(id === 'x' ? 0.95 : 0, 0, id === 'z' ? 0.95 : 0))
+    const stem = add(group, new Mesh(new CylinderGeometry(0.047, 0.047, 0.66, 12), material(color)))
+    const tip = add(group, new Mesh(new ConeGeometry(0.19, 0.34, 4), material(color)))
     const target = add(group, new Mesh(new CylinderGeometry(0.15, 0.15, 0.95, 8), material(color, true)), true)
     if (id === 'x') { stem.rotation.z = tip.rotation.z = target.rotation.z = -Math.PI / 2; stem.position.x = 0.47; tip.position.x = 0.96; target.position.x = 0.61 }
     else { stem.rotation.x = tip.rotation.x = target.rotation.x = Math.PI / 2; stem.position.z = 0.47; tip.position.z = 0.96; target.position.z = 0.61 }
   }
-  const free = handle('xz', '#e2e5dc', new Vector3())
-  const diamond = add(free, new Mesh(new BoxGeometry(0.27, 0.045, 0.27), material('#e2e5dc'))); diamond.rotation.y = Math.PI / 4
-  add(free, new Mesh(new CylinderGeometry(0.23, 0.23, 0.08, 12), material('#e2e5dc', true)), true)
-  const rotate = handle('rotate-y', '#b7c7cf', new Vector3(-1.12, 0, 0))
-  const arc = add(rotate, new Mesh(new TorusGeometry(1.12, 0.022, 6, 72, Math.PI * 1.5), material('#8b9ca9'))); arc.rotation.x = Math.PI / 2
-  const arcTarget = add(rotate, new Mesh(new TorusGeometry(1.12, 0.115, 6, 72, Math.PI * 1.5), material('#8b9ca9', true)), true); arcTarget.rotation.x = Math.PI / 2
-  const grip = add(rotate, new Mesh(new TorusGeometry(0.12, 0.043, 8, 24), material('#b7c7cf'))); grip.rotation.x = Math.PI / 2; grip.position.x = -1.12
+  const free = handle('xz', '#edf6f3', new Vector3())
+  const diamondBase = add(free, new Mesh(new BoxGeometry(0.42, 0.04, 0.42), material('#111e28')))
+  diamondBase.rotation.y = Math.PI / 4; diamondBase.renderOrder = 19; diamondBase.userData.fixedColor = true
+  const diamond = add(free, new Mesh(new BoxGeometry(0.32, 0.045, 0.32), material('#edf6f3'))); diamond.rotation.y = Math.PI / 4; diamond.position.y = 0.025
+  add(free, new Mesh(new CylinderGeometry(0.27, 0.27, 0.08, 12), material('#edf6f3', true)), true)
+  const rotate = handle('rotate-y', '#efbd48', new Vector3(-1.35, 0, 0))
+  const arcBase = add(rotate, new Mesh(new TorusGeometry(1.35, 0.082, 10, 96, Math.PI * 1.5), material('#101c25')))
+  arcBase.rotation.x = Math.PI / 2; arcBase.renderOrder = 18; arcBase.userData.fixedColor = true
+  const arc = add(rotate, new Mesh(new TorusGeometry(1.35, 0.042, 10, 96, Math.PI * 1.5), material('#efbd48'))); arc.rotation.x = Math.PI / 2
+  const arcTarget = add(rotate, new Mesh(new TorusGeometry(1.35, 0.12, 8, 96, Math.PI * 1.5), material('#efbd48', true)), true); arcTarget.rotation.x = Math.PI / 2
+  const grip = add(rotate, new Mesh(new TorusGeometry(0.16, 0.062, 12, 32), material('#efbd48'))); grip.rotation.x = Math.PI / 2; grip.position.x = -1.35; grip.renderOrder = 22
+  const gripCore = add(rotate, new Mesh(new CylinderGeometry(0.095, 0.095, 0.03, 24), material('#18252c')))
+  gripCore.position.x = -1.35; gripCore.renderOrder = 23; gripCore.userData.fixedColor = true
   const paint = () => {
     for (const [id, group] of handles) for (const mesh of group.children as Mesh[]) {
-      if (!mesh.userData.pickOnly) (mesh.material as MeshBasicMaterial).color.set(id === active || id === hovered ? '#65d8cd' : id === 'rotate-y' && mesh === arc ? '#8b9ca9' : group.userData.color)
+      if (!mesh.userData.pickOnly && !mesh.userData.fixedColor) (mesh.material as MeshBasicMaterial).color.set(id === active || id === hovered ? '#65d8cd' : group.userData.color)
     }
   }
   const pixelScale = (point: Vector3, camera: PerspectiveCamera, height: number) => Math.max(0.1, -point.clone().applyMatrix4(camera.matrixWorldInverse).z) * 2 * Math.tan(camera.fov * Math.PI / 360) / (height * camera.zoom) * 42
@@ -39,7 +45,18 @@ export function createComponentTransformGizmo() {
     if (!model || height <= 1) { root.visible = false; selectedId = null; hovered = null; active = null; lockedOffset = null; return }
     if (selectedId !== model.userData.id) { hovered = null; active = null; lockedOffset = null; paint() }
     selectedId = model.userData.id; root.visible = true; camera.updateMatrixWorld()
+    // World X/Z movement stays fixed. Only the Y ring and grip track object yaw,
+    // including live previews while the gesture center is locked.
+    rotate.rotation.y = model.rotation.y
     if (active && lockedOffset) { root.position.copy(model.position).add(lockedOffset); root.scale.setScalar(pixelScale(root.position, camera, height)); root.updateMatrixWorld(true); return }
+    // Ground-footprint clearance alone can still cover the face of a tall model.
+    model.updateMatrixWorld(true)
+    const localBounds = model.userData.visualBounds as [number[], number[]] | undefined
+    const [mw, mh, md] = model.userData.size as number[]
+    const bounds = localBounds ? new Box3(new Vector3().fromArray(localBounds[0]), new Vector3().fromArray(localBounds[1])) : new Box3(new Vector3(-mw / 2, 0, -md / 2), new Vector3(mw / 2, mh, md / 2))
+    const projected: Vector3[] = []
+    for (const x of [bounds.min.x, bounds.max.x]) for (const y of [bounds.min.y, bounds.max.y]) for (const z of [bounds.min.z, bounds.max.z]) projected.push(new Vector3(x, y, z).applyMatrix4(model.matrixWorld).project(camera))
+    const selectedArea = { left: Math.min(...projected.map((p) => (p.x + 1) * width / 2)), right: Math.max(...projected.map((p) => (p.x + 1) * width / 2)), top: Math.min(...projected.map((p) => (1 - p.y) * height / 2)), bottom: Math.max(...projected.map((p) => (1 - p.y) * height / 2)) }
     const neighbors = [...others] // Map.values() is single-use; all candidates need the same obstacles.
     const near = camera.position.clone().sub(model.position).setY(0).normalize(), right = new Vector3(near.z, 0, -near.x)
     const directions = [near, right, right.clone().negate(), near.clone().negate()]
@@ -53,7 +70,9 @@ export function createComponentTransformGizmo() {
       const screen = point.clone().project(camera), px = (screen.x + 1) * width / 2, py = (1 - screen.y) * height / 2
       let score = index * 10
       if (screen.z < -1 || screen.z > 1) score += 10000
+      if (px < 65 || px > width - 65 || py < 55 || py > height - 55) score += 100000
       score += Math.max(0, 70 - px, px - width + 70) * 10 + Math.max(0, 70 - py, py - height + 70) * 10
+      if (px + 60 > selectedArea.left && px - 60 < selectedArea.right && py + 55 > selectedArea.top && py - 55 < selectedArea.bottom) score += 10000
       for (const area of obstacles) if (px + 60 > area.left && px - 60 < area.right && py + 55 > area.top && py - 55 < area.bottom) score += 10000
       for (const other of neighbors) {
         if (other === model) continue
@@ -68,7 +87,7 @@ export function createComponentTransformGizmo() {
   }
   return {
     root, update,
-    position(id: TransformHandle) { return root.visible ? root.localToWorld(markers.get(id)!.clone()) : null },
+    position(id: TransformHandle) { return root.visible ? id === 'rotate-y' ? grip.getWorldPosition(new Vector3()) : root.localToWorld(markers.get(id)!.clone()) : null },
     origin() { return root.visible ? root.position.clone() : null },
     pick(ray: Raycaster) {
       if (!root.visible || !selectedId) return null

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+  <!-- Original vector preview of the procedural two-knob, two-post model. -->
+  <defs>
+    <linearGradient id="metal" x2="1" y2="1"><stop stop-color="#aeb8c0"/><stop offset="1" stop-color="#677780"/></linearGradient>
+    <linearGradient id="side" x2="1"><stop stop-color="#71818b"/><stop offset="1" stop-color="#485a65"/></linearGradient>
+    <radialGradient id="knob"><stop stop-color="#414e58"/><stop offset=".75" stop-color="#27333c"/><stop offset="1" stop-color="#0c171e"/></radialGradient>
+  </defs>
+  <path d="M20 24 94 8 141 33 82 46Z" fill="url(#metal)" stroke="#a3afb8" stroke-width=".7"/>
+  <path d="M20 24 82 46 82 142 20 112Z" fill="url(#side)" stroke="#657984" stroke-width=".7"/>
+  <g fill="#1c303a"><path d="m30 47 3 1.5v21l-3-1.5zm7 3.5 3 1.5v21l-3-1.5zm7 3.5 3 1.5v21l-3-1.5zm7 3.5 3 1.5v21l-3-1.5zm7 3.5 3 1.5v21l-3-1.5zm7 3.5 3 1.5v21l-3-1.5z"/><path d="m30 77 3 1.5v21l-3-1.5zm7 3.5 3 1.5v21l-3-1.5zm7 3.5 3 1.5v21l-3-1.5zm7 3.5 3 1.5v21l-3-1.5zm7 3.5 3 1.5v21l-3-1.5zm7 3.5 3 1.5v21l-3-1.5z"/></g>
+  <g fill="#26373f"><ellipse cx="35" cy="28" rx="2" ry="1"/><ellipse cx="97" cy="17" rx="2" ry="1"/><ellipse cx="113" cy="31" rx="2" ry="1"/></g>
+  <g transform="matrix(.72 -.16 0 .87 82 46)">
+    <rect width="82" height="110" rx="3" fill="#303c44" stroke="#0c1a23" stroke-width="2"/>
+    <rect x="5" y="6" width="49" height="77" rx="2" fill="#080f15" stroke="#162630"/>
+    <rect x="58" y="6" width="20" height="77" rx="2" fill="#3b4851" stroke="#20313a"/>
+    <g font-family="monospace" font-size="10" font-weight="bold"><text x="10" y="26" fill="#ff5a47">--.--</text><text x="45" y="26" fill="#ff5a47" font-size="6">V</text><text x="10" y="47" fill="#36b9ff">--.--</text><text x="45" y="47" fill="#36b9ff" font-size="6">A</text><text x="10" y="68" fill="#ff5a47">--.--</text><text x="45" y="68" fill="#ff5a47" font-size="6">W</text></g>
+    <g fill="url(#knob)" stroke="#80949e" stroke-width=".7"><circle cx="68" cy="26" r="8"/><circle cx="68" cy="59" r="8"/></g>
+    <path d="M68 19v5m0 28v5" stroke="#d6e1e4" stroke-width="1.6"/>
+    <g font-family="sans-serif" font-size="3.6" text-anchor="middle" fill="#cbd7dd"><text x="68" y="40">Voltage</text><text x="68" y="73">Ampe</text><text x="42" y="91">Vcc</text><text x="68" y="91">Gnd</text></g>
+    <path d="M4 85H78" stroke="#162630"/>
+    <rect x="7" y="92" width="11" height="15" rx="1" fill="#101b23"/><rect x="9" y="94" width="7" height="11" rx=".7" fill="#ec4d3c"/>
+    <g font-family="sans-serif" font-size="4" text-anchor="middle" fill="#fff1e8"><text x="12.5" y="99">I</text><text x="12.5" y="103">O</text></g>
+    <circle cx="42" cy="99" r="7" fill="#e44d3d"/><circle cx="68" cy="99" r="7" fill="#6b7c86"/>
+    <g fill="#101c24"><circle cx="42" cy="99" r="4"/><circle cx="68" cy="99" r="4"/></g>
+    <path d="M9 112v4h10v-4m45 0v4h10v-4" fill="#15242d"/>
+  </g>
+</svg>

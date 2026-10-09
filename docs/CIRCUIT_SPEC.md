@@ -127,3 +127,5 @@ The following are intentionally unresolved until parts and datasheets are select
 ## Component pose and visual supply clarification — 2026-10-09
 
 Transform gizmo preview does not change Circuit Graph. Release commits position or Y rotation through existing schema 1.0 commands/history; cancel restores committed geometry. Named ports/wires retain identities. Workspace Object Snap, docking, arbitrary-angle footprints and decorative supply terminals never create electrical nodes. Bench supply readouts remain unknown/OFF; no physical source or measurement is implied.
+
+Latest supply appearance has two Vcc/Gnd sockets and two Voltage/Ampe knobs. These labels and the V/A/W screen are descriptive visual details, not named logical ports or measured outputs. Upright dimensions [2.4, 2.8, 3.2] belong to the editor's visual contract; schema 1.0 electrical connections remain explicit and unchanged. Rotating Y grip and cached geometry bounds are scene resources, never Circuit Graph metadata.

@@ -1,5 +1,7 @@
 # Phân tích Component Transform Gizmo — 2026-10-09
 
+> Báo cáo này ghi nhận lần triển khai gizmo ban đầu. Tinh chỉnh mới nhất về menu, núm Y chạy theo góc xoay và Power Supply dáng đứng hai núm/hai cọc nằm trong [SOURCE_ANALYSIS_RIBBON_GIZMO_SUPPLY.md](SOURCE_ANALYSIS_RIBBON_GIZMO_SUPPLY.md). Bằng chứng kiểm thử bên dưới là lịch sử của lần triển khai trước.
+
 ## Hiện trạng và nguyên nhân
 
 `CircuitWorkspace3D.vue` trước đây giữ toolbar Perspective/Zoom/Reset/Snap ngay trên canvas và dòng tên tool/hướng dẫn ở đáy workspace. `SimulationStatusBar.vue` chỉ chứa trạng thái vận hành. Reset đưa camera về gốc, nên không thể đảm bảo nhìn thấy mạch có các component ở xa.

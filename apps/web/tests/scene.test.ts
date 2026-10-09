@@ -63,19 +63,61 @@ test('selected models expose pickable adjacent gizmo handles, stable screen scal
   } finally { manager.dispose() }
 })
 
-test('bench supply has a rounded enclosure, front controls and terminals but no logical source', () => {
+test('upright bench supply has two adjustment knobs, two output sockets and no logical source', () => {
   const supply = buildComponent({ id: 'P', type: 'POWER_SUPPLY' })
   try {
     const body = supply.children.find((child) => child.name === 'supply-enclosure') as Mesh | undefined
     assert.ok(body, 'supply needs a purpose-built enclosure')
     assert.ok(body.geometry.getAttribute('position').count > 24, 'enclosure corners should be rounded')
     assert.ok(supply.children.some((child) => child.name === 'supply-display'))
-    assert.equal(supply.children.filter((child) => child.name.startsWith('supply-knob')).length, 4)
-    assert.equal(supply.children.filter((child) => child.name.startsWith('supply-terminal')).length, 3)
+    const knobs = supply.children.filter((child) => child.name.startsWith('supply-knob'))
+    const terminals = supply.children.filter((child) => child.name.startsWith('supply-terminal'))
+    assert.equal(knobs.length, 2, 'Voltage and Ampe are the only adjustment knobs')
+    assert.equal(terminals.length, 2, 'Vcc and Gnd are the only decorative binding posts')
+    assert.ok(knobs.every((knob) => knob.position.x > 0), 'knobs belong to the right-hand vertical strip')
+    assert.ok(Math.abs(knobs[0].position.y - knobs[1].position.y) > 0.7)
+    assert.ok(terminals.every((terminal) => terminal.position.y < knobs[1].position.y))
+    for (const terminal of terminals) {
+      const origin = terminal.position.clone(); origin.z += 1
+      const hit = new Raycaster(origin, new Vector3(0, 0, -1)).intersectObject(supply, true)[0]
+      assert.equal(hit?.object.name, 'socket-floor', 'both socket bores must reveal a dark recessed floor, not a closed terminal cap')
+      assert.ok(terminal.position.z + 0.19 - hit.point.z > 0.14)
+    }
+    const display = supply.getObjectByName('supply-display') as Mesh
+    display.geometry.computeBoundingBox()
+    const screen = display.geometry.boundingBox!.getSize(new Vector3())
+    assert.ok(screen.y > screen.x, 'V/A/W display must have portrait proportions')
+    assert.equal(supply.children.some((child) => /usb/i.test(child.name)), false)
     assert.equal(supply.children.some((child) => child.userData.kind === 'port'), false)
     const bounds = new Box3().setFromObject(supply)
-    assert.ok(bounds.min.y >= 0 && bounds.max.y <= 1.23)
+    assert.ok(bounds.min.y >= 0 && bounds.max.y <= Number(supply.userData.size[1]) + 0.01)
+    const size = bounds.getSize(new Vector3())
+    assert.ok(size.y > size.x && size.z > size.x, 'case must be upright with a deep metal enclosure')
   } finally { disposeObject(supply) }
+})
+
+test('Y rotation grip follows preview yaw while its gesture center and world X/Z handles stay stable', () => {
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} })
+  try {
+    manager.resize(1000, 700)
+    const graph: CircuitGraph = { schema_version: '1.0', circuit_id: 'grip', modules: [{ id: 'B', type: 'BREADBOARD' }], connections: [] }
+    manager.syncGraph(graph); manager.highlight('B'); manager.activateGizmo('rotate-y')
+    const center = manager.gizmoOrigin()!, radial = manager.gizmoHandlePosition('rotate-y')!.clone().sub(center)
+    const x = manager.gizmoHandlePosition('x')!.clone(), z = manager.gizmoHandlePosition('z')!.clone()
+    for (const angle of [45, 90, 180, 270]) {
+      manager.previewRotation('B', angle)
+      const grip = manager.gizmoHandlePosition('rotate-y')!
+      assert.ok(grip.distanceTo(center.clone().add(radial.clone().applyAxisAngle(new Vector3(0, 1, 0), angle * Math.PI / 180))) < 0.001, 'grip must travel around the Y ring with object yaw')
+      assert.ok(manager.gizmoOrigin()!.distanceTo(center) < 0.001)
+      assert.ok(manager.gizmoHandlePosition('x')!.distanceTo(x) < 0.001)
+      assert.ok(manager.gizmoHandlePosition('z')!.distanceTo(z) < 0.001)
+      const p = manager.project(grip)
+      assert.equal(manager.pickGizmo(p.x, p.y)?.handle, 'rotate-y')
+    }
+    assert.equal(graph.modules[0].rotation, undefined, 'preview must leave circuit truth unchanged')
+    manager.syncGraph(graph)
+    assert.ok(manager.gizmoHandlePosition('rotate-y')!.distanceTo(center.clone().add(radial)) < 0.001, 'cancel restores the original grip angle')
+  } finally { manager.dispose() }
 })
 
 test('gizmo hover highlights only its handle and disposal releases tool geometry', () => {
@@ -118,6 +160,33 @@ test('gizmo avoids a visible information window in canvas coordinates', () => {
     manager.setGizmoObstacles!([{ left: p.x - 65, top: p.y - 60, right: p.x + 65, bottom: p.y + 60 }])
     const moved = manager.project(manager.gizmoHandlePosition('xz')!)
     assert.ok(Math.abs(moved.x - p.x) > 120 || Math.abs(moved.y - p.y) > 115, 'choose a clear screen location outside the window')
+  } finally { manager.dispose() }
+})
+
+test('adjacent gizmo clears the projected silhouette of a tall supply', () => {
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} })
+  try {
+    manager.resize(1280, 650)
+    manager.syncGraph({ schema_version: '1.0', circuit_id: 'tall', modules: [{ id: 'P', type: 'POWER_SUPPLY' }], connections: [] })
+    manager.fitCircuit(); manager.highlight('P')
+    const bounds = new Box3().setFromObject(manager.models.get('P')!), points = []
+    for (const x of [bounds.min.x, bounds.max.x]) for (const y of [bounds.min.y, bounds.max.y]) for (const z of [bounds.min.z, bounds.max.z]) points.push(manager.project(new Vector3(x, y, z)))
+    const left = Math.min(...points.map((p) => p.x)), right = Math.max(...points.map((p) => p.x))
+    const top = Math.min(...points.map((p) => p.y)), bottom = Math.max(...points.map((p) => p.y))
+    const center = manager.project(manager.gizmoOrigin()!)
+    assert.ok(center.x + 60 < left || center.x - 60 > right || center.y + 55 < top || center.y - 55 > bottom, 'ring must not overlap the selected supply screen or controls')
+  } finally { manager.dispose() }
+})
+
+test('rotated supply keeps the full gizmo within a small canvas', () => {
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} })
+  try {
+    manager.resize(595, 390)
+    const graph: CircuitGraph = { schema_version: '1.0', circuit_id: 'small', modules: [{ id: 'P', type: 'POWER_SUPPLY' }], connections: [] }
+    manager.syncGraph(graph); manager.orbit(-45); manager.fitCircuit(); manager.highlight('P')
+    manager.syncGraph({ ...graph, modules: [{ ...graph.modules[0], rotation: 120 }] })
+    const center = manager.project(manager.gizmoOrigin()!)
+    assert.ok(center.x >= 60 && center.x <= 535 && center.y >= 55 && center.y <= 335, 'handles and ring need screen clearance after yaw changes')
   } finally { manager.dispose() }
 })
 

@@ -18,13 +18,13 @@ const introductions: Record<string, string> = {
   BREADBOARD: 'A solderless work surface with two terminal fields, a recessed IC channel and separate rail strips. Arrange modular boards and components before connecting logical ports.',
   BREADBOARD_630: 'A terminal strip with two fields of contacts separated by a recessed IC channel. Combine it with rail strips to organize a circuit on the work surface.',
   BREADBOARD_100: 'A narrow power rail strip for arranging a modular breadboard assembly. Place it alongside a terminal board to extend the work surface.',
-  POWER_SUPPLY: 'A bench supply enclosure with a recessed display, four adjustment knobs, cooling vents and three colored output terminals. Arrange it alongside the circuit on the work surface.',
+  POWER_SUPPLY: 'An upright metal bench supply with a vertical V/A/W display, Voltage and Ampe knobs, Vcc and Gnd binding posts, cooling vents and a power switch. Arrange it alongside the circuit on the work surface.',
 }
 const description = computed(() => type.value && introductions[type.value] || item.value?.description || (definition.value ? definition.value.visualOnly ? 'A visual work surface for arranging circuit components. Add another board and choose its position on the surface.' : 'An editor component with named logical ports. Arrange it on the surface before connecting its ports.' : 'An imported component. Its original properties are retained; no model contract is available for adding another instance.'))
 const note = computed(() => definition.value?.visualOnly ? 'Visual structure. Placement creates no electrical source or connection.' : definition.value ? 'Editor model with named logical ports. Physical pin mapping and execution support are separate.' : 'This entry has no placeable editor model yet.')
 function add() { if (definition.value && type.value) { workspace.armPlacement(type.value); ui.activeRibbonGroup = null } }
 function close() { ui.closeWindow('component-info'); void nextTick(() => document.querySelector<HTMLCanvasElement>('canvas[aria-label="Three-dimensional circuit workspace"]')?.focus()) }
-// Explicit ribbon Info activation receives focus; automatic selection remains on canvas.
+// Explicit window activation receives focus; automatic selection remains on canvas.
 watch(() => window.value?.activation, (activation) => { if (activation) void nextTick(() => header.value?.focus()) })
 </script>
 <template>
