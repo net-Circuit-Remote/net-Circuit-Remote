@@ -1,9 +1,13 @@
 import { defineStore } from 'pinia'
 
-export type DockTab = 'instruments' | 'logic-analyzer' | 'console'
 export interface ConsoleEntry { id: number; time: string; level: 'info' | 'error'; message: string }
 export const useInstrumentStore = defineStore('instrument', {
-  state: () => ({ activeTab: 'instruments' as DockTab, entries: [] as ConsoleEntry[], nextEntryId: 1 }),
+  state: () => ({
+    entries: [] as ConsoleEntry[], nextEntryId: 1,
+    oscilloscope: { timeDiv: '1 ms', channelScale: '1 V', trigger: 'Auto' },
+    generator: { waveform: 'Sine', frequency: 1000, amplitude: 1, offset: 0, dutyCycle: 50 },
+    monitor: { channels: [] as string[], timeScale: '1 ms' },
+  }),
   actions: {
     log(message: string, level: ConsoleEntry['level'] = 'info') {
       this.entries.push({ id: this.nextEntryId++, time: new Date().toLocaleTimeString(), level, message })

@@ -19,6 +19,7 @@
 ### Table of Contents
 - [V1 architecture baseline](#v1-architecture-baseline)
 - [Core boundary](#core-boundary)
+- [Single Workspace UI direction](#single-workspace-ui-direction)
 - [Repository structure](#repository-structure)
 - [Read this before development](#read-this-before-development)
 - [Quick start — verification](#quick-start--verification)
@@ -70,6 +71,27 @@ Virtual Hardware      Physical Hardware
 ```
 
 The Browser never directly writes FPGA registers, raw MUX addresses, or Linux SPI devices. It produces a **Circuit Graph**; backend layers validate and translate that graph before any physical action.
+
+### Single Workspace UI direction
+
+The frontend implements a **single full-screen electronics workbench**. `/` opens it directly; all legacy and unknown URLs redirect to `/`. The previous routed pages and visible page navigation have been removed. Phase 1 includes local JSON file/history commands, a component ribbon using the supplied SVG artwork, a tool rail, a disposable Three.js grid, status bar and six contextual floating windows. Full circuit editing and execution remain subsequent work.
+
+Target layout:
+
+```text
+Top application bar: brand + New/Open/Save + Undo/Redo
+Component ribbon: Structure / Passive / Active / Output / Input / Logic ICs /
+                  Arithmetic ICs / Memory / Display / Embedded/Controller /
+                  Instruments / Notation
+Left tool rail: Select / Wire / Move / Rotate / Delete / Scope / Probe
+Center: Three.js circuit/breadboard workspace occupying most of the viewport
+Right overlay: view/display controls when needed
+Bottom status bar: Run/Stop, simulation state, frequency/step, component/wire count
+Floating windows: Oscilloscope, Function Generator, Signal Monitor,
+                  Component/IC Info, Memory Hex Editor, validation/status panels
+```
+
+The interaction model is inspired by the supplied reference images and by the workflow of CRUMB-like virtual electronics workbenches, but the project must use its own code, assets, visual identity, and component models rather than copying proprietary UI/assets pixel-for-pixel.
 
 ### Repository structure
 
@@ -126,7 +148,7 @@ Production build:
 npm run build
 ```
 
-The current Web UI is a shell. The full Three.js breadboard/circuit editor belongs to later Web phases.
+Single Workspace Phase 1 is implemented and verified on 2026-10-09. New/Open/Save use local Circuit Graph JSON (2 MB maximum); Undo/Redo cover project commands. The next frontend task is Phase 2 component placement and graph-driven editing. See [web usage](apps/web/README.md), [source analysis](docs/SOURCE_ANALYSIS_SINGLE_WORKSPACE.md) and [verification evidence](docs/DEV_LOG.md).
 
 ### Quick start — Application Backend
 
@@ -345,7 +367,7 @@ npm run dev
 npm run build
 ```
 
-Giao diện Web đã có nền tảng Phase 1: sáu trang, layout Laboratory ba cột và instrument dock, sáu Pinia store, API typed và WebSocket tự reconnect. Chạy `npm test` để kiểm tra frontend. Circuit draft chỉ tồn tại trong phiên trình duyệt; editor Three.js, lưu trữ backend và capture thuộc các phase tiếp theo. Chi tiết trong `apps/web/README.md`.
+Phase 1 **Single Workspace** đã được triển khai và kiểm chứng ngày 2026-10-09: `/` mở workbench, không còn navigation nhiều trang; có file bar, 12 nhóm ribbon dùng artwork SVG được cung cấp, 7 công cụ, Three.js grid, status bar và 6 cửa sổ nổi. New/Open/Save dùng JSON cục bộ, Undo/Redo hỗ trợ lịch sử project; API typed, WebSocket và 6 store được giữ đúng boundary. Phase 2 tiếp theo là đặt linh kiện và chỉnh Circuit Graph. Xem [hướng dẫn web](apps/web/README.md) và [phân tích source](docs/SOURCE_ANALYSIS_SINGLE_WORKSPACE.md).
 
 ### Khởi động nhanh — Backend ứng dụng
 

@@ -17,6 +17,10 @@ This file is the first document an AI or new contributor must read. It records a
 - Database baseline: **SQLite**.
 - Deployment baseline: **Nginx + systemd**.
 - Development strategy: **Web-first**, simulation-first, FPGA integration later.
+- Frontend UX architecture: **Single Workspace**, desktop-style virtual electronics workbench.
+- `/` opens the laboratory workspace directly; do not rebuild the product around Dashboard / Circuits / Stations / Experiments / Settings pages.
+- Approved workbench layout: application/file actions at top, component ribbon below, left interaction tool rail, dominant central Three.js workspace, bottom simulation status bar, contextual/floating instrument windows.
+- Reference images and CRUMB-like workflows are inspiration for interaction and density only; do not copy proprietary source, branding, icons or assets pixel-for-pixel.
 - Prototype FPGA: **EP4CE6E22C8N**, no SDRAM, Experiment Controller only.
 - Final V1 FPGA: **EP4CE10E22C8N**.
 - Final V1 external memory: **64 MB SDR SDRAM, 16-bit**.
@@ -37,9 +41,10 @@ Before editing code:
 2. Read `docs/ARCHITECTURE.md`.
 3. Read `docs/ROADMAP.md`.
 4. Read `docs/DEV_LOG.md`.
-5. Read task-specific specs/contracts.
-6. Inspect related source and tests.
-7. Plan the smallest safe change.
+5. For frontend work, read `docs/superpowers/specs/2026-10-09-single-workspace-ui-design.md`.
+6. Read task-specific specs/contracts.
+7. Inspect related source and tests.
+8. Plan the smallest safe change.
 
 ## 4. Required session-end protocol
 
@@ -109,3 +114,26 @@ A task is complete only when implementation exists, relevant tests pass, known r
 - Keep common RTL separate from target-specific constraints.
 - EP4CE6 source is a prototype target, not the permanent resource ceiling.
 - Do not claim SDRAM timing correctness until the exact SDRAM datasheet is selected and used.
+
+
+## 11. Single Workspace frontend rules
+
+- Treat the old six-page Vue Router design as **superseded**.
+- Do not add new Dashboard/Circuits/Stations/Experiments/Settings UI.
+- Route-level separation must not be used to hide core lab tools; core lab interaction stays in one workspace.
+- Prefer component ribbon + contextual menus for component insertion.
+- Prefer floating windows for instruments, memory editors and detailed inspectors.
+- Keep the circuit workspace visible while instruments are open.
+- Keep UI state separate from Circuit Graph electrical state.
+- Component/library definitions must be metadata-driven.
+- Visual 3D position must never define an electrical node.
+- Preserve typed API/WebSocket/hardware boundaries during UI migration.
+- Do not claim the Single Workspace source migration is complete until frontend tests and production build pass.
+
+## 12. Current frontend implementation — 2026-10-09
+
+Single Workspace Phase 1 is implemented. App renders one shell; legacy/unknown URLs redirect to `/`. No legacy page components, permanent inspector/library columns or bottom dock remain. Six Pinia stores and typed REST/WebSocket boundaries are retained. Project file/history actions are local JSON; scene resources stay outside stores. Shared floating windows support activation/focus, drag, keyboard movement/Escape and viewport clamping.
+
+Use supplied artwork through the committed thumbnails in `apps/web/src/assets/icons`; regenerate with `scripts/prepare_workbench_icons.py` after source artwork/device metadata changes. Do not bundle the large original SVG/embedded-PNG files. Read `docs/SOURCE_ANALYSIS_SINGLE_WORKSPACE.md` and the current DEV_LOG before Phase 2.
+
+Next work: metadata-backed placement, picking and graph edit commands. The grid and tool modes do not yet edit a circuit. Run/Stop/Step, acquisition, generator output and memory editing require real contracts; keep their current unavailable states honest.

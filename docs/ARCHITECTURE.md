@@ -37,7 +37,10 @@ VirtualStation   PhysicalStation
 
 ### Frontend
 
-Owns UI state, workspace interaction, Circuit Graph editing, instrument panels, status presentation and waveform rendering. It **must not** know FPGA registers, chip-select details, raw MUX addresses, Linux device paths or physical switching sequences.
+Owns the **Single Workspace** UI state, workspace interaction, Circuit Graph editing, component/tool selection, floating instrument windows, status presentation and waveform rendering. It **must not** know FPGA registers, chip-select details, raw MUX addresses, Linux device paths or physical switching sequences.
+
+The user-facing application is not a dashboard-style multi-page site. `/` opens the workbench directly. The former Dashboard / Circuits / Stations / Experiments / Settings page model is superseded and must not be extended.
+
 
 ### Application Backend
 
@@ -50,6 +53,81 @@ Owns Hardware Station discovery, capability reporting, translation from validate
 ### FPGA
 
 Owns deterministic and timing-critical behavior: routing apply sequences, experiment clock, trigger, capture, GPIO timing, Logic Analyzer, SDRAM access and later instrument datapaths.
+
+## 3A. Single Workspace UI architecture
+
+The approved frontend shell is a desktop-style virtual electronics workbench inspired by the supplied reference images and CRUMB-like workflows, while keeping original code/assets/visual identity.
+
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│ App bar: brand | New | Open | Save | Undo | Redo                   │
+├─────────────────────────────────────────────────────────────────────┤
+│ Component ribbon: Structure / Passive / Active / Output / Input /  │
+│ Logic ICs / Arithmetic ICs / Memory / Display / Instruments / ...  │
+├────────┬───────────────────────────────────────────────────┬────────┤
+│        │                                                   │        │
+│ Tool   │               Circuit Workspace                   │ View   │
+│ Rail   │       Three.js board / breadboard scene           │ opts   │
+│        │                                                   │        │
+├────────┴───────────────────────────────────────────────────┴────────┤
+│ Simulation status | run/stop | frequency/step | object counts      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+Primary tool rail:
+
+```text
+Select
+Wire
+Move
+Rotate
+Delete
+Probe
+Scope
+```
+
+Tools requiring a larger control surface open as floating windows over the workspace rather than routing to another page:
+
+```text
+Oscilloscope
+Function Generator
+Logic Analyzer / Signal Monitor
+Component / IC Information
+Properties / Inspector
+Memory Hex Editor
+Validation / execution status
+```
+
+The central workspace is the dominant visual area. Large permanent sidebars are avoided; information appears contextually through ribbon menus, overlays and floating windows.
+
+### Frontend rendering layers
+
+```text
+HTML/CSS application chrome
+        +
+Three.js 3D circuit scene
+        +
+Canvas/SVG instrument plots
+        +
+optional scene labels
+```
+
+Electrical identity is never inferred from visual coordinates.
+
+### Legacy UI migration
+
+Phase 1 migration is implemented on 2026-10-09. `App.vue` renders only `SingleWorkspaceShell`; Vue Router only normalizes legacy/unknown addresses to `/`. All seven old page files and the five Library/Workspace/Inspector/Dock/LogicAnalyzer components were removed. Typed API clients, WebSocket and six stores remain reusable.
+
+Current composition: `components/workbench/{AppTitleBar,ComponentRibbon,ToolRail,CircuitWorkspace3D,SimulationStatusBar}` and `components/windows/FloatingWindowManager`. Shared `FloatingWindow` owns drag, keyboard movement/Escape, activation/focus restoration and bounded workspace-relative placement; the six bodies share that framework. `ui` owns ribbon/window state, `workspace` owns one active tool, and `circuit` owns local files, bounded project history and stale-validation guards. Validation and station selection live inside Inspector.
+
+`three/SceneManager.ts` owns the scene/camera/grid/renderer. Vue owns ResizeObserver and mount/unmount bridging. Renders are coalesced on demand, and unmount cancels pending frames and disposes grid geometry/materials/renderer. Circuit Graph remains serializable and independent of visual coordinates. This is a visual grid foundation; component rendering, picking and wiring are Phase 2.
+
+The supplied `assets/icon .svg` files embed approximately 102 MB of PNG artwork. A reproducible script produces 43,482 bytes of optimized SVG thumbnails with a provenance manifest and canonical device metadata snapshots. Frontend imports remain inside `apps/web/src`; original artwork and backend contracts remain unchanged.
+
+The active Single Workspace UI specification is:
+
+`docs/superpowers/specs/2026-10-09-single-workspace-ui-design.md`
+
 
 ## 4. Hardware Station abstraction
 

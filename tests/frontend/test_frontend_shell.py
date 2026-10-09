@@ -6,7 +6,7 @@ WEB=ROOT/'apps/web'
 REQUIRED=[
  'package.json','tsconfig.json','vite.config.ts','index.html','src/main.ts','src/App.vue',
  'src/stores/station.ts','src/services/api.ts','src/services/websocket.ts',
- 'src/components/LabWorkspace.vue','src/components/HardwareStatus.vue','src/components/LogicAnalyzer.vue',
+ 'src/components/HardwareStatus.vue',
  'src/types/circuit.ts','src/style.css','README.md'
 ]
 REQUIRED += [
@@ -14,7 +14,9 @@ REQUIRED += [
 ]
 REQUIRED += [f'src/services/api/{name}.ts' for name in ['client', 'circuits', 'stations', 'experiments']]
 REQUIRED += ['src/router/index.ts', 'src/services/websocket/client.ts', 'src/services/websocket/events.ts']
-REQUIRED += [f'src/pages/{name}Page.vue' for name in ['Dashboard', 'Laboratory', 'Circuits', 'Stations', 'Experiments', 'Settings']]
+REQUIRED += [f'src/components/workbench/{name}.vue' for name in ['SingleWorkspaceShell', 'AppTitleBar', 'ComponentRibbon', 'ToolRail', 'CircuitWorkspace3D', 'SimulationStatusBar']]
+REQUIRED += [f'src/components/windows/{name}.vue' for name in ['FloatingWindow', 'FloatingWindowManager', 'OscilloscopeWindow', 'GeneratorWindow', 'SignalMonitorWindow', 'ComponentInfoWindow', 'InspectorWindow', 'HexEditorWindow']]
+REQUIRED += ['src/router/routes.ts', 'src/three/SceneManager.ts', 'src/services/files/circuitFile.ts']
 
 def test_frontend_shell_files_exist():
     missing=[p for p in REQUIRED if not (WEB/p).is_file()]
@@ -22,7 +24,7 @@ def test_frontend_shell_files_exist():
 
 
 def test_app_declares_project_title_and_hardware_status_supports_simulation():
-    app=(WEB/'src/App.vue').read_text()
+    app=(WEB/'src/components/workbench/AppTitleBar.vue').read_text(encoding='utf-8')
     status=(WEB/'src/components/HardwareStatus.vue').read_text()
     store=(WEB/'src/stores/station.ts').read_text()
     assert 'net*CIRCUIT Remote' in app
@@ -71,3 +73,36 @@ def test_frontend_typescript_build_config_includes_node_and_modern_libs():
     assert '@types/node' in dev
     assert 'node' in types
     assert 'esnext' in libs or 'esnext.disposable' in libs
+
+
+def test_single_shell_has_no_legacy_page_owner_or_navigation():
+    app = (WEB/'src/App.vue').read_text(encoding='utf-8')
+    assert 'SingleWorkspaceShell' in app
+    assert 'RouterLink' not in app and 'RouterView' not in app
+    assert not list((WEB/'src/pages').glob('*.vue'))
+
+
+def test_supplied_icons_have_small_committed_derivatives_with_verified_provenance():
+    import hashlib
+    import json
+    icon_dir = WEB/'src/assets/icons'
+    manifest = json.loads((icon_dir/'manifest.json').read_text(encoding='utf-8'))
+    originals = sorted((ROOT/'assets/icon .svg').glob('*.svg'))
+    assert len(manifest) == len(originals) == 17
+    assert sum(entry['output_bytes'] for entry in manifest) < 100_000
+    for entry in manifest:
+        source = ROOT/entry['source']
+        assert source.parent == ROOT/'assets/icon .svg'
+        assert hashlib.sha256(source.read_bytes()).hexdigest() == entry['sha256']
+        icon = (icon_dir/entry['file']).read_bytes()
+        assert len(icon) == entry['output_bytes']
+        assert b'data:image/webp;base64,' in icon
+        assert b'data:image/png;base64,' not in icon
+
+
+def test_browser_device_metadata_matches_authoritative_device_library():
+    import json
+    snapshot = json.loads((WEB/'src/data/deviceMetadata.json').read_text(encoding='utf-8'))
+    for relative in ['logic-ic/74hc08.json', 'breadboards/generic-full-size.json']:
+        original = json.loads((ROOT/'device-library'/relative).read_text(encoding='utf-8'))
+        assert snapshot[original['id']] == original

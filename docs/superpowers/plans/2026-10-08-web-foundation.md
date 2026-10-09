@@ -1,3 +1,11 @@
+# SUPERSEDED — Historical Web Foundation Implementation Plan
+
+> **Status:** SUPERSEDED on 2026-10-09 for user-facing routing/layout decisions.  
+> The completed API, WebSocket, store and test work remains useful.  
+> Do not extend the six-page UI described below. Use `docs/superpowers/specs/2026-10-09-single-workspace-ui-design.md` and `docs/PROMPT_SINGLE_WORKSPACE_UI_AI.md` for the next frontend migration.
+
+---
+
 # Web Foundation Implementation Plan
 
 > **For agentic workers:** Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

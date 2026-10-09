@@ -1,9 +1,9 @@
 name: Frontend
 on:
   push:
-    paths: ['apps/web/**', 'tests/frontend/**', 'contracts/circuit-schema/**', '.github/workflows/frontend.yml']
+    paths: ['apps/web/**', 'tests/frontend/**', 'contracts/circuit-schema/**', 'device-library/**', 'assets/icon .svg/**', 'scripts/prepare_workbench_icons.py', '.github/workflows/frontend.yml']
   pull_request:
-    paths: ['apps/web/**', 'tests/frontend/**', 'contracts/circuit-schema/**', '.github/workflows/frontend.yml']
+    paths: ['apps/web/**', 'tests/frontend/**', 'contracts/circuit-schema/**', 'device-library/**', 'assets/icon .svg/**', 'scripts/prepare_workbench_icons.py', '.github/workflows/frontend.yml']
 jobs:
   build:
     runs-on: ubuntu-latest

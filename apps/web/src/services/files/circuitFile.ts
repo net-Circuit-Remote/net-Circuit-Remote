@@ -1,0 +1,27 @@
+import type { CircuitGraph } from '../../types/circuit'
+
+export const MAX_CIRCUIT_FILE_BYTES = 2_000_000
+const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value)
+const text = (value: unknown): value is string => typeof value === 'string' && value.length > 0
+const keys = (value: Record<string, unknown>, allowed: string[]) => Object.keys(value).every((key) => allowed.includes(key))
+const optionalObject = (value: unknown) => value === undefined || object(value)
+const endpoint = (value: unknown) => text(value) && /^[^.]+\.[^.]+$/.test(value)
+
+// Structural schema v1 guard. Logical/electrical validation remains on the API.
+export function parseCircuitFile(contents: string): CircuitGraph {
+  if (new TextEncoder().encode(contents).length > MAX_CIRCUIT_FILE_BYTES) throw new Error('Circuit file is too large (maximum 2 MB).')
+  let value: unknown
+  try { value = JSON.parse(contents) } catch { throw new Error('Open a valid Circuit Graph JSON file.') }
+  const invalid = () => { throw new Error('File does not match Circuit Graph schema 1.0.') }
+  if (!object(value) || !keys(value, ['schema_version', 'circuit_id', 'modules', 'connections', 'metadata']) || value.schema_version !== '1.0' || !text(value.circuit_id) || !Array.isArray(value.modules) || !Array.isArray(value.connections) || !optionalObject(value.metadata)) return invalid()
+  for (const module of value.modules) {
+    if (!object(module) || !text(module.id) || !text(module.type) || !optionalObject(module.properties)) return invalid()
+    if (module.position !== undefined) {
+      if (!object(module.position) || !keys(module.position, ['x', 'y', 'z']) || !Object.values(module.position).every((coordinate) => typeof coordinate === 'number' && Number.isFinite(coordinate))) return invalid()
+    }
+  }
+  for (const connection of value.connections) {
+    if (!object(connection) || !keys(connection, ['source', 'destination', 'metadata']) || !endpoint(connection.source) || !endpoint(connection.destination) || !optionalObject(connection.metadata)) return invalid()
+  }
+  return value as unknown as CircuitGraph
+}

@@ -1,3 +1,11 @@
+# SUPERSEDED — Historical Web Foundation UI Design
+
+> **Status:** SUPERSEDED on 2026-10-09 for user-facing UI architecture.  
+> **Replacement:** `docs/superpowers/specs/2026-10-09-single-workspace-ui-design.md`  
+> Keep this file only as historical context for the already-built typed API/WebSocket/store foundation. Do **not** use its six-page routing/layout design for new frontend work.
+
+---
+
 # Phase 1 — Web Foundation
 
 ## Intent and scope

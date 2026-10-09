@@ -1,7 +1,7 @@
 export interface CircuitModule {
   id: string
   type: string
-  position?: { x: number; y: number; z?: number }
+  position?: { x?: number; y?: number; z?: number }
   properties?: Record<string, unknown>
 }
 

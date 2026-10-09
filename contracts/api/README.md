@@ -36,4 +36,8 @@ Unknown/malformed messages must not update station state. Reconnection triggers 
 
 ## Future backend interfaces
 
-The frontend's typed experiment service reserves `GET /api/experiments` and `GET /api/experiments/{id}` returning `{experiment_id, circuit_id, station_id, state}` (or an array). These endpoints are **not implemented** and current pages do not request them. Persistence, experiment actions, station reservation and capture remain subsequent-phase work.
+The frontend's typed experiment service reserves `GET /api/experiments` and `GET /api/experiments/{id}` returning `{experiment_id, circuit_id, station_id, state}` (or an array). These endpoints are **not implemented**. The approved Single Workspace frontend must not depend on them until backend support exists. Persistence, experiment actions, station reservation and capture remain subsequent-phase work.
+
+## Single Workspace Phase 1 consumers
+
+The migrated shell uses station discovery/events continuously and invokes structural validation from its floating Inspector. New/Open/Save operate on local schema v1 JSON (maximum 2,000,000 UTF-8 bytes); they do not imply server persistence or issue new requests. Run/Stop/Step, waveform acquisition, generator output and Hex Editor writes remain unavailable because their public contracts are absent. This migration changes no REST/WebSocket wire format.

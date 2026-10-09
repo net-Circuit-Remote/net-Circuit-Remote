@@ -1,0 +1,30 @@
+<script setup lang="ts">
+defineProps<{ name: string }>()
+const paths: Record<string, string> = {
+  new: 'M6 3h8l4 4v14H6z M14 3v5h5 M9 14h6 M12 11v6',
+  open: 'M3 7h7l2 3h9l-3 10H3z M3 7V4h7l2 3h7v3',
+  save: 'M4 3h14l3 3v15H3V3z M7 3v6h10V3 M7 21v-8h10v8',
+  undo: 'M8 5 3 10l5 5 M3 10h10a7 7 0 0 1 7 7',
+  redo: 'M16 5l5 5-5 5 M21 10H11a7 7 0 0 0-7 7',
+  select: 'M5 3v17l5-5 4 7 3-2-4-7h7z',
+  wire: 'M4 4h6v7h9v9 M2 2h4v4H2z M17 18h4v4h-4z',
+  move: 'M12 2v20 M2 12h20 M8 6l4-4 4 4 M8 18l4 4 4-4 M6 8l-4 4 4 4 M18 8l4 4-4 4',
+  rotate: 'M20 8a9 9 0 1 0 1 7 M20 2v6h-6',
+  delete: 'M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7',
+  scope: 'M3 4h18v14H3z M7 21h10 M12 18v3 M5 11h3l2-4 4 8 2-4h3',
+  probe: 'M4 21 18 7 M14 3l7 7 M12 8l4 4 M3 22l3-1-2-2z',
+  inspector: 'M4 4h16v16H4z M9 4v16 M12 8h5 M12 12h5 M12 16h3',
+  close: 'M6 6l12 12 M18 6 6 18',
+  plus: 'M12 5v14 M5 12h14', minus: 'M5 12h14',
+  reset: 'M4 9V4h5 M4 4l5 5 M20 9V4h-5 M20 4l-5 5 M4 15v5h5 M4 20l5-5 M20 15v5h-5 M20 20l-5-5',
+  play: 'M7 4l14 8-14 8z', stop: 'M5 5h14v14H5z', step: 'M5 4l12 8-12 8z M20 4v16',
+  switch: 'M4 15h4 M16 15h4 M8 15l8-9 M3 13h2v4H3z M19 13h2v4h-2z',
+  clock: 'M4 16V8h8v8h8 M3 3h18v18H3z',
+  memory: 'M5 6h14v12H5z M8 6V3 M12 6V3 M16 6V3 M8 18v3 M12 18v3 M16 18v3 M8 10h8 M8 14h5',
+  chip: 'M6 6h12v12H6z M9 2v4 M15 2v4 M9 18v4 M15 18v4 M2 9h4 M2 15h4 M18 9h4 M18 15h4 M10 10h4v4h-4z',
+  monitor: 'M3 4h18v14H3z M8 22h8 M12 18v4 M5 12h4V8h5v4h5',
+  tag: 'M3 3h9l9 9-9 9-9-9z M7 7h.01',
+  chevron: 'M7 10l5 5 5-5',
+}
+</script>
+<template><svg class="workbench-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="paths[name] || paths.chip" /></svg></template>

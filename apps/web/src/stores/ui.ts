@@ -1,6 +1,48 @@
 import { defineStore } from 'pinia'
 import type { ConnectionState } from '../services/websocket/client'
+import { windowDefinitions, type WindowKind, type WorkspaceWindow } from '../types/windows'
+
+function bound(window: WorkspaceWindow, width: number, height: number) {
+  window.width = Math.min(windowDefinitions[window.kind].width, width)
+  window.height = Math.min(windowDefinitions[window.kind].height, height)
+  window.x = Math.max(0, Math.min(window.x, width - window.width))
+  window.y = Math.max(0, Math.min(window.y, height - window.height))
+}
 
 export const useUiStore = defineStore('ui', {
-  state: () => ({ libraryVisible: true, inspectorVisible: true, dockVisible: true, connectionState: 'idle' as ConnectionState }),
+  state: () => ({ activeRibbonGroup: null as string | null, windows: [] as WorkspaceWindow[], viewport: { width: 900, height: 500 }, connectionState: 'idle' as ConnectionState }),
+  actions: {
+    toggleRibbon(id: string) { this.activeRibbonGroup = this.activeRibbonGroup === id ? null : id },
+    setViewport(width: number, height: number) {
+      this.viewport = { width: Math.max(0, width), height: Math.max(0, height) }
+      for (const window of this.windows) bound(window, this.viewport.width, this.viewport.height)
+    },
+    openWindow(kind: WindowKind) {
+      let window = this.windows.find((entry) => entry.kind === kind)
+      if (!window) {
+        const index = this.windows.length
+        window = { kind, open: true, x: 32 + index * 26, y: 36 + index * 22, width: windowDefinitions[kind].width, height: windowDefinitions[kind].height, z: 0, activation: 0 }
+        this.windows.push(window)
+      }
+      window.open = true
+      bound(window, this.viewport.width, this.viewport.height)
+      this.focusWindow(kind)
+      window.activation++
+    },
+    closeWindow(kind: WindowKind) { const window = this.windows.find((entry) => entry.kind === kind); if (window) window.open = false },
+    focusWindow(kind: WindowKind) {
+      const ordered = [...this.windows].sort((a, b) => a.z - b.z)
+      const active = ordered.find((entry) => entry.kind === kind)
+      if (!active) return
+      const rest = ordered.filter((entry) => entry !== active)
+      rest.push(active)
+      rest.forEach((entry, index) => { entry.z = index + 1 })
+    },
+    moveWindow(kind: WindowKind, x: number, y: number) {
+      const window = this.windows.find((entry) => entry.kind === kind)
+      if (!window || !Number.isFinite(x) || !Number.isFinite(y)) return
+      window.x = x; window.y = y
+      bound(window, this.viewport.width, this.viewport.height)
+    },
+  },
 })
