@@ -2,7 +2,7 @@
   "version": "1.0",
   "scope": "Functional editor abstractions; no physical pin numbers, routing resources or electrical ratings. Visual dimensions are arbitrary world units.",
   "components": [
-    {"type":"BREADBOARD","name":"Breadboard","family":"structure","visual":"breadboard","size":[8.8,0.32,3.2],"color":"#f4f5f8","ports":[],"defaults":{},"parameters":[],"visualOnly":true},
+    {"type":"BREADBOARD","name":"Breadboard","family":"structure","visual":"breadboard","size":[9.0,0.3,2.66],"color":"#fafbfc","ports":[],"defaults":{},"parameters":[],"visualOnly":true},
     {"type":"BOARD","name":"Board","family":"structure","visual":"board","size":[4,0.15,3],"color":"#237f6d","ports":[],"defaults":{},"parameters":[],"visualOnly":true},
     {"type":"POWER_SUPPLY","name":"Power supply visual","family":"structure","visual":"supply","size":[2.4,1.2,1.5],"color":"#8095a6","ports":[],"defaults":{},"parameters":[],"visualOnly":true},
     {"type":"RESISTOR","name":"Resistor","family":"passive","visual":"resistor","size":[1.8,0.4,0.65],"color":"#c5ab79","ports":[{"id":"A","direction":"inout"},{"id":"B","direction":"inout"}],"defaults":{"resistance_ohm":1000},"parameters":[{"key":"resistance_ohm","label":"Resistance (Ω)","kind":"number","min":0.001,"max":1000000000}]},

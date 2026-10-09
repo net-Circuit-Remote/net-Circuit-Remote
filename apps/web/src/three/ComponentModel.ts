@@ -14,87 +14,95 @@ export function disposeObject(root: Object3D) {
 
 function createBreadboardTexture(): CanvasTexture | null {
   if (typeof document === 'undefined') return null
-  const width = 2048
-  const height = 746
+  const width = 2400
+  const height = 710
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
 
-  // Off-white ABS plastic body surface
-  ctx.fillStyle = '#f7f8fa'
+  const w = 9.0
+  const d = 2.66
+  const pitch = 0.13
+  const spanX = 62 * pitch
+
+  const toPx = (wx: number, wz: number): [number, number] => [
+    ((wx + w / 2) / w) * width,
+    ((wz + d / 2) / d) * height
+  ]
+
+  // Clean off-white ABS plastic surface
+  ctx.fillStyle = '#fafbfc'
   ctx.fillRect(0, 0, width, height)
 
   // Outer plastic beveled border
   ctx.lineWidth = 3
-  ctx.strokeStyle = '#cbd3dc'
+  ctx.strokeStyle = '#cbd5e1'
   ctx.strokeRect(1, 1, width - 2, height - 2)
   ctx.lineWidth = 2
-  ctx.strokeStyle = '#e2e7ed'
+  ctx.strokeStyle = '#e2e8f0'
   ctx.strokeRect(4, 4, width - 8, height - 8)
 
-  const toPx = (wx: number, wz: number): [number, number] => [
-    ((wx + 4.4) / 8.8) * width,
-    ((wz + 1.6) / 3.2) * height
-  ]
+  // Modular strip seams (dividing top bus, middle terminal block, bottom bus)
+  const [, cySeamTop] = toPx(0, -0.93)
+  const [, cySeamBot] = toPx(0, 0.93)
+  ctx.lineWidth = 2
+  ctx.strokeStyle = '#d1d5db'
+  ctx.beginPath(); ctx.moveTo(width * 0.01, cySeamTop); ctx.lineTo(width * 0.99, cySeamTop); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(width * 0.01, cySeamBot); ctx.lineTo(width * 0.99, cySeamBot); ctx.stroke()
 
-  // Power rail recessed channels
-  for (const rz of [-1.245, 1.245]) {
-    const [, cy] = toPx(0, rz)
-    ctx.fillStyle = '#f1f3f6'
-    ctx.strokeStyle = '#e2e7ec'
-    ctx.lineWidth = 1
-    ctx.fillRect(width * 0.02, cy - 38, width * 0.96, 76)
-    ctx.strokeRect(width * 0.02, cy - 38, width * 0.96, 76)
-  }
-
-  // Center trough / groove channel (separating upper and lower terminal strips)
+  // Center trough / groove channel (IC divider between rows E and F)
   const [, cyTrough] = toPx(0, 0)
-  ctx.fillStyle = '#e4e8ee'
-  ctx.strokeStyle = '#c9d2dc'
+  ctx.fillStyle = '#e2e8f0'
+  ctx.fillRect(width * 0.015, cyTrough - 16, width * 0.97, 32)
+  ctx.strokeStyle = '#cbd5e1'
   ctx.lineWidth = 1
-  ctx.fillRect(width * 0.02, cyTrough - 15, width * 0.96, 30)
-  ctx.strokeRect(width * 0.02, cyTrough - 15, width * 0.96, 30)
-  ctx.strokeStyle = '#b3beca'
-  ctx.beginPath()
-  ctx.moveTo(width * 0.02, cyTrough)
-  ctx.lineTo(width * 0.98, cyTrough)
-  ctx.stroke()
+  ctx.strokeRect(width * 0.015, cyTrough - 16, width * 0.97, 32)
+  ctx.strokeStyle = '#94a3b8'
+  ctx.lineWidth = 2
+  ctx.beginPath(); ctx.moveTo(width * 0.015, cyTrough); ctx.lineTo(width * 0.985, cyTrough); ctx.stroke()
 
-  // Red (+) and Blue (-) power distribution lines
-  const [, cyTopBlue] = toPx(0, -1.45)
-  const [, cyTopRed] = toPx(0, -1.04)
-  const [, cyBotRed] = toPx(0, 1.04)
-  const [, cyBotBlue] = toPx(0, 1.45)
+  // Power distribution lines: Red (+) and Cobalt Blue (-)
+  // Top rail: Red at -1.25, Blue at -0.98
+  // Bottom rail: Red at +0.98, Blue at +1.25
+  const [, cyTopRed] = toPx(0, -1.25)
+  const [, cyTopBlue] = toPx(0, -0.98)
+  const [, cyBotRed] = toPx(0, 0.98)
+  const [, cyBotBlue] = toPx(0, 1.25)
 
-  ctx.lineWidth = 4
-  ctx.strokeStyle = '#2563eb'; ctx.beginPath(); ctx.moveTo(width * 0.04, cyTopBlue); ctx.lineTo(width * 0.96, cyTopBlue); ctx.stroke()
-  ctx.strokeStyle = '#dc2626'; ctx.beginPath(); ctx.moveTo(width * 0.04, cyTopRed); ctx.lineTo(width * 0.96, cyTopRed); ctx.stroke()
-  ctx.strokeStyle = '#dc2626'; ctx.beginPath(); ctx.moveTo(width * 0.04, cyBotRed); ctx.lineTo(width * 0.96, cyBotRed); ctx.stroke()
-  ctx.strokeStyle = '#2563eb'; ctx.beginPath(); ctx.moveTo(width * 0.04, cyBotBlue); ctx.lineTo(width * 0.96, cyBotBlue); ctx.stroke()
+  const lineStartX = width * 0.038
+  const lineEndX = width * 0.962
 
-  // Polarity markings (+ / -)
-  ctx.font = 'bold 24px "Segoe UI", Arial, sans-serif'
+  ctx.lineWidth = 5
+  ctx.strokeStyle = '#dc2626'
+  ctx.beginPath(); ctx.moveTo(lineStartX, cyTopRed); ctx.lineTo(lineEndX, cyTopRed); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(lineStartX, cyBotRed); ctx.lineTo(lineEndX, cyBotRed); ctx.stroke()
+
+  ctx.strokeStyle = '#0284c7'
+  ctx.beginPath(); ctx.moveTo(lineStartX, cyTopBlue); ctx.lineTo(lineEndX, cyTopBlue); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(lineStartX, cyBotBlue); ctx.lineTo(lineEndX, cyBotBlue); ctx.stroke()
+
+  // Polarity markings (+ and -) bold, large, high-contrast
+  ctx.font = 'bold 38px "Segoe UI", Arial, sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  for (const pxX of [width * 0.028, width * 0.5, width * 0.972]) {
-    ctx.fillStyle = '#2563eb'; ctx.fillText('-', pxX, cyTopBlue)
-    ctx.fillStyle = '#dc2626'; ctx.fillText('+', pxX, cyTopRed)
-    ctx.fillStyle = '#dc2626'; ctx.fillText('+', pxX, cyBotRed)
-    ctx.fillStyle = '#2563eb'; ctx.fillText('-', pxX, cyBotBlue)
+  for (const sx of [width * 0.022, width * 0.978]) {
+    ctx.fillStyle = '#dc2626'; ctx.fillText('+', sx, cyTopRed)
+    ctx.fillStyle = '#0284c7'; ctx.fillText('-', sx, cyTopBlue)
+    ctx.fillStyle = '#dc2626'; ctx.fillText('+', sx, cyBotRed)
+    ctx.fillStyle = '#0284c7'; ctx.fillText('-', sx, cyBotBlue)
   }
 
-  // 63 column coordinates
-  const pitchX = 7.86 / 62
+  // 63 column coordinates with uniform pitch
   const colsX: number[] = []
-  for (let i = 0; i < 63; i++) colsX.push(-3.93 + i * pitchX)
+  for (let i = 0; i < 63; i++) colsX.push(-spanX / 2 + i * pitch)
 
-  // Column numbers (1, 5, 10 ... 60, 63)
-  const [, cyNumTop] = toPx(0, -0.90)
-  const [, cyNumBot] = toPx(0, 0.90)
-  ctx.font = 'bold 15px "Segoe UI", Arial, sans-serif'
-  ctx.fillStyle = '#475569'
+  // Column numbers (1, 5, 10, ... 60, 63) bold and crisp
+  const [, cyNumTop] = toPx(0, -0.83)
+  const [, cyNumBot] = toPx(0, 0.83)
+  ctx.font = 'bold 24px "Segoe UI", Arial, sans-serif'
+  ctx.fillStyle = '#0f172a'
   for (let i = 0; i < 63; i++) {
     const colNum = i + 1
     if (colNum === 1 || colNum % 5 === 0 || colNum === 63) {
@@ -104,12 +112,13 @@ function createBreadboardTexture(): CanvasTexture | null {
     }
   }
 
-  // Row letters (J, I, H, G, F and E, D, C, B, A)
-  const rowZUpper = [-0.74, -0.58, -0.42, -0.26, -0.10]
-  const rowZLower = [0.10, 0.26, 0.42, 0.58, 0.74]
-  const lettersUpper = ['J', 'I', 'H', 'G', 'F']
-  const lettersLower = ['E', 'D', 'C', 'B', 'A']
-  for (const labelX of [colsX[0] - 0.26, colsX[62] + 0.26]) {
+  // Row letters: Upper strip A-E, Lower strip F-J
+  const rowZUpper = [-pitch * 5.5, -pitch * 4.5, -pitch * 3.5, -pitch * 2.5, -pitch * 1.5]
+  const rowZLower = [pitch * 1.5, pitch * 2.5, pitch * 3.5, pitch * 4.5, pitch * 5.5]
+  const lettersUpper = ['A', 'B', 'C', 'D', 'E']
+  const lettersLower = ['F', 'G', 'H', 'I', 'J']
+
+  for (const labelX of [colsX[0] - 0.28, colsX[62] + 0.28]) {
     const [cx] = toPx(labelX, 0)
     for (let r = 0; r < 5; r++) {
       const [, cyU] = toPx(0, rowZUpper[r])
@@ -119,22 +128,16 @@ function createBreadboardTexture(): CanvasTexture | null {
     }
   }
 
-  // Engineering markings on center groove
-  ctx.font = 'bold 14px "Segoe UI", Arial, sans-serif'
-  ctx.fillStyle = '#788696'
-  ctx.fillText('MB-102', width * 0.25, cyTrough)
-  ctx.fillText('net*CIRCUIT', width * 0.75, cyTrough)
-
-  // Socket drawing helper
+  // Sockets drawing helper (square beveled funnel with dark cavity)
   const drawSocket = (cx: number, cy: number) => {
-    ctx.fillStyle = '#edf1f5'
-    ctx.fillRect(cx - 8, cy - 8, 16, 16)
-    ctx.strokeStyle = '#c8d1dc'
+    ctx.fillStyle = '#f1f5f9'
+    ctx.fillRect(cx - 10, cy - 10, 20, 20)
+    ctx.strokeStyle = '#cbd5e1'
     ctx.lineWidth = 1
-    ctx.strokeRect(cx - 7.5, cy - 7.5, 15, 15)
-    ctx.fillStyle = '#161e27'
-    ctx.fillRect(cx - 5, cy - 5, 10, 10)
-    ctx.fillStyle = '#3b4754'
+    ctx.strokeRect(cx - 9.5, cy - 9.5, 19, 19)
+    ctx.fillStyle = '#1e293b'
+    ctx.fillRect(cx - 6, cy - 6, 12, 12)
+    ctx.fillStyle = '#475569'
     ctx.fillRect(cx - 2, cy - 4, 1, 8)
     ctx.fillRect(cx + 2, cy - 4, 1, 8)
   }
@@ -157,16 +160,22 @@ function createBreadboardTexture(): CanvasTexture | null {
   for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(g * 6 + i)
   for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(34 + g * 6 + i)
 
-  const powerZ = [-1.35, -1.14, 1.14, 1.35]
+  const powerZTop = [-1.18, -1.05]
+  const powerZBot = [1.05, 1.18]
   for (const ci of powerCols) {
     const [cx] = toPx(colsX[ci], 0)
-    for (const pz of powerZ) {
+    for (const pz of powerZTop) {
+      const [, cy] = toPx(0, pz)
+      drawSocket(cx, cy)
+    }
+    for (const pz of powerZBot) {
       const [, cy] = toPx(0, pz)
       drawSocket(cx, cy)
     }
   }
 
   const texture = new CanvasTexture(canvas)
+  texture.anisotropy = 16
   texture.needsUpdate = true
   return texture
 }
@@ -213,34 +222,36 @@ export function buildComponent(module: CircuitModule): Group {
     tape.position.set(0, 0.01, 0)
     group.add(tape)
 
-    // Dovetail interlocking tabs and notches
-    const tabColor = '#ebeef2'
-    const notchColor = '#d3d9e2'
-    for (const tx of [-2.2, 2.2]) {
-      const tabZ = new Mesh(new BoxGeometry(0.35, h * 0.72, 0.12), material(tabColor))
-      tabZ.position.set(tx, h / 2 + 0.02, d / 2 + 0.06)
+    // Dovetail interlocking tabs and notches matching real MB-102
+    const tabColor = '#fafbfc'
+    const notchColor = '#cbd5e1'
+    for (const tx of [-2.7, 0, 2.7]) {
+      const tabZ = new Mesh(new BoxGeometry(0.30, h * 0.70, 0.10), material(tabColor))
+      tabZ.position.set(tx, h / 2 + 0.02, -d / 2 - 0.05)
       group.add(tabZ)
-      const notchZ = new Mesh(new BoxGeometry(0.37, h * 0.74, 0.06), material(notchColor))
-      notchZ.position.set(tx, h / 2 + 0.02, -d / 2 + 0.03)
+      const notchZ = new Mesh(new BoxGeometry(0.32, h * 0.72, 0.05), material(notchColor))
+      notchZ.position.set(tx, h / 2 + 0.02, d / 2 - 0.025)
       group.add(notchZ)
     }
-    const tabX = new Mesh(new BoxGeometry(0.12, h * 0.72, 0.45), material(tabColor))
-    tabX.position.set(w / 2 + 0.06, h / 2 + 0.02, 0)
+    const tabX = new Mesh(new BoxGeometry(0.10, h * 0.70, 0.35), material(tabColor))
+    tabX.position.set(w / 2 + 0.05, h / 2 + 0.02, 0)
     group.add(tabX)
-    const notchX = new Mesh(new BoxGeometry(0.06, h * 0.74, 0.47), material(notchColor))
-    notchX.position.set(-w / 2 + 0.03, h / 2 + 0.02, 0)
+    const notchX = new Mesh(new BoxGeometry(0.05, h * 0.72, 0.37), material(notchColor))
+    notchX.position.set(-w / 2 + 0.025, h / 2 + 0.02, 0)
     group.add(notchX)
 
     // Exactly 1 InstancedMesh with 830 contacts (630 terminal + 200 power rails)
-    const pitchX = 7.86 / 62
+    const pitch = 0.13
+    const spanX = 62 * pitch
     const colsX: number[] = []
-    for (let i = 0; i < 63; i++) colsX.push(-3.93 + i * pitchX)
-    const rowZUpper = [-0.74, -0.58, -0.42, -0.26, -0.10]
-    const rowZLower = [0.10, 0.26, 0.42, 0.58, 0.74]
+    for (let i = 0; i < 63; i++) colsX.push(-spanX / 2 + i * pitch)
+    const rowZUpper = [-pitch * 5.5, -pitch * 4.5, -pitch * 3.5, -pitch * 2.5, -pitch * 1.5]
+    const rowZLower = [pitch * 1.5, pitch * 2.5, pitch * 3.5, pitch * 4.5, pitch * 5.5]
     const powerCols: number[] = []
     for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(g * 6 + i)
     for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(34 + g * 6 + i)
-    const powerZ = [-1.35, -1.14, 1.14, 1.35]
+    const powerZTop = [-1.18, -1.05]
+    const powerZBot = [1.05, 1.18]
 
     const holeGeom = new BoxGeometry(0.046, 0.012, 0.046)
     const holeMat = new MeshStandardMaterial({ color: '#161e27', roughness: 0.35, metalness: 0.65 })
@@ -262,7 +273,11 @@ export function buildComponent(module: CircuitModule): Group {
 
     for (const ci of powerCols) {
       const hx = colsX[ci]
-      for (const hz of powerZ) {
+      for (const hz of powerZTop) {
+        matrix.makeTranslation(hx, h + 0.021, hz)
+        holes.setMatrixAt(idx++, matrix)
+      }
+      for (const hz of powerZBot) {
         matrix.makeTranslation(hx, h + 0.021, hz)
         holes.setMatrixAt(idx++, matrix)
       }

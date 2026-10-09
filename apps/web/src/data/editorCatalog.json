@@ -8,11 +8,11 @@
       "family": "structure",
       "visual": "breadboard",
       "size": [
-        8.8,
-        0.32,
-        3.2
+        9.0,
+        0.3,
+        2.66
       ],
-      "color": "#f4f5f8",
+      "color": "#fafbfc",
       "ports": [],
       "defaults": {},
       "parameters": [],
