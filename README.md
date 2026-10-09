@@ -85,13 +85,15 @@ Component ribbon: Structure / Passive / Active / Output / Input / Logic ICs /
                   Instruments / Notation
 Left tool rail: Select / Wire / Move / Rotate / Delete / Scope / Probe
 Center: Three.js circuit/breadboard workspace occupying most of the viewport
-Right overlay: view/display controls when needed
-Bottom status bar: Run/Stop, simulation state, frequency/step, component/wire count
+Right overlay: selected Component Info and contextual instrument windows
+Bottom status bar: execution/count/status + right-aligned Zoom In/Out/Fit/Object Snap
 Floating windows: Oscilloscope, Function Generator, Signal Monitor,
                   Component/IC Info, Memory Hex Editor, validation/status panels
 ```
 
 The interaction model is inspired by the supplied reference images and by the workflow of CRUMB-like virtual electronics workbenches, but the project must use its own code, assets, visual identity, and component models rather than copying proprietary UI/assets pixel-for-pixel.
+
+Latest refinement: selected models have an adjacent X/Z/free-move/Y-rotation gizmo with hover, live wire/pose preview, stable camera-relative scale and one Undo on release. Direct body dragging still requires Move. Perspective/tool-title overlays are removed; view tools live at the status bar's right with definitions. Power Supply has an original bench enclosure/controls/vents, while remaining visual-only. See [source analysis](docs/SOURCE_ANALYSIS_COMPONENT_TRANSFORM_GIZMO.md) and [verification](docs/verification/2026-10-09-component-transform-gizmo-browser.md).
 
 ### Repository structure
 

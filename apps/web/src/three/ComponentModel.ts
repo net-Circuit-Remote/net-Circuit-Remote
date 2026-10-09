@@ -2,6 +2,7 @@ import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, InstancedMesh, Mes
 import { getDefinition, type LogicalPort } from '../data/editorCatalog'
 import type { CircuitModule } from '../types/circuit'
 import { addBreadboardHousing } from './BreadboardHousing'
+import { addPowerSupplyModel } from './PowerSupplyModel'
 
 export function disposeObject(root: Object3D) {
   root.traverse((object) => {
@@ -323,12 +324,14 @@ export function buildComponent(module: CircuitModule): Group {
     addBreadboardHousing(group, [w, h, d], color, createBreadboard630Texture(), true, false)
   } else if (definition?.visual === 'breadboard_100') {
     addBreadboardHousing(group, [w, h, d], color, createBreadboard100Texture(), false, false)
+  } else if (definition?.visual === 'supply') {
+    addPowerSupplyModel(group, [w, h, d])
   } else {
     box(0, h / 2 + 0.02, 0, w, h, d, color)
     if (definition?.visual === 'button') box(0, h + 0.12, 0, w * 0.65, 0.25, d * 0.65, module.properties?.state ? '#d7b58e' : '#835f87')
     if (definition?.visual === 'toggle') { const lever = box(0, h + 0.25, 0, 0.15, 0.55, 0.2, '#c0d1db'); lever.rotation.z = module.properties?.state ? -0.4 : 0.4 }
     if (definition?.visual === 'dip') for (let i = 0; i < 4; i++) box((i - 1.5) * 0.38, h + 0.08, ((Number(module.properties?.value ?? 0) >> i) & 1) ? -0.2 : 0.2, 0.22, 0.18, 0.3, '#e6dac4')
-    if (definition?.visual === 'supply' || definition?.visual === 'display' || definition?.visual === 'clock') box(0, h + 0.02, 0, w * 0.72, 0.04, d * 0.65, '#152a2e')
+    if (definition?.visual === 'display' || definition?.visual === 'clock') box(0, h + 0.02, 0, w * 0.72, 0.04, d * 0.65, '#152a2e')
     if (definition?.visual === 'segment') {
       for (const [x, z, sx, sz] of [[0, -0.6, 0.6, 0.1], [0, 0, 0.6, 0.1], [0, 0.6, 0.6, 0.1], [-0.35, -0.3, 0.1, 0.45], [0.35, -0.3, 0.1, 0.45], [-0.35, 0.3, 0.1, 0.45], [0.35, 0.3, 0.1, 0.45]]) box(x, h + 0.04, z, sx, 0.025, sz, '#683839')
     }
@@ -339,7 +342,7 @@ export function buildComponent(module: CircuitModule): Group {
     anchor.userData = { kind: 'port', id: module.id, endpoint: `${module.id}.${port.id}` }
     group.add(anchor)
   }
-  if (typeof document !== 'undefined' && !definition?.visual?.startsWith('breadboard')) {
+  if (typeof document !== 'undefined' && !definition?.visual?.startsWith('breadboard') && definition?.visual !== 'supply') {
     const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 80
     const context = canvas.getContext('2d')
     if (context) {

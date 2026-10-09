@@ -1,10 +1,125 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createSceneManager, type SceneRenderer } from '../src/three/SceneManager'
-import { InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Raycaster, ShaderMaterial, Vector3 } from 'three'
+import { Box3, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, PerspectiveCamera, Raycaster, ShaderMaterial, Vector3 } from 'three'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { buildComponent, disposeObject } from '../src/three/ComponentModel'
 import type { CircuitGraph } from '../src/types/circuit'
+import { createComponentTransformGizmo } from '../src/three/ComponentTransformGizmo'
+
+type TransformScene = ReturnType<typeof createSceneManager> & {
+  fitCircuit?: () => boolean
+  previewRotation?: (id: string, degrees: number) => void
+  gizmoHandlePosition?: (handle: 'x' | 'z' | 'xz' | 'rotate-y') => Vector3 | null
+  pickGizmo?: (x: number, y: number) => { id: string; handle: string } | null
+  hoverGizmo?: (x: number, y: number) => string | null
+}
+
+test('fit entire circuit frames remote rotated components without changing graph or view heading', () => {
+  const manager: TransformScene = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} })
+  try {
+    manager.resize(1000, 700)
+    assert.equal(typeof manager.fitCircuit, 'function', 'fit must use circuit bounds rather than reset view')
+    assert.equal(manager.fitCircuit!(), false)
+    const graph: CircuitGraph = { schema_version: '1.0', circuit_id: 'fit', modules: [{ id: 'A', type: 'BREADBOARD', rotation: 35, position: { x: -16, y: 0, z: -12 } }, { id: 'B', type: 'POWER_SUPPLY', position: { x: 23, y: 2, z: 18 } }], connections: [] }
+    manager.syncGraph(graph); manager.orbit(40); manager.setZoom(200)
+    const before = manager.camera.quaternion.clone(), snapshot = JSON.stringify(graph)
+    assert.equal(manager.fitCircuit!(), true)
+    for (const model of manager.models.values()) {
+      const bounds = new Box3().setFromObject(model)
+      for (const x of [bounds.min.x, bounds.max.x]) for (const y of [bounds.min.y, bounds.max.y]) for (const z of [bounds.min.z, bounds.max.z]) assert.equal(manager.project(new Vector3(x, y, z)).visible, true)
+    }
+    assert.ok(manager.camera.quaternion.angleTo(before) < 0.001)
+    assert.equal(JSON.stringify(graph), snapshot)
+  } finally { manager.dispose() }
+})
+
+test('selected models expose pickable adjacent gizmo handles, stable screen scale and live rotation', () => {
+  const manager: TransformScene = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} })
+  try {
+    manager.resize(1000, 700)
+    const graph: CircuitGraph = { schema_version: '1.0', circuit_id: 'gizmo', modules: [{ id: 'A', type: 'CLOCK' }, { id: 'B', type: 'LED', position: { x: 3, y: 0, z: 0 } }], connections: [{ source: 'A.OUT', destination: 'B.IN' }] }
+    manager.syncGraph(graph); manager.highlight('A')
+    assert.equal(typeof manager.gizmoHandlePosition, 'function')
+    const read = (handle: 'x' | 'z' | 'xz' | 'rotate-y') => manager.gizmoHandlePosition!(handle)!
+    for (const handle of ['x', 'z', 'xz', 'rotate-y'] as const) {
+      const p = manager.project(read(handle))
+      assert.equal(manager.pickGizmo!(p.x, p.y)?.handle, handle)
+      assert.equal(manager.hoverGizmo!(p.x, p.y), handle)
+    }
+    const separation = () => { const a = manager.project(read('x')), b = manager.project(read('xz')); return Math.hypot(a.x - b.x, a.y - b.y) }
+    const initial = separation()
+    manager.setZoom(200)
+    assert.ok(Math.abs(separation() - initial) < initial * 0.08)
+    const anchor = read('xz').clone()
+    manager.previewMove('A', { x: 1, y: 0.4, z: 1 })
+    assert.ok(read('xz').distanceTo(anchor) > 0.5)
+    const endpoint = manager.endpointPosition('A.OUT')!.clone(), snapshot = JSON.stringify(graph)
+    manager.previewRotation!('A', 45)
+    assert.ok(manager.endpointPosition('A.OUT')!.distanceTo(endpoint) > 0.2)
+    assert.equal(JSON.stringify(graph), snapshot)
+    manager.highlight(null)
+    assert.equal(manager.gizmoHandlePosition!('xz'), null)
+  } finally { manager.dispose() }
+})
+
+test('bench supply has a rounded enclosure, front controls and terminals but no logical source', () => {
+  const supply = buildComponent({ id: 'P', type: 'POWER_SUPPLY' })
+  try {
+    const body = supply.children.find((child) => child.name === 'supply-enclosure') as Mesh | undefined
+    assert.ok(body, 'supply needs a purpose-built enclosure')
+    assert.ok(body.geometry.getAttribute('position').count > 24, 'enclosure corners should be rounded')
+    assert.ok(supply.children.some((child) => child.name === 'supply-display'))
+    assert.equal(supply.children.filter((child) => child.name.startsWith('supply-knob')).length, 4)
+    assert.equal(supply.children.filter((child) => child.name.startsWith('supply-terminal')).length, 3)
+    assert.equal(supply.children.some((child) => child.userData.kind === 'port'), false)
+    const bounds = new Box3().setFromObject(supply)
+    assert.ok(bounds.min.y >= 0 && bounds.max.y <= 1.23)
+  } finally { disposeObject(supply) }
+})
+
+test('gizmo hover highlights only its handle and disposal releases tool geometry', () => {
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} })
+  manager.resize(1000, 700); manager.syncGraph({ schema_version: '1.0', circuit_id: 'hover', modules: [{ id: 'B', type: 'BREADBOARD_100' }], connections: [] }); manager.highlight('B')
+  const p = manager.project(manager.gizmoHandlePosition('x')!)
+  manager.hoverGizmo(p.x, p.y)
+  const tool = manager.scene.children.find((child) => child.name === 'component-transform-gizmo')!
+  let highlighted = 0, geometry = 0, released = 0
+  tool.traverse((child) => { if (child instanceof Mesh) { geometry++; child.geometry.addEventListener('dispose', () => released++); if ((child.material as MeshStandardMaterial).color.getHexString() === '65d8cd') highlighted++ } })
+  assert.equal(highlighted, 2, 'only the X stem and arrow should highlight')
+  manager.dispose(); assert.equal(released, geometry)
+})
+
+test('gizmo checks neighbors for every candidate even with a single-use model iterator', () => {
+  const models = new Map<string, Group>()
+  for (const [id, x, z] of [['A', 0, 0], ['B', 0, 3], ['C', 3, 0]] as const) { const model = new Group(); model.userData = { id, size: [2, 1, 2] }; model.position.set(x, 0, z); models.set(id, model) }
+  const camera = new PerspectiveCamera(42, 1000 / 700, 0.1, 150); camera.position.set(0, 11, 10); camera.lookAt(0, 0, 0)
+  const gizmo = createComponentTransformGizmo()
+  try { gizmo.update(models.get('A'), models.values(), camera, 1000, 700); assert.ok(gizmo.root.position.x < 0, 'both front and right are occupied; the clear left candidate should win') }
+  finally { disposeObject(gizmo.root) }
+})
+
+test('active translation maintains gizmo pixel size as the model approaches the camera', () => {
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} })
+  try {
+    manager.resize(1000, 700); manager.syncGraph({ schema_version: '1.0', circuit_id: 'scale', modules: [{ id: 'A', type: 'CLOCK' }], connections: [] }); manager.highlight('A')
+    const width = () => { const a = manager.project(manager.gizmoHandlePosition('x')!), b = manager.project(manager.gizmoHandlePosition('xz')!); return Math.hypot(a.x - b.x, a.y - b.y) }
+    const before = width(); manager.activateGizmo('xz'); manager.previewMove('A', { x: 0, y: 0, z: 7 })
+    assert.ok(Math.abs(width() - before) / before < 0.08, 'active dragging must recompute camera-relative scale')
+  } finally { manager.dispose() }
+})
+
+test('gizmo avoids a visible information window in canvas coordinates', () => {
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} }) as ReturnType<typeof createSceneManager> & { setGizmoObstacles?: (rects: { left: number; top: number; right: number; bottom: number }[]) => void }
+  try {
+    manager.resize(1000, 700); manager.syncGraph({ schema_version: '1.0', circuit_id: 'panel', modules: [{ id: 'A', type: 'CLOCK' }], connections: [] }); manager.highlight('A')
+    const p = manager.project(manager.gizmoHandlePosition('xz')!)
+    assert.equal(typeof manager.setGizmoObstacles, 'function')
+    manager.setGizmoObstacles!([{ left: p.x - 65, top: p.y - 60, right: p.x + 65, bottom: p.y + 60 }])
+    const moved = manager.project(manager.gizmoHandlePosition('xz')!)
+    assert.ok(Math.abs(moved.x - p.x) > 120 || Math.abs(moved.y - p.y) > 115, 'choose a clear screen location outside the window')
+  } finally { manager.dispose() }
+})
 
 test('structure disposal releases instance buffers, not only geometry and material', () => {
   for (const type of ['BREADBOARD', 'BREADBOARD_630', 'BREADBOARD_100']) {

@@ -6,11 +6,21 @@ import { useCircuitStore } from '../stores/circuit'
 import { useWorkspaceStore } from '../stores/workspace'
 import { useUiStore } from '../stores/ui'
 import type { CircuitModule } from '../types/circuit'
+import type { TransformHandle } from '../three/ComponentTransformGizmo'
 type Manager = ReturnType<typeof createSceneManager>
 export type Position = { x: number; y: number; z: number }
 interface DragGesture { pointer: number; start: { x: number; y: number }; dragged: boolean }
 interface MoveGesture extends DragGesture { kind: 'move'; id: string; draft: string | null; planeHeight: number; offset: Position; position: Position }
 interface PanGesture extends DragGesture { kind: 'pan'; anchor: Vector3 }
+interface TransformGesture extends DragGesture {
+  kind: 'transform'; id: string; draft: string | null; handle: TransformHandle; anchor: Vector3; center: Vector3
+  initial: Position; position: Position; initialRotation: number; rotation: number; lastAngle: number; angle: number
+}
+
+function footprint(size: readonly number[], degrees: number) {
+  const angle = degrees * Math.PI / 180, c = Math.abs(Math.cos(angle)), s = Math.abs(Math.sin(angle))
+  return [size[0] * c + size[2] * s, size[0] * s + size[2] * c]
+}
 
 export function snapPosition(
   point: { x: number; y?: number; z: number },
@@ -38,9 +48,7 @@ export function snapPosition(
 
   const activeModule = activeId ? modules.find((m) => m.id === activeId) : null
   const activeRot = activeModule?.rotation ?? 0
-  const activeRotated = (Math.round(activeRot / 90) % 2 !== 0)
-  const activeW = activeRotated ? (activeDef.size[2] ?? 2.66) : (activeDef.size[0] ?? 9.0)
-  const activeD = activeRotated ? (activeDef.size[0] ?? 9.0) : (activeDef.size[2] ?? 2.66)
+  const [activeW, activeD] = footprint(activeDef.size, activeRot)
 
   // 1. Magnetic docking candidates
   let bestCandidate: { x: number; z: number } | null = null
@@ -50,9 +58,7 @@ export function snapPosition(
     const mDef = getDefinition(m.type)
     if (!mDef) continue
     const mRot = m.rotation ?? 0
-    const mRotated = (Math.round(mRot / 90) % 2 !== 0)
-    const mW = mRotated ? (mDef.size[2] ?? 2.66) : (mDef.size[0] ?? 9.0)
-    const mD = mRotated ? (mDef.size[0] ?? 9.0) : (mDef.size[2] ?? 2.66)
+    const [mW, mD] = footprint(mDef.size, mRot)
     const mX = m.position?.x ?? 0
     const mZ = m.position?.z ?? 0
 
@@ -74,9 +80,7 @@ export function snapPosition(
         const bDef = getDefinition(b.type)
         if (!bDef) return false
         const bRot = b.rotation ?? 0
-        const bRotated = (Math.round(bRot / 90) % 2 !== 0)
-        const bW = bRotated ? (bDef.size[2] ?? 2.66) : (bDef.size[0] ?? 9.0)
-        const bD = bRotated ? (bDef.size[0] ?? 9.0) : (bDef.size[2] ?? 2.66)
+        const [bW, bD] = footprint(bDef.size, bRot)
         const bX = b.position?.x ?? 0
         const bZ = b.position?.z ?? 0
         return (s.x - activeW / 2 < bX + bW / 2 - eps) &&
@@ -108,9 +112,7 @@ export function snapPosition(
       const mDef = getDefinition(m.type)
       if (!mDef) continue
       const mRot = m.rotation ?? 0
-      const mRotated = (Math.round(mRot / 90) % 2 !== 0)
-      const mW = mRotated ? (mDef.size[2] ?? 2.66) : (mDef.size[0] ?? 9.0)
-      const mD = mRotated ? (mDef.size[0] ?? 9.0) : (mDef.size[2] ?? 2.66)
+      const [mW, mD] = footprint(mDef.size, mRot)
       const mX = m.position?.x ?? 0
       const mZ = m.position?.z ?? 0
 
@@ -145,8 +147,9 @@ export function snapPosition(
 
 export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, manager: () => Manager | undefined) {
   const circuit = useCircuitStore(), workspace = useWorkspaceStore(), ui = useUiStore()
-  let gesture: MoveGesture | PanGesture | null = null
-  const dragging = ref<'move' | 'pan' | null>(null)
+  let gesture: MoveGesture | PanGesture | TransformGesture | null = null
+  const dragging = ref<'move' | 'pan' | 'transform' | null>(null)
+  const hoveredHandle = ref<TransformHandle | null>(null)
   const ports = ref<{ endpoint: string; x: number; y: number; direction: string }[]>([])
   const selected = computed(() => circuit.graph?.modules.find((module) => module.id === workspace.selectedModuleId))
   const attempt = (action: () => void) => { try { action(); workspace.editError = '' } catch (error) { workspace.editError = error instanceof Error ? error.message : 'Circuit edit failed.' } }
@@ -168,7 +171,8 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   }
   function sync() { manager()?.syncGraph(circuit.graph); manager()?.highlight(workspace.selectedModuleId, workspace.selectedWire); updatePorts() }
   function cancel() {
-    if (gesture) { const pointer = gesture.pointer; gesture = null; dragging.value = null; manager()?.lockPointer(false); if (canvas.value?.hasPointerCapture(pointer)) canvas.value.releasePointerCapture(pointer); sync() }
+    if (gesture) { const pointer = gesture.pointer; gesture = null; dragging.value = null; manager()?.activateGizmo(null); manager()?.lockPointer(false); if (canvas.value?.hasPointerCapture(pointer)) canvas.value.releasePointerCapture(pointer); sync() }
+    hoveredHandle.value = null; manager()?.clearGizmoHover()
     manager()?.setGhost(null)
   }
   function connect(endpoint: string) {
@@ -191,6 +195,14 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
     if (event.button !== 0 || gesture || !manager() || !canvas.value) return
     canvas.value.focus(); const { x, y } = coordinates(event), point = manager()!.groundPoint(x, y)
     if (workspace.placementType) { if (point) place(workspace.placementType, snap(point, workspace.placementType)); return }
+    const transform = manager()!.pickGizmo(x, y), module = selected.value
+    if (transform && module && transform.id === module.id) {
+      const center = manager()!.gizmoOrigin()!, anchor = manager()!.groundPoint(x, y, center.y)
+      if (!anchor) return
+      const initial = { x: module.position?.x ?? 0, y: module.position?.y ?? 0, z: module.position?.z ?? 0 }
+      gesture = { kind: 'transform', pointer: event.pointerId, start: { x, y }, dragged: false, id: module.id, draft: circuit.activeId, handle: transform.handle, center, anchor, initial, position: initial, initialRotation: module.rotation ?? 0, rotation: module.rotation ?? 0, lastAngle: Math.atan2(-(anchor.z - center.z), anchor.x - center.x), angle: 0 }
+      manager()!.activateGizmo(transform.handle); manager()!.lockPointer(true); canvas.value.setPointerCapture(event.pointerId); event.preventDefault?.(); return
+    }
     const hit = manager()!.pick(x, y)
     if (workspace.tool === 'wire' && hit?.kind === 'port') { connect(hit.endpoint); return }
     if (hit?.kind === 'wire') {
@@ -229,7 +241,30 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
       if (!gesture.dragged && Math.hypot(x - gesture.start.x, y - gesture.start.y) < 4) return
       gesture.dragged = true; dragging.value = gesture.kind
       if (gesture.kind === 'pan') { manager()!.panGrab(gesture.anchor, x, y); return }
+      if (gesture.kind === 'transform') {
+        const transform = gesture, point = manager()!.groundPoint(x, y, transform.center.y)
+        if (!point) return
+        if (transform.handle === 'rotate-y') {
+          const dx = point.x - transform.center.x, dz = point.z - transform.center.z
+          if (Math.hypot(dx, dz) < 0.001) return
+          const currentAngle = Math.atan2(-dz, dx)
+          transform.angle += Math.atan2(Math.sin(currentAngle - transform.lastAngle), Math.cos(currentAngle - transform.lastAngle))
+          transform.lastAngle = currentAngle
+          const raw = transform.initialRotation + transform.angle * 180 / Math.PI
+          transform.rotation = workspace.snap ? Math.round(raw / 15) * 15 : Math.round(raw * 100) / 100
+          manager()!.previewRotation(transform.id, transform.rotation)
+        } else {
+          point.sub(transform.anchor); point.x += transform.initial.x; point.z += transform.initial.z
+          const type = circuit.graph?.modules.find((m) => m.id === transform.id)?.type
+          transform.position = snap(point, transform.handle === 'xz' ? type : undefined, transform.id, transform.initial.y)
+          if (transform.handle === 'x') transform.position.z = transform.initial.z
+          if (transform.handle === 'z') transform.position.x = transform.initial.x
+          manager()!.previewMove(transform.id, transform.position)
+        }
+        updatePorts(); return
+      }
     }
+    if (!gesture) hoveredHandle.value = workspace.placementType ? null : manager()!.hoverGizmo(x, y)
     const point = manager()!.groundPoint(x, y, gesture?.kind === 'move' ? gesture.planeHeight : 0)
     if (!point) return
     if (gesture?.kind === 'move') {
@@ -247,9 +282,13 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   function pointerUp(event: PointerEvent) {
     if (!gesture || event.pointerId !== gesture.pointer) return
     pointerMove(event)
-    const completed = gesture; gesture = null; dragging.value = null; manager()?.lockPointer(false)
+    const completed = gesture; gesture = null; dragging.value = null; manager()?.activateGizmo(null); manager()?.lockPointer(false)
     if (canvas.value?.hasPointerCapture(event.pointerId)) canvas.value.releasePointerCapture(event.pointerId)
     if (completed.kind === 'move' && completed.dragged && completed.draft === circuit.activeId) attempt(() => circuit.moveModule(completed.id, completed.position))
+    else if (completed.kind === 'transform' && completed.dragged && completed.draft === circuit.activeId) attempt(() => {
+      if (completed.handle === 'rotate-y') circuit.rotateModule(completed.id, completed.rotation - completed.initialRotation)
+      else circuit.moveModule(completed.id, completed.position)
+    })
     else if (completed.kind === 'pan' && !completed.dragged) workspace.clearSelection()
     sync()
   }
@@ -263,6 +302,7 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   function keydown(event: KeyboardEvent) {
     if (event.key === 'Escape') { cancel(); workspace.cancelPlacement(); workspace.editError = ''; return }
     if (event.ctrlKey || event.metaKey || event.altKey) return
+    if (gesture && ['Delete', 'Backspace', 'r', 'R', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) cancel()
     const id = workspace.selectedModuleId
     if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); attempt(() => { if (id) circuit.removeModule(id); else if (workspace.selectedWire) circuit.disconnectPorts(workspace.selectedWire.source, workspace.selectedWire.destination) }) }
     else if (id && event.key.toLowerCase() === 'r') attempt(() => circuit.rotateModule(id))
@@ -288,11 +328,15 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
     sync()
   }, { deep: true })
   watch(() => [workspace.tool, workspace.placementType], () => { cancel(); updatePorts() })
-  watch(() => [workspace.selectedModuleId, workspace.selectedWire], () => { manager()?.highlight(workspace.selectedModuleId, workspace.selectedWire); updatePorts() })
+  watch(() => [workspace.selectedModuleId, workspace.selectedWire], () => {
+    if (gesture && gesture.kind !== 'pan' && gesture.id !== workspace.selectedModuleId) cancel()
+    manager()?.highlight(workspace.selectedModuleId, workspace.selectedWire); updatePorts()
+  })
   watch(() => selected.value?.id, (id) => {
     if (id) ui.openWindow('component-info', { activate: false })
     else ui.closeWindow('component-info')
   }, { immediate: true })
   onUnmounted(cancel)
-  return { ports, selected, dragging, updatePorts, sync, cancel, connect, pointerDown, pointerMove, pointerUp, drop, keydown, selectModule }
+  function pointerLeave() { if (!gesture) { hoveredHandle.value = null; manager()?.clearGizmoHover(); manager()?.setGhost(null) } }
+  return { ports, selected, dragging, hoveredHandle, updatePorts, sync, cancel, connect, pointerDown, pointerMove, pointerUp, pointerLeave, drop, keydown, selectModule }
 }

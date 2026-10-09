@@ -23,3 +23,7 @@ SceneManager owns camera, lights, work surface, models, wires, picking and resou
 ## Verification
 
 Behavior tests cover graph edits/history, rejected connections, cascade deletion, metadata provenance, memory isolation/validation, scene reconciliation, picking/anchors and cancellation/disposal. Build, frontend boundaries, repository checks and actual browser gestures verify integration. No simulation waveform, real power supply or physical routing claim is introduced.
+
+## Current transform/view refinement — 2026-10-09
+
+Perspective and generic tool-title/hint overlays are removed. Status-bar right contains defined Zoom In/Out, Zoom To View Entire Circuit (model/wire bounds, preserve heading), and Workspace Object Snap. Selected models show adjacent X/Z/free-move/Y-rotation handles with hover, live preview, stable active pixel scale, neighboring-model/window avoidance and one Undo on release; no Delete/Confirm/Check. Direct body dragging remains Move-only. Snap is 0.5-unit movement and 15-degree gizmo rotation. The original bench Power Supply case/controls/vents have unknown/OFF display and zero electrical ports. This supersedes older view/reset descriptions above. Source/evidence: `docs/SOURCE_ANALYSIS_COMPONENT_TRANSFORM_GIZMO.md` and its dated browser report.

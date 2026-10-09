@@ -5,6 +5,8 @@ import { getDefinition } from '../data/editorCatalog'
 import type { CircuitGraph, CircuitModule } from '../types/circuit'
 import { createSelectionOutline, updateSelectionOutline } from './SelectionOutline'
 import { createTechnicalGrid, updateTechnicalGrid } from './TechnicalGrid'
+import { Box3, Sphere } from 'three'
+import { createComponentTransformGizmo, type GizmoObstacle, type TransformHandle } from './ComponentTransformGizmo'
 
 export interface SceneRenderer { setSize(width: number, height: number, updateStyle?: boolean): void; render(scene: Scene, camera: PerspectiveCamera): void; dispose(): void }
 interface SceneOptions { renderer: SceneRenderer; canvas?: HTMLCanvasElement; onRender?: () => void; requestFrame?: (callback: FrameRequestCallback) => number; cancelFrame?: (id: number) => void }
@@ -21,6 +23,9 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
   const fillLight = new DirectionalLight('#a8c7e8', 0.75); fillLight.position.set(6, 8, -6)
   const wires = new Group(), content = new Group(), models = new Map<string, Group>()
   scene.add(grid, ambient, light, fillLight, content, wires)
+  const gizmo = createComponentTransformGizmo(); scene.add(gizmo.root)
+  let gizmoObstacles: GizmoObstacle[] = []
+  const updateGizmo = () => gizmo.update(highlightedId ? models.get(highlightedId) : undefined, models.values(), camera, width, height, gizmoObstacles)
   const raycaster = new Raycaster(), plane = new Plane(new Vector3(0, 1, 0), 0)
   let width = 1, height = 1, frame: number | null = null, disposed = false, visible = false, suspended = false, pointerLocked = false
   let graph: CircuitGraph | null = null, ghost: Group | null = null
@@ -32,6 +37,7 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
         const target = controls?.target ?? viewTarget
         const focus = highlightedId ? models.get(highlightedId)?.position ?? target : target
         updateTechnicalGrid(grid, camera, target, focus, height)
+        updateGizmo()
         scene.updateMatrixWorld(true)
         if (activeOutline) updateSelectionOutline(activeOutline.group, camera.position, width, height)
         renderer.render(scene, camera); onRender?.()
@@ -85,6 +91,13 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
   return {
     scene, camera, grid, models, wires,
     endpointPosition,
+    setGizmoObstacles(areas: GizmoObstacle[]) { if (!disposed && JSON.stringify(areas) !== JSON.stringify(gizmoObstacles)) { gizmoObstacles = areas.map((area) => ({ ...area })); schedule() } },
+    gizmoHandlePosition(handle: TransformHandle) { if (disposed) return null; updateGizmo(); return gizmo.position(handle) },
+    gizmoOrigin() { if (disposed) return null; updateGizmo(); return gizmo.origin() },
+    pickGizmo(x: number, y: number) { if (disposed) return null; updateGizmo(); ray(x, y); return gizmo.pick(raycaster) },
+    hoverGizmo(x: number, y: number) { if (disposed) return null; updateGizmo(); ray(x, y); const handle = gizmo.pick(raycaster)?.handle ?? null; gizmo.hover(handle); schedule(); return handle },
+    clearGizmoHover() { gizmo.hover(null); schedule() },
+    activateGizmo(handle: TransformHandle | null) { updateGizmo(); gizmo.activate(handle, highlightedId ? models.get(highlightedId) : undefined); schedule() },
     syncGraph(next: CircuitGraph | null) {
       if (disposed) return
       graph = next
@@ -101,6 +114,7 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
       refreshWires(); schedule()
     },
     previewMove(id: string, position: Required<NonNullable<CircuitModule['position']>>) { const model = models.get(id); if (model && !disposed) { model.position.set(position.x, position.y, position.z); model.updateMatrixWorld(true); refreshWires(); schedule() } },
+    previewRotation(id: string, degrees: number) { const model = models.get(id); if (model && !disposed && Number.isFinite(degrees)) { model.rotation.y = degrees * Math.PI / 180; model.updateMatrixWorld(true); refreshWires(); schedule() } },
     setGhost(type: string | null, position?: Vector3) {
       if (ghost && type && position && ghost.userData.type === type) { ghost.position.copy(position); ghost.updateMatrixWorld(true); schedule(); return }
       if (ghost) { disposeObject(ghost); scene.remove(ghost); ghost = null }
@@ -155,6 +169,18 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
     project(point: Vector3) { camera.updateMatrixWorld(); const p = point.clone().project(camera); return { x: (p.x + 1) * width / 2, y: (1 - p.y) * height / 2, visible: p.z >= -1 && p.z <= 1 && Math.abs(p.x) < 1 && Math.abs(p.y) < 1 } },
     resize(w: number, h: number) { if (disposed) return; visible = w > 0 && h > 0; if (!visible) { if (frame !== null) cancelFrame(frame); frame = null; return }; width = w; height = h; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); schedule() },
     setZoom(percent: number) { if (disposed) return; camera.zoom = Math.min(200, Math.max(50, percent)) / 100; camera.updateProjectionMatrix(); schedule() },
+    fitCircuit() {
+      if (disposed || !models.size) return false
+      const bounds = new Box3().setFromObject(content); bounds.union(new Box3().setFromObject(wires))
+      const sphere = bounds.getBoundingSphere(new Sphere()), target = controls?.target ?? viewTarget
+      const direction = camera.position.clone().sub(target).normalize()
+      const half = Math.min(camera.fov * Math.PI / 360, Math.atan(Math.tan(camera.fov * Math.PI / 360) * camera.aspect))
+      const distance = Math.max(3, sphere.radius / Math.sin(half) * 1.2)
+      target.copy(sphere.center); camera.position.copy(target).addScaledVector(direction, distance); camera.lookAt(target)
+      camera.zoom = 1; camera.far = Math.max(150, distance * 4 + sphere.radius * 2); camera.updateProjectionMatrix()
+      if (controls) { controls.maxDistance = Math.max(45, distance * 2); controls.update() }
+      schedule(); return true
+    },
     orbit(degrees: number) { if (disposed || !Number.isFinite(degrees)) return; const target = controls?.target ?? viewTarget; camera.position.sub(target).applyAxisAngle(new Vector3(0, 1, 0), degrees * Math.PI / 180).add(target); camera.lookAt(target); controls?.update(); schedule() },
     pan(horizontal: number, forward: number) {
       if (disposed || !Number.isFinite(horizontal) || !Number.isFinite(forward)) return

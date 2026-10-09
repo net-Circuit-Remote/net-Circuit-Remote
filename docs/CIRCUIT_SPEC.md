@@ -123,3 +123,7 @@ The following are intentionally unresolved until parts and datasheets are select
 - FPGA bank voltages and pin assignments;
 - final independent routing channel count;
 - supported experiment frequency limits.
+
+## Component pose and visual supply clarification — 2026-10-09
+
+Transform gizmo preview does not change Circuit Graph. Release commits position or Y rotation through existing schema 1.0 commands/history; cancel restores committed geometry. Named ports/wires retain identities. Workspace Object Snap, docking, arbitrary-angle footprints and decorative supply terminals never create electrical nodes. Bench supply readouts remain unknown/OFF; no physical source or measurement is implied.

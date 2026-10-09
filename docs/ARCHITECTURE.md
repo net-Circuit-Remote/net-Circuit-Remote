@@ -66,11 +66,11 @@ The approved frontend shell is a desktop-style virtual electronics workbench ins
 │ Logic ICs / Arithmetic ICs / Memory / Display / Instruments / ...  │
 ├────────┬───────────────────────────────────────────────────┬────────┤
 │        │                                                   │        │
-│ Tool   │               Circuit Workspace                   │ View   │
-│ Rail   │       Three.js board / breadboard scene           │ opts   │
+│ Tool   │               Circuit Workspace                   │ Info   │
+│ Rail   │       Three.js board / breadboard scene           │ window │
 │        │                                                   │        │
 ├────────┴───────────────────────────────────────────────────┴────────┤
-│ Simulation status | run/stop | frequency/step | object counts      │
+│ Execution / counts / status | right: Zoom In/Out/Fit/Object Snap     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -250,3 +250,9 @@ Concurrent Web users do not equal concurrent independent physical experiments. T
 ## 12. Web-first integration gate
 
 FPGA integration begins only after milestone **W1 — Web Platform Ready for FPGA Integration**, defined in `ROADMAP.md`.
+
+## Component transform and view ownership — 2026-10-09
+
+`ComponentTransformGizmo` is scene-owned and never serialized. Raycast its explicit X/Z/free/Y handles before graph geometry; Move-only direct body dragging remains. The editor previews pose/endpoints/wires, unwraps Y angles, then commits one circuit command or restores graph geometry on cancel. Screen scale is refreshed during active movement; candidate positions avoid reusable neighbor snapshots and DOM window/navigation bounds. Arbitrary-angle breadboard snap uses conservative AABB extents. `PowerSupplyModel` owns the original visual case/panel/knobs/vents/terminals; no electrical ports or live measurements are invented.
+
+View controls belong at Status Bar right: Zoom In/Out, fit entire model/wire bounds with viewing direction retained, and Workspace Object Snap (0.5 movement, 15-degree gizmo rotation). No Perspective or generic tool-title overlay. Scene resources stay outside Pinia and dispose with SceneManager. See `SOURCE_ANALYSIS_COMPONENT_TRANSFORM_GIZMO.md` for algorithms and verification limits.

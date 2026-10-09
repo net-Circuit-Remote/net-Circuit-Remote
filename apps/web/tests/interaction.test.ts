@@ -43,6 +43,78 @@ function setup(tool: WorkspaceTool = 'select') {
   } }
 }
 
+test('gizmo X/Z/free handles move on the work plane with live wires and one undo, even in Select', async () => {
+  for (const handle of ['x', 'z', 'xz'] as const) {
+    const h = setup()
+    try {
+      const original = { x: 0.13, y: 0.25, z: 0.19 }
+      const id = h.circuit.placeModule('CLOCK', original), led = h.circuit.placeModule('LED', { x: -3, y: 0, z: -2 })
+      h.circuit.connectPorts(`${id}.OUT`, `${led}.IN`); h.workspace.selectModule(id)
+      await nextTick(); h.circuit.past = []
+      const origin = h.manager.gizmoHandlePosition(handle)!, start = h.manager.project(origin)
+      const target = h.manager.project(origin.clone().add(new Vector3(1.2, 0, 0.8)))
+      const endpoint = h.manager.endpointPosition(`${id}.OUT`)!.clone(), camera = h.manager.camera.position.clone()
+      h.editor.pointerDown(h.pointer(start.x, start.y)); h.editor.pointerMove(h.pointer(target.x, target.y))
+      assert.deepEqual(h.circuit.graph!.modules[0].position, original, 'preview cannot change logical graph')
+      assert.ok(h.manager.endpointPosition(`${id}.OUT`)!.distanceTo(endpoint) > 0.5, 'named ports and wires follow preview')
+      assert.ok(h.manager.camera.position.distanceTo(camera) < 0.0001, 'gizmo must not pan the camera')
+      h.editor.pointerUp(h.pointer(target.x, target.y))
+      const position = h.circuit.graph!.modules[0].position!
+      assert.equal(position.y, original.y)
+      if (handle === 'x') assert.equal(position.z, original.z)
+      if (handle === 'z') assert.equal(position.x, original.x)
+      assert.equal(h.circuit.past.length, 1); assert.equal(h.captured.size, 0)
+      h.circuit.undo(); assert.deepEqual(h.circuit.graph!.modules[0].position, original)
+      h.circuit.redo(); assert.deepEqual(h.circuit.graph!.modules[0].position, position)
+    } finally { h.dispose() }
+  }
+})
+
+test('Y rotation gizmo previews continuously, snaps to 15 degrees and records one rotation', async () => {
+  const h = setup()
+  try {
+    const id = h.circuit.placeModule('CLOCK', { x: 0, y: 0.4, z: 0 }); h.workspace.selectModule(id)
+    await nextTick(); h.circuit.past = []
+    const origin = h.manager.gizmoOrigin()!, handle = h.manager.gizmoHandlePosition('rotate-y')!
+    const start = h.manager.project(handle), radius = handle.distanceTo(origin)
+    const target = h.manager.project(origin.clone().add(new Vector3(-radius * Math.cos(Math.PI / 3), 0, radius * Math.sin(Math.PI / 3))))
+    const endpoint = h.manager.endpointPosition(`${id}.OUT`)!.clone()
+    h.editor.pointerDown(h.pointer(start.x, start.y)); h.editor.pointerMove(h.pointer(target.x, target.y))
+    assert.ok(h.manager.endpointPosition(`${id}.OUT`)!.distanceTo(endpoint) > 0.2)
+    assert.equal(h.circuit.graph!.modules[0].rotation ?? 0, 0)
+    h.editor.pointerUp(h.pointer(target.x, target.y))
+    assert.equal(h.circuit.graph!.modules[0].rotation, 60)
+    assert.equal(h.circuit.graph!.modules[0].position!.y, 0.4)
+    assert.equal(h.circuit.past.length, 1)
+    h.circuit.undo(); assert.equal(h.circuit.graph!.modules[0].rotation ?? 0, 0)
+  } finally { h.dispose() }
+})
+
+test('gizmo cancellation and selection changes roll preview back and ignore foreign pointer release', async () => {
+  const h = setup()
+  try {
+    const id = h.circuit.placeModule('BREADBOARD', { x: 0, y: 0.2, z: 0 }), other = h.circuit.placeModule('POWER_SUPPLY', { x: -5, y: 0, z: -3 })
+    h.workspace.selectModule(id); await nextTick(); h.circuit.past = []
+    const start = h.manager.project(h.manager.gizmoHandlePosition('xz')!)
+    h.editor.pointerDown(h.pointer(start.x, start.y)); h.editor.pointerMove(h.pointer(start.x + 60, start.y + 30))
+    h.editor.pointerUp(h.pointer(start.x + 60, start.y + 30, 2))
+    assert.equal(h.captured.size, 1)
+    h.editor.keydown({ key: 'Escape' } as KeyboardEvent)
+    assert.equal(h.captured.size, 0); assert.deepEqual(h.manager.models.get(id)!.position.toArray(), [0, 0.2, 0]); assert.equal(h.circuit.past.length, 0)
+    h.editor.pointerDown(h.pointer(start.x, start.y)); h.editor.pointerMove(h.pointer(start.x + 60, start.y + 30))
+    h.workspace.selectModule(other); await nextTick()
+    assert.equal(h.captured.size, 0); assert.equal(h.circuit.past.length, 0)
+    assert.deepEqual(h.manager.models.get(id)!.position.toArray(), [0, 0.2, 0])
+  } finally { h.dispose() }
+})
+
+test('breadboard snap uses the rotated footprint after a non-quarter-turn gizmo rotation', () => {
+  const modules = [{ id: 'A', type: 'BREADBOARD', position: { x: 0, y: 0, z: 0 } }, { id: 'B', type: 'BREADBOARD', rotation: 30, position: { x: 0, y: 0, z: 3 } }]
+  const position = snapPosition({ x: 0, z: 3 }, true, modules, 'BREADBOARD', 'B')
+  const rotatedDepth = 9 * Math.sin(Math.PI / 6) + 2.66 * Math.cos(Math.PI / 6)
+  assert.ok(position.z - rotatedDepth / 2 >= 2.66 / 2 - 0.005, 'snap must not overlap rotated housing')
+})
+
 test('Move left drag moves a breadboard, previews without graph mutation and commits one undo', async () => {
   const h = setup('move')
   try {

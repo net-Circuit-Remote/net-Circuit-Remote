@@ -1,10 +1,10 @@
 ---
 project: net-Circuit-Remote
-current_phase: interactive-circuit-workspace-navigation-complete
-status: verified
+current_phase: interactive-workspace-transform-gizmo
+status: implemented-tests-browser-verified-build-unverified
 last_updated: 2026-10-09
 next_task: phase-3-simulator-event-clock-model-integration
-blocking_issue: none
+blocking_issue: final-vite-bundle-sandbox-eperm-prior-elevation-declined
 hardware_mode: simulation
 fpga_development_started: false
 ---
@@ -14,6 +14,14 @@ fpga_development_started: false
 ## Current Goal
 
 Phase 2 **Interactive Circuit Workspace** is implemented, preserving Phase 1 shell and transport boundaries. Next: Phase 3 simulator/event/clock/model adapters and real output/capture data.
+
+## Component Transform Gizmo and status view tools — 2026-10-09
+
+Removed Perspective viewport box and generic Select/Wire/Move/Rotate title/hint. Defined Zoom In/Out, Zoom To View Entire Circuit and Workspace Object Snap at Status Bar right, with responsive wrapping. Fit uses full model/wire bounds, retains heading and resets magnification. Selected objects have adjacent X/Z/free movement and Y rotation handles, hover/active color, live pose/endpoints/wires, stable screen scale including active movement, neighboring-model/window avoidance and one Undo on release. Body dragging remains Move-only; capture/Escape/tool/selection/graph/context cancellation restores committed geometry.
+
+Added original bench supply enclosure/front controls/vents/terminals/feet/screws, unknown/OFF readouts and concise introduction; zero-port visual-only contract retained. Updated breadboard snap to conservative actual-angle footprints. Fresh independent review exposed single-use neighbor iteration and missing active scale updates; both reproduced RED and fixed GREEN.
+
+Final npm **79/79 PASS**, UTF-8 Python frontend/docs/context **17/17 PASS**, context check and diff whitespace PASS. Browser verified native supply X drag 6→8.5 with unchanged Y/Z and one Undo/Redo; Y arc 0→75° with Undo; breadboard diamond (0,0)→(2,1.5) with Undo; fit/zoom/orbit, real supply geometry and four responsive sizes. Fresh-load warning/error logs empty; earlier stale-store HMR errors are recorded in the report. Final build passes TypeScript but sandbox Vite realpath EPERM prevents bundling; prior elevation decline respected. No dependency/contract/hardware changes, commit/push/deployment or hosted CI run. See `SOURCE_ANALYSIS_COMPONENT_TRANSFORM_GIZMO.md` and `verification/2026-10-09-component-transform-gizmo-browser.md`.
 
 ## Technical grid, socket depth and 2px selection — 2026-10-09
 

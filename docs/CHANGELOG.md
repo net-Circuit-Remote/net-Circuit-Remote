@@ -4,6 +4,14 @@ All notable project changes will be documented in this file. The project follows
 
 ## [Unreleased]
 
+### Changed — 2026-10-09 Component Transform Gizmo
+
+- Replaced Perspective/tool-title overlays with defined status-bar-right Zoom In/Out, Zoom To View Entire Circuit and Workspace Object Snap.
+- Added adjacent X/Z/free/Y handles, hover/live wire/pose preview, stable active pixel scale, neighbor/window avoidance, captured cancellation and one Undo; body dragging stays Move-only.
+- Fit now frames actual model/wire bounds. Arbitrary-angle breadboard snap uses conservative rotated footprints.
+- Added original bench supply enclosure/panel/knobs/vents/terminals with unknown/OFF display and zero electrical ports.
+- Final npm 79/79 and UTF-8 frontend/docs/context 17/17 PASS; native WebGL/gesture/responsive evidence recorded. Production bundle remains unverified under sandbox EPERM/prior elevation decline.
+
 ### Changed — 2026-10-09 Technical Workbench refinement
 
 - Selection border now uses 2 CSS pixels, Medium Gold #d4af37 and camera-dependent housing contours.
