@@ -2,7 +2,7 @@ import { Box3, BoxGeometry, CanvasTexture, CylinderGeometry, Group, InstancedMes
 import { getDefinition, type LogicalPort } from '../data/editorCatalog'
 import type { CircuitModule } from '../types/circuit'
 import { addBreadboardHousing } from './BreadboardHousing'
-import { addPowerSupplyModel } from './PowerSupplyModel'
+import { addPowerSupplyModel, applyPowerSupplyControls } from './PowerSupplyModel'
 
 export function disposeObject(root: Object3D) {
   root.traverse((object) => {
@@ -358,4 +358,9 @@ export function buildComponent(module: CircuitModule): Group {
   applyPose(group, module)
   return group
 }
-export function applyPose(group: Group, module: CircuitModule) { group.position.set(module.position?.x ?? 0, module.position?.y ?? 0, module.position?.z ?? 0); group.rotation.y = (module.rotation ?? 0) * Math.PI / 180; group.updateMatrixWorld(true) }
+export function applyPose(group: Group, module: CircuitModule) {
+  group.position.set(module.position?.x ?? 0, module.position?.y ?? 0, module.position?.z ?? 0)
+  group.rotation.y = (module.rotation ?? 0) * Math.PI / 180
+  if (getDefinition(module.type)?.visual === 'supply') applyPowerSupplyControls(group, module.properties)
+  group.updateMatrixWorld(true)
+}

@@ -7,10 +7,11 @@ import { createSelectionOutline, updateSelectionOutline } from './SelectionOutli
 import { createTechnicalGrid, updateTechnicalGrid } from './TechnicalGrid'
 import { Box3, Sphere } from 'three'
 import { createComponentTransformGizmo, type GizmoObstacle, type TransformHandle } from './ComponentTransformGizmo'
+import { applyPowerSupplyControls, type SupplyControl } from './PowerSupplyModel'
 
 export interface SceneRenderer { setSize(width: number, height: number, updateStyle?: boolean): void; render(scene: Scene, camera: PerspectiveCamera): void; dispose(): void }
 interface SceneOptions { renderer: SceneRenderer; canvas?: HTMLCanvasElement; onRender?: () => void; requestFrame?: (callback: FrameRequestCallback) => number; cancelFrame?: (id: number) => void }
-export type PickResult = ({ kind: 'module'; id: string } | { kind: 'port'; id: string; endpoint: string } | { kind: 'wire'; source: string; destination: string }) & { point: Vector3 }
+export type PickResult = ({ kind: 'module'; id: string } | { kind: 'control'; id: string; control: SupplyControl } | { kind: 'port'; id: string; endpoint: string } | { kind: 'wire'; source: string; destination: string }) & { point: Vector3 }
 export interface OrientationAxis { label: 'X' | 'Y' | 'Z'; x: number; y: number; depth: number; color: string }
 
 // Geometry is a projection of graph IDs and named logical ports, never a source of nets.
@@ -107,7 +108,7 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
         let model = models.get(module.id)
         const signature = JSON.stringify([module.type, module.properties])
         if (model && model.userData.signature !== signature) { if (activeOutline?.id === module.id) removeActiveOutline(); disposeObject(model); content.remove(model); models.delete(module.id); model = undefined }
-        if (!model) { model = buildComponent(module); models.set(module.id, model); content.add(model) }
+        if (!model) { model = buildComponent(module); model.userData.onVisualChange = schedule; models.set(module.id, model); content.add(model) }
         applyPose(model, module)
       }
       attachOutline()
@@ -115,6 +116,12 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
     },
     previewMove(id: string, position: Required<NonNullable<CircuitModule['position']>>) { const model = models.get(id); if (model && !disposed) { model.position.set(position.x, position.y, position.z); model.updateMatrixWorld(true); refreshWires(); schedule() } },
     previewRotation(id: string, degrees: number) { const model = models.get(id); if (model && !disposed && Number.isFinite(degrees)) { model.rotation.y = degrees * Math.PI / 180; model.updateMatrixWorld(true); refreshWires(); schedule() } },
+    previewSupplyControl(id: string, control: SupplyControl, value: number | boolean) {
+      const model = models.get(id), module = graph?.modules.find((item) => item.id === id)
+      if (model && module && getDefinition(module.type)?.visual === 'supply' && !disposed) {
+        applyPowerSupplyControls(model, { ...module.properties, [control]: value }); model.updateMatrixWorld(true); schedule()
+      }
+    },
     setGhost(type: string | null, position?: Vector3) {
       if (ghost && type && position && ghost.userData.type === type) { ghost.position.copy(position); ghost.updateMatrixWorld(true); schedule(); return }
       if (ghost) { disposeObject(ghost); scene.remove(ghost); ghost = null }

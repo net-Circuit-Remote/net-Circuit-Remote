@@ -78,8 +78,32 @@
       ],
       "color": "#a1aab4",
       "ports": [],
-      "defaults": {},
-      "parameters": [],
+      "defaults": {
+        "voltage_v": 0,
+        "current_limit_a": 0,
+        "power_on": false
+      },
+      "parameters": [
+        {
+          "key": "voltage_v",
+          "label": "Voltage setpoint (0–15 V)",
+          "kind": "number",
+          "min": 0,
+          "max": 15
+        },
+        {
+          "key": "current_limit_a",
+          "label": "Current limit (0–5 A)",
+          "kind": "number",
+          "min": 0,
+          "max": 5
+        },
+        {
+          "key": "power_on",
+          "label": "Power switch (visual)",
+          "kind": "boolean"
+        }
+      ],
       "visualOnly": true
     },
     {

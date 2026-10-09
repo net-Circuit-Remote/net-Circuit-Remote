@@ -6,6 +6,87 @@ import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { buildComponent, disposeObject } from '../src/three/ComponentModel'
 import type { CircuitGraph } from '../src/types/circuit'
 import { createComponentTransformGizmo } from '../src/three/ComponentTransformGizmo'
+import { applyPowerSupplyControls } from '../src/three/PowerSupplyModel'
+
+test('supply display reuses its canvas texture while knobs, calibrated scale and logo follow local settings', () => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'document'), labels: string[] = []
+  let canvases = 0
+  const ctx = { fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {}, arc() {}, fill() {}, fillText(text: string) { labels.push(text) } }
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: { createElement() { canvases++; return { getContext: () => ctx } } } })
+  const model = buildComponent({ id: 'PSU', type: 'POWER_SUPPLY', rotation: 30 })
+  try {
+    const screen = model.getObjectByName('supply-display') as Mesh<any, any>, texture = screen.material.map, initialVersion = texture.version
+    let disposed = 0; texture.addEventListener('dispose', () => disposed++)
+    const initialCanvases = canvases
+    applyPowerSupplyControls(model, { voltage_v: 7.5, current_limit_a: 2.5, power_on: true })
+    assert.equal(model.getObjectByName('supply-knob-0')!.rotation.z, -0)
+    assert.equal(model.getObjectByName('supply-knob-1')!.rotation.z, -0)
+    assert.equal(screen.material.map, texture); assert.ok(texture.version > initialVersion)
+    assert.equal(canvases, initialCanvases); assert.equal(disposed, 0)
+    assert.ok(!labels.some((text) => /LOCAL SETPOINT|VOLTAGE SET|CURRENT LIMIT|NOT MEASURED|VISUAL/.test(text)), 'front panel only shows its units and printed legends')
+    assert.ok(labels.includes('net*CIRCUIT'))
+    assert.ok(labels.includes('15') && labels.includes('5'), 'calibration rings show both upper limits')
+    assert.ok(model.getObjectByName('supply-brand-icon') instanceof Mesh)
+    const knob = model.getObjectByName('knob-body') as Mesh<any, any>
+    assert.ok(knob.geometry.parameters.radiusTop < 0.18, 'compact knob leaves room for the calibration ring')
+    applyPowerSupplyControls(model, { voltage_v: 30, current_limit_a: -1, power_on: false })
+    assert.deepEqual(screen.userData.settings, [false, 15, 0])
+    applyPowerSupplyControls(model, { voltage_v: NaN, current_limit_a: Infinity, power_on: 'on' })
+    assert.deepEqual(screen.userData.settings, [false, 0, 0], 'malformed imports display safe defaults')
+  } finally {
+    disposeObject(model)
+    if (previous) Object.defineProperty(globalThis, 'document', previous)
+    else Reflect.deleteProperty(globalThis, 'document')
+  }
+})
+
+test('power OFF paints only black glass; ON lights digits and display/brand stay inside the front panel', () => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'document')
+  const drawings: { strokes: number; text: string[]; fills: string[] }[] = []
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: { createElement() {
+    const record = { strokes: 0, text: [] as string[], fills: [] as string[] }; drawings.push(record)
+    const ctx = { fillStyle: '', fillRect() { record.fills.push(this.fillStyle) }, beginPath() {}, moveTo() {}, lineTo() {}, stroke() { record.strokes++ }, arc() {}, fill() {}, fillText(text: string) { record.text.push(text) } }
+    return { getContext: () => ctx }
+  } } })
+  const model = buildComponent({ id: 'PSU', type: 'POWER_SUPPLY' })
+  try {
+    const glass = drawings[0]
+    assert.deepEqual(glass.fills, ['#000000'])
+    assert.equal(glass.strokes, 0); assert.deepEqual(glass.text, [])
+    applyPowerSupplyControls(model, { voltage_v: 3.3, current_limit_a: 1, power_on: true })
+    assert.ok(glass.strokes > 0); assert.deepEqual(glass.text, ['V', 'A', 'W'])
+    glass.text = []; glass.strokes = 0; glass.fills = []
+    applyPowerSupplyControls(model, { voltage_v: 3.3, current_limit_a: 1, power_on: false })
+    assert.deepEqual(glass.fills, ['#000000']); assert.equal(glass.strokes, 0); assert.deepEqual(glass.text, [])
+    const display = new Box3().setFromObject(model.getObjectByName('display-recess')!)
+    assert.ok(display.max.y < 2.60, 'upper display edge has a real inset below the case header')
+    assert.ok(display.min.y > 0.70, 'display keeps clearance above the output labels')
+    assert.ok(new Box3().setFromObject(model.getObjectByName('control-strip')!).max.y < 2.60, 'both panel inserts fit below the header')
+    const brand = model.getObjectByName('supply-brand-icon')!
+    assert.ok(brand.position.x > 0, 'brand icon is on the right side')
+    assert.ok(new Box3().setFromObject(brand).min.y > display.max.y, 'branding does not overprint the screen')
+  } finally {
+    disposeObject(model)
+    if (previous) Object.defineProperty(globalThis, 'document', previous)
+    else Reflect.deleteProperty(globalThis, 'document')
+  }
+})
+
+test('supply controls are occluded by their case and still pick correctly after moving and rotating the supply', () => {
+  const manager = createSceneManager({ renderer: { setSize() {}, render() {}, dispose() {} }, requestFrame: () => 1, cancelFrame() {} })
+  try {
+    manager.resize(1000, 700)
+    manager.syncGraph({ schema_version: '1.0', circuit_id: 'supply', modules: [{ id: 'PSU', type: 'POWER_SUPPLY', rotation: 35, position: { x: 2, y: 0.3, z: -1 } }], connections: [] })
+    const model = manager.models.get('PSU')!, front = model.localToWorld(new Vector3(0, 1.4, 10))
+    const target = model.localToWorld(new Vector3(0, 1.4, 0)), knob = model.localToWorld(new Vector3(0.804, 2.128, 1.84))
+    manager.camera.position.copy(front); manager.camera.lookAt(target)
+    const start = manager.project(knob)
+    assert.equal(manager.pick(start.x, start.y)?.kind, 'control')
+    manager.camera.position.copy(model.localToWorld(new Vector3(0, 1.4, -10))); manager.camera.lookAt(target)
+    const hidden = manager.project(knob)
+    assert.equal(manager.pick(hidden.x, hidden.y)?.kind, 'module', 'cannot operate a knob through the rear metal case')
+  } finally { manager.dispose() }
+})
 
 type TransformScene = ReturnType<typeof createSceneManager> & {
   fitCircuit?: () => boolean

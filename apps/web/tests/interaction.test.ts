@@ -43,6 +43,126 @@ function setup(tool: WorkspaceTool = 'select') {
   } }
 }
 
+function supplyFront(h: ReturnType<typeof setup>, x: number, y: number, z = 1.85) {
+  h.manager.camera.position.set(0, 1.4, 10)
+  h.manager.camera.lookAt(0, 1.4, 0)
+  return h.manager.project(new Vector3(x, y, z))
+}
+
+test('voltage drag reaches every common setpoint exactly from an irregular starting value', async () => {
+  const h = setup()
+  try {
+    const id = h.circuit.placeModule('POWER_SUPPLY', { x: 0, y: 0, z: 0 })
+    h.workspace.selectModule(id)
+    for (const target of [3, 3.3, 5, 6, 9, 12, 15]) {
+      h.circuit.updateModuleProperties(id, { voltage_v: 4.97 })
+      await nextTick(); h.circuit.past = []
+      const start = supplyFront(h, 0.804, 2.128), pixels = Math.round((target - 4.97) / 0.05)
+      h.editor.pointerDown(h.pointer(start.x, start.y))
+      h.editor.pointerUp(h.pointer(start.x, start.y - pixels))
+      assert.equal(h.circuit.graph!.modules[0].properties!.voltage_v, target)
+      assert.equal(h.circuit.past.length, 1)
+      h.circuit.undo(); await nextTick()
+      assert.equal(h.circuit.graph!.modules[0].properties!.voltage_v, 4.97)
+    }
+  } finally { h.dispose() }
+})
+
+test('Shift adjusts voltage by a hundredth without a dead zone or jump when precision changes', async () => {
+  const h = setup()
+  try {
+    const id = h.circuit.placeModule('POWER_SUPPLY', { x: 0, y: 0, z: 0 })
+    h.circuit.updateModuleProperties(id, { voltage_v: 7.34 }); await nextTick(); h.circuit.past = []
+    const start = supplyFront(h, 0.804, 2.128)
+    h.editor.pointerDown(h.pointer(start.x, start.y))
+    h.editor.pointerMove(Object.assign(h.pointer(start.x, start.y - 1), { shiftKey: true }))
+    assert.deepEqual(h.manager.models.get(id)!.getObjectByName('supply-display')!.userData.settings, [false, 7.35, 0])
+    h.editor.pointerMove(Object.assign(h.pointer(start.x, start.y - 20), { shiftKey: true }))
+    h.editor.pointerUp(h.pointer(start.x, start.y - 22))
+    assert.equal(h.circuit.graph!.modules[0].properties!.voltage_v, 7.64, 'changing the modifier affects only new pointer travel')
+    assert.equal(h.circuit.past.length, 1)
+    h.circuit.updateModuleProperties(id, { voltage_v: 5 }); await nextTick(); h.circuit.past = []
+    h.editor.pointerDown(h.pointer(start.x, start.y))
+    h.editor.pointerMove(Object.assign(h.pointer(start.x, start.y - 1), { shiftKey: true }))
+    h.editor.pointerUp(h.pointer(start.x, start.y - 1))
+    assert.equal(h.circuit.graph!.modules[0].properties!.voltage_v, 5.01, 'releasing Shift before the mouse must retain the last fine setting')
+    assert.equal(h.circuit.past.length, 1)
+  } finally { h.dispose() }
+})
+
+test('Select drags each supply knob live, clamps its setting and commits one undo without moving the supply', async () => {
+  for (const [index, key, y, maximum] of [[0, 'voltage_v', 2.128, 15], [1, 'current_limit_a', 1.204, 5]] as const) {
+    const h = setup()
+    try {
+      const id = h.circuit.placeModule('POWER_SUPPLY', { x: 0, y: 0, z: 0 })
+      h.workspace.selectModule(id)
+      await nextTick(); h.circuit.past = []
+      useUiStore().closeWindow('component-info')
+      const start = supplyFront(h, 0.804, y), camera = h.manager.camera.position.clone()
+      assert.equal(h.manager.pick(start.x, start.y)?.kind, 'control')
+      const knob = h.manager.models.get(id)!.getObjectByName(`supply-knob-${index}`)!
+      const initialAngle = knob.rotation.z
+      h.editor.pointerDown(h.pointer(start.x, start.y)); h.editor.pointerMove(h.pointer(start.x, start.y - 80))
+      assert.equal(useUiStore().windows.find((window) => window.kind === 'component-info')?.open, false, 'adjustment must not reopen a dismissed overlay')
+      assert.ok(Math.abs(knob.rotation.z - initialAngle) > 0.5, 'index and grip rotate during the gesture')
+      assert.equal(h.circuit.graph!.modules[0].properties![key], 0, 'preview is not a history command')
+      assert.deepEqual(h.manager.models.get(id)!.getObjectByName('supply-display')!.userData.settings, index === 0 ? [false, 4, 0] : [false, 0, 1.6])
+      assert.ok(h.manager.camera.position.distanceTo(camera) < 0.0001)
+      h.editor.pointerUp(h.pointer(start.x, start.y - 400))
+      assert.equal(h.circuit.graph!.modules[0].properties![key], maximum)
+      assert.deepEqual(h.circuit.graph!.modules[0].position, { x: 0, y: 0, z: 0 })
+      assert.equal(h.circuit.graph!.modules[0].rotation ?? 0, 0)
+      assert.equal(h.circuit.past.length, 1); assert.equal(h.captured.size, 0)
+      h.circuit.undo(); await nextTick()
+      assert.equal(h.circuit.graph!.modules[0].properties![key], 0)
+      assert.equal(h.manager.models.get(id)!.getObjectByName(`supply-knob-${index}`)!.rotation.z, initialAngle)
+      h.circuit.redo(); assert.equal(h.circuit.graph!.modules[0].properties![key], maximum)
+    } finally { h.dispose() }
+  }
+})
+
+test('supply rocker clicks toggle its pose, undo/redo and ignore dragged or foreign pointer releases', async () => {
+  const h = setup()
+  try {
+    const id = h.circuit.placeModule('POWER_SUPPLY', { x: 0, y: 0, z: 0 })
+    await nextTick(); h.circuit.past = []
+    const start = supplyFront(h, -0.84, 0.392, 1.75)
+    assert.equal(h.manager.pick(start.x, start.y)?.kind, 'control')
+    const off = h.manager.models.get(id)!.getObjectByName('power-switch')!.rotation.x
+    h.editor.pointerDown(h.pointer(start.x, start.y)); h.editor.pointerUp(h.pointer(start.x, start.y, 2))
+    assert.equal(h.captured.size, 1); assert.equal(h.circuit.graph!.modules[0].properties!.power_on, false)
+    h.editor.pointerUp(h.pointer(start.x, start.y)); await nextTick()
+    assert.equal(h.circuit.graph!.modules[0].properties!.power_on, true)
+    assert.ok(h.manager.models.get(id)!.getObjectByName('power-switch')!.rotation.x * off < 0)
+    assert.equal(h.circuit.past.length, 1)
+    h.circuit.undo(); await nextTick(); assert.equal(h.circuit.graph!.modules[0].properties!.power_on, false)
+    h.circuit.redo(); await nextTick()
+    h.editor.pointerDown(h.pointer(start.x, start.y)); h.editor.pointerUp(h.pointer(start.x, start.y + 30))
+    assert.equal(h.circuit.graph!.modules[0].properties!.power_on, true)
+    h.editor.pointerDown(h.pointer(start.x, start.y)); h.editor.pointerUp(h.pointer(start.x, start.y))
+    assert.equal(h.circuit.graph!.modules[0].properties!.power_on, false)
+  } finally { h.dispose() }
+})
+
+test('canceling a supply knob restores its pose; Move still moves the entire supply from a knob', async () => {
+  const h = setup()
+  try {
+    const id = h.circuit.placeModule('POWER_SUPPLY', { x: 0, y: 0, z: 0 })
+    await nextTick(); h.circuit.past = []
+    const start = supplyFront(h, 0.804, 2.128)
+    const initialAngle = h.manager.models.get(id)!.getObjectByName('supply-knob-0')!.rotation.z
+    h.editor.pointerDown(h.pointer(start.x, start.y)); h.editor.pointerMove(h.pointer(start.x, start.y - 70))
+    assert.ok(Math.abs(h.manager.models.get(id)!.getObjectByName('supply-knob-0')!.rotation.z - initialAngle) > 0.5)
+    h.editor.cancel()
+    assert.equal(h.manager.models.get(id)!.getObjectByName('supply-knob-0')!.rotation.z, initialAngle)
+    assert.equal(h.circuit.past.length, 0); assert.equal(h.captured.size, 0)
+    h.workspace.setTool('move'); await nextTick()
+    h.editor.pointerDown(h.pointer(start.x, start.y)); h.editor.pointerUp(h.pointer(start.x + 80, start.y))
+    assert.ok(Math.abs(h.circuit.graph!.modules[0].position!.x!) > 0.1)
+    assert.equal(h.circuit.graph!.modules[0].properties!.voltage_v, 0)
+  } finally { h.dispose() }
+})
+
 test('gizmo X/Z/free handles move on the work plane with live wires and one undo, even in Select', async () => {
   for (const handle of ['x', 'z', 'xz'] as const) {
     const h = setup()

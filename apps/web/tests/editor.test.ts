@@ -7,6 +7,18 @@ import { componentCatalog, getDefinition } from '../src/data/editorCatalog'
 import { createMemoryImage, parseMemoryImage } from '../src/services/files/memoryImage'
 
 beforeEach(() => { setActivePinia(createPinia()); useCircuitStore().createDraft(); useCircuitStore().past = [] })
+test('visual supply controls are bounded, isolated and survive file round-trip without electrical ports', () => {
+  const store = useCircuitStore(), position = { x: 0, y: 0, z: 0 }
+  store.placeModule('POWER_SUPPLY', position); store.placeModule('POWER_SUPPLY', position)
+  const id = store.graph!.modules[0].id
+  store.updateModuleProperties(id, { voltage_v: 12, current_limit_a: 2, power_on: true })
+  assert.deepEqual(store.graph!.modules[1].properties, { voltage_v: 0, current_limit_a: 0, power_on: false })
+  const snapshot = store.snapshot(), steps = store.past.length
+  for (const patch of [{ voltage_v: 15.1 }, { voltage_v: -0.1 }, { current_limit_a: 5.1 }, { current_limit_a: -0.1 }, { power_on: 1 }]) assert.throws(() => store.updateModuleProperties(id, patch))
+  assert.equal(store.snapshot(), snapshot); assert.equal(store.past.length, steps)
+  assert.deepEqual(parseCircuitFile(store.exportGraph()).modules[0].properties, { voltage_v: 12, current_limit_a: 2, power_on: true })
+  assert.deepEqual(getDefinition('POWER_SUPPLY')!.ports, [])
+})
 test('required families have explicit functional contracts; visual structures never create ports', () => {
   for (const type of ['BREADBOARD', 'BREADBOARD_630', 'BREADBOARD_100', 'BOARD', 'POWER_SUPPLY', 'RESISTOR', 'CAPACITOR', 'PUSH_BUTTON', 'DIGITAL_SWITCH', 'DIP_SWITCH', 'CLOCK', 'LED', 'SEGMENT_1', 'PROBE', 'DISPLAY', '74HC08', 'ADDER', 'MULTIPLIER', 'MEMORY']) assert.ok(getDefinition(type), type)
   for (const type of ['BREADBOARD', 'BREADBOARD_630', 'BREADBOARD_100', 'BOARD', 'POWER_SUPPLY']) assert.deepEqual(getDefinition(type)?.ports, [])

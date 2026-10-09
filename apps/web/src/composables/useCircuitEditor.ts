@@ -7,11 +7,17 @@ import { useWorkspaceStore } from '../stores/workspace'
 import { useUiStore } from '../stores/ui'
 import type { CircuitModule } from '../types/circuit'
 import type { TransformHandle } from '../three/ComponentTransformGizmo'
+import { supplyControlMaximum, supplyControlValue, type SupplyControl } from '../three/PowerSupplyModel'
 type Manager = ReturnType<typeof createSceneManager>
 export type Position = { x: number; y: number; z: number }
 interface DragGesture { pointer: number; start: { x: number; y: number }; dragged: boolean }
 interface MoveGesture extends DragGesture { kind: 'move'; id: string; draft: string | null; planeHeight: number; offset: Position; position: Position }
 interface PanGesture extends DragGesture { kind: 'pan'; anchor: Vector3 }
+interface ControlGesture extends DragGesture {
+  kind: 'control'; id: string; draft: string | null; control: SupplyControl; initial: number | boolean; value: number | boolean
+  axis: 'x' | 'y' | null; last: { x: number; y: number }; raw: number
+}
+const voltageDetents = [3, 3.3, 5, 6, 9, 12, 15] as const
 interface TransformGesture extends DragGesture {
   kind: 'transform'; id: string; draft: string | null; handle: TransformHandle; anchor: Vector3; center: Vector3
   initial: Position; position: Position; initialRotation: number; rotation: number; lastAngle: number; angle: number
@@ -147,9 +153,11 @@ export function snapPosition(
 
 export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, manager: () => Manager | undefined) {
   const circuit = useCircuitStore(), workspace = useWorkspaceStore(), ui = useUiStore()
-  let gesture: MoveGesture | PanGesture | TransformGesture | null = null
-  const dragging = ref<'move' | 'pan' | 'transform' | null>(null)
+  let gesture: MoveGesture | PanGesture | TransformGesture | ControlGesture | null = null
+  const dragging = ref<'move' | 'pan' | 'transform' | 'control' | null>(null)
   const hoveredHandle = ref<TransformHandle | null>(null)
+  const hoveredControl = ref<SupplyControl | null>(null)
+  const controlHint = computed(() => hoveredControl.value === 'power_on' ? 'Click to toggle power On/Off' : hoveredControl.value ? `Drag ${hoveredControl.value === 'voltage_v' ? 'Voltage (0–15 V)' : 'Ampe (0–5 A)'} knob up/right to increase, down/left to decrease. Hold Shift for fine adjustment.` : '')
   const ports = ref<{ endpoint: string; x: number; y: number; direction: string }[]>([])
   const selected = computed(() => circuit.graph?.modules.find((module) => module.id === workspace.selectedModuleId))
   const attempt = (action: () => void) => { try { action(); workspace.editError = '' } catch (error) { workspace.editError = error instanceof Error ? error.message : 'Circuit edit failed.' } }
@@ -172,7 +180,7 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   function sync() { manager()?.syncGraph(circuit.graph); manager()?.highlight(workspace.selectedModuleId, workspace.selectedWire); updatePorts() }
   function cancel() {
     if (gesture) { const pointer = gesture.pointer; gesture = null; dragging.value = null; manager()?.activateGizmo(null); manager()?.lockPointer(false); if (canvas.value?.hasPointerCapture(pointer)) canvas.value.releasePointerCapture(pointer); sync() }
-    hoveredHandle.value = null; manager()?.clearGizmoHover()
+    hoveredHandle.value = null; hoveredControl.value = null; manager()?.clearGizmoHover()
     manager()?.setGhost(null)
   }
   function connect(endpoint: string) {
@@ -218,8 +226,13 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
       return
     }
     workspace.selectModule(hit.id)
-    ui.openWindow('component-info', { activate: false })
-    if (workspace.tool === 'rotate') attempt(() => circuit.rotateModule(hit.id))
+    if (!(workspace.tool === 'select' && hit.kind === 'control')) ui.openWindow('component-info', { activate: false })
+    if (workspace.tool === 'select' && hit.kind === 'control') {
+      const initial = supplyControlValue(selected.value?.properties, hit.control)
+      gesture = { kind: 'control', pointer: event.pointerId, start: { x, y }, dragged: false, id: hit.id, draft: circuit.activeId, control: hit.control, initial, value: initial, axis: null, last: { x, y }, raw: typeof initial === 'number' ? initial : 0 }
+      manager()!.lockPointer(true); canvas.value.setPointerCapture(event.pointerId); event.preventDefault?.()
+    }
+    else if (workspace.tool === 'rotate') attempt(() => circuit.rotateModule(hit.id))
     else if (workspace.tool === 'delete') attempt(() => circuit.removeModule(hit.id))
     else if (workspace.tool === 'scope' || workspace.tool === 'probe') ui.openWindow(workspace.tool === 'scope' ? 'oscilloscope' : 'monitor')
     else if (workspace.tool === 'move') {
@@ -238,8 +251,29 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
     const { x, y } = coordinates(event)
     if (gesture) {
       if (event.pointerId !== gesture.pointer) return
-      if (!gesture.dragged && Math.hypot(x - gesture.start.x, y - gesture.start.y) < 4) return
+      const threshold = gesture.kind === 'control' && gesture.control !== 'power_on' ? 1 : 4
+      if (!gesture.dragged && Math.hypot(x - gesture.start.x, y - gesture.start.y) < threshold) return
       gesture.dragged = true; dragging.value = gesture.kind
+      if (gesture.kind === 'control') {
+        if (gesture.control !== 'power_on') {
+          const maximum = supplyControlMaximum(gesture.control)
+          // Lock the intended drag axis so diagonal jitter does not double the gain.
+          // Voltage: 0.05 V/pixel, Shift: 0.01 V/pixel. Apply modifier changes only
+          // to new travel; keep the unsnapped accumulator so detents never trap a drag.
+          gesture.axis ??= Math.abs(x - gesture.start.x) > Math.abs(y - gesture.start.y) ? 'x' : 'y'
+          const delta = gesture.axis === 'x' ? x - gesture.last.x : gesture.last.y - y
+          gesture.last = { x, y }
+          // A modifier change or mouse release alone must not re-snap a fine value.
+          if (delta === 0) return
+          const rate = (gesture.control === 'voltage_v' ? 0.05 : 0.02) * (event.shiftKey ? 0.2 : 1)
+          gesture.raw = Math.max(0, Math.min(maximum, gesture.raw + delta * rate))
+          const raw = gesture.raw
+          const detent = gesture.control === 'voltage_v' && !event.shiftKey ? voltageDetents.find((value) => Math.abs(value - raw) <= 0.06) : undefined
+          gesture.value = detent ?? Math.round(gesture.raw * 100) / 100
+          manager()!.previewSupplyControl(gesture.id, gesture.control, gesture.value)
+        }
+        return
+      }
       if (gesture.kind === 'pan') { manager()!.panGrab(gesture.anchor, x, y); return }
       if (gesture.kind === 'transform') {
         const transform = gesture, point = manager()!.groundPoint(x, y, transform.center.y)
@@ -264,7 +298,11 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
         updatePorts(); return
       }
     }
-    if (!gesture) hoveredHandle.value = workspace.placementType ? null : manager()!.hoverGizmo(x, y)
+    if (!gesture) {
+      hoveredHandle.value = workspace.placementType ? null : manager()!.hoverGizmo(x, y)
+      const hit = !workspace.placementType && !hoveredHandle.value && workspace.tool === 'select' ? manager()!.pick(x, y) : null
+      hoveredControl.value = hit?.kind === 'control' ? hit.control : null
+    }
     const point = manager()!.groundPoint(x, y, gesture?.kind === 'move' ? gesture.planeHeight : 0)
     if (!point) return
     if (gesture?.kind === 'move') {
@@ -284,7 +322,14 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
     pointerMove(event)
     const completed = gesture; gesture = null; dragging.value = null; manager()?.activateGizmo(null); manager()?.lockPointer(false)
     if (canvas.value?.hasPointerCapture(event.pointerId)) canvas.value.releasePointerCapture(event.pointerId)
-    if (completed.kind === 'move' && completed.dragged && completed.draft === circuit.activeId) attempt(() => circuit.moveModule(completed.id, completed.position))
+    if (completed.kind === 'control' && completed.draft === circuit.activeId) {
+      if (completed.control !== 'power_on' && completed.dragged) attempt(() => circuit.updateModuleProperties(completed.id, { [completed.control]: completed.value }))
+      else if (completed.control === 'power_on' && !completed.dragged && canvas.value) {
+        const { x, y } = coordinates(event), hit = manager()?.pick(x, y)
+        if (hit?.kind === 'control' && hit.id === completed.id && hit.control === 'power_on') attempt(() => circuit.updateModuleProperties(completed.id, { power_on: !completed.initial }))
+      }
+    }
+    else if (completed.kind === 'move' && completed.dragged && completed.draft === circuit.activeId) attempt(() => circuit.moveModule(completed.id, completed.position))
     else if (completed.kind === 'transform' && completed.dragged && completed.draft === circuit.activeId) attempt(() => {
       if (completed.handle === 'rotate-y') circuit.rotateModule(completed.id, completed.rotation - completed.initialRotation)
       else circuit.moveModule(completed.id, completed.position)
@@ -337,6 +382,6 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
     else ui.closeWindow('component-info')
   }, { immediate: true })
   onUnmounted(cancel)
-  function pointerLeave() { if (!gesture) { hoveredHandle.value = null; manager()?.clearGizmoHover(); manager()?.setGhost(null) } }
-  return { ports, selected, dragging, hoveredHandle, updatePorts, sync, cancel, connect, pointerDown, pointerMove, pointerUp, pointerLeave, drop, keydown, selectModule }
+  function pointerLeave() { if (!gesture) { hoveredHandle.value = null; hoveredControl.value = null; manager()?.clearGizmoHover(); manager()?.setGhost(null) } }
+  return { ports, selected, dragging, hoveredHandle, hoveredControl, controlHint, updatePorts, sync, cancel, connect, pointerDown, pointerMove, pointerUp, pointerLeave, drop, keydown, selectModule }
 }
