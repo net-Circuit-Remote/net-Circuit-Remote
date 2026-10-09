@@ -17,7 +17,7 @@ export const ribbonGroups: RibbonGroup[] = [
   { id: 'passive', label: 'Passive', icon: 'resistor', items: [artwork('RESISTOR', 'Resistor', 'resistor'), artwork('CAPACITOR', 'Capacitor', 'capacitor')] },
   { id: 'active', label: 'Active', icon: 'transistor', items: [artwork('TRANSISTOR', 'Transistor', 'transistor'), artwork('DIODE', 'Diode', 'diode'), artwork('ZENER', 'Zener diode', 'diode_zener')] },
   { id: 'output', label: 'Output', icon: 'led', items: [artwork('LED', 'LED indicator', 'led'), artwork('BUZZER', 'Buzzer', 'buzzer_chip')] },
-  { id: 'input', label: 'Input', glyph: 'switch', items: [future('DIGITAL_SWITCH', 'Digital switch', 'switch'), future('CLOCK', 'Clock', 'clock'), artwork('POWER_SUPPLY', 'Power supply', 'power_supply')] },
+  { id: 'input', label: 'Input', icon: 'Input', items: [artwork('DIGITAL_SWITCH', 'Digital switch', 'Input'), future('CLOCK', 'Clock', 'clock'), artwork('POWER_SUPPLY', 'Power supply', 'power_supply')] },
   { id: 'logic', label: 'Logic ICs', icon: 'ic_logic', items: [
     { type: '74HC08', name: '74HC08 · AND', icon: 'ic_logic', description: 'Quad two-input AND gate. Starter logical metadata only; browser simulation integration is pending.', metadata: deviceMetadata['74HC08'] },
   ] },
@@ -28,7 +28,7 @@ export const ribbonGroups: RibbonGroup[] = [
   { id: 'instruments', label: 'Instruments', icon: 'Oscillocrope', items: [
     { type: 'OSCILLOSCOPE', name: 'Oscilloscope', icon: 'Oscillocrope', description: 'Acquisition window shell.', window: 'oscilloscope' },
     { type: 'GENERATOR', name: 'Function Generator', icon: 'Generator', description: 'Generator configuration shell.', window: 'generator' },
-    { type: 'SIGNAL_MONITOR', name: 'Signal Monitor', glyph: 'monitor', description: 'Digital acquisition window shell.', window: 'monitor' },
+    { type: 'SIGNAL_MONITOR', name: 'Signal Monitor', icon: 'signal_monitor', description: 'Digital acquisition window shell.', window: 'monitor' },
   ] },
   { id: 'notation', label: 'Notation', glyph: 'tag', items: [future('LABEL', 'Label', 'tag'), future('PROBE', 'Probe annotation', 'probe')] },
 ]

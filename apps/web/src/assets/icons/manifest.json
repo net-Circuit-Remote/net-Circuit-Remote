@@ -56,6 +56,13 @@
     "output_bytes": 1262
   },
   {
+    "file": "favicon.svg",
+    "source": "assets/icon .svg/favicon.svg",
+    "sha256": "d4cfda951c81c3a1760fb40380d244eafc618047450d534ff7ff804fba81b9c2",
+    "source_bytes": 8724,
+    "output_bytes": 3556
+  },
+  {
     "file": "Generator.svg",
     "source": "assets/icon .svg/Generator.svg",
     "sha256": "2452297299b42d3fc869d94792f206c2ce8d19a4f79faf2e5a85f5c30e857b86",
@@ -75,6 +82,13 @@
     "sha256": "0b4e66b11657a3f04d288000ade38ef6f9095865f6659b3d0dcf917a073d949d",
     "source_bytes": 5415252,
     "output_bytes": 3210
+  },
+  {
+    "file": "Input.svg",
+    "source": "assets/icon .svg/Input.svg",
+    "sha256": "ca37dfd5b9a30ddfaa859997cd78b012509e2b33f61cae29ec1abf9b8216c200",
+    "source_bytes": 1384424,
+    "output_bytes": 4758
   },
   {
     "file": "led.svg",
@@ -110,6 +124,13 @@
     "sha256": "85c2e4dd50952d7734c1aa132ac8bf2a8ffbb46f342e43d124e1703c8e813b5e",
     "source_bytes": 4967016,
     "output_bytes": 1726
+  },
+  {
+    "file": "signal_monitor.svg",
+    "source": "assets/icon .svg/signal_monitor.svg",
+    "sha256": "300953e9fd8696ee7daae69d9ebeabed2e71c6f9ba62485df10ee180f765334d",
+    "source_bytes": 2121793,
+    "output_bytes": 4899
   },
   {
     "file": "transistor.svg",

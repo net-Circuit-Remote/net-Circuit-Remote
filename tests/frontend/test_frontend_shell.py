@@ -88,7 +88,7 @@ def test_supplied_icons_have_small_committed_derivatives_with_verified_provenanc
     icon_dir = WEB/'src/assets/icons'
     manifest = json.loads((icon_dir/'manifest.json').read_text(encoding='utf-8'))
     originals = sorted((ROOT/'assets/icon .svg').glob('*.svg'))
-    assert len(manifest) == len(originals) == 17
+    assert len(manifest) == len(originals) == 20
     assert sum(entry['output_bytes'] for entry in manifest) < 100_000
     for entry in manifest:
         source = ROOT/entry['source']

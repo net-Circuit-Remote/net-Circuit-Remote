@@ -17,7 +17,8 @@ code { font-family: Consolas, monospace; }
 .single-workspace-shell { height: 100dvh; min-height: 560px; display: flex; flex-direction: column; overflow: hidden; }
 .app-titlebar { height: 52px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding: 0 16px; background: #182330; border-bottom: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
-.brand-mark { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid #4cad9e; border-radius: 6px; color: #80dccb; font-weight: 650; letter-spacing: -1px; font-size: 16px; }
+.brand-mark { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex-shrink: 0; }
+.brand-mark img { width: 38px; height: 38px; object-fit: contain; display: block; }
 .brand strong { font-size: 14px; letter-spacing: -.3px; }
 .brand strong span { font-weight: 400; color: #98aabd; }
 .file-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }

@@ -4,6 +4,7 @@ import { useCircuitStore } from '../../stores/circuit'
 import { useUiStore } from '../../stores/ui'
 import { useInstrumentStore } from '../../stores/instrument'
 import { MAX_CIRCUIT_FILE_BYTES, parseCircuitFile } from '../../services/files/circuitFile'
+import { iconUrl } from '../../data/ribbon'
 import WorkbenchIcon from './WorkbenchIcon.vue'
 const circuit = useCircuitStore()
 const ui = useUiStore()
@@ -54,7 +55,7 @@ onUnmounted(() => window.removeEventListener('keydown', shortcuts))
 </script>
 <template>
   <header class="app-titlebar">
-    <div class="brand" aria-label="net*CIRCUIT Remote"><span class="brand-mark">nC</span><strong>net*CIRCUIT <span>Remote</span></strong></div>
+    <div class="brand" aria-label="net*CIRCUIT Remote"><span class="brand-mark"><img :src="iconUrl('favicon')" alt="net*CIRCUIT Remote" width="38" height="38" /></span><strong>net*CIRCUIT <span>Remote</span></strong></div>
     <div class="file-actions" role="toolbar" aria-label="File actions">
       <button title="New circuit (Ctrl+N)" @click="newFile"><WorkbenchIcon name="new" />New</button>
       <button title="Open Circuit Graph JSON (Ctrl+O)" @click="fileInput?.click()"><WorkbenchIcon name="open" />Open</button>
