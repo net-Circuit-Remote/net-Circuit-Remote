@@ -4,56 +4,56 @@
     "source": "assets/icon .svg/7doan1.svg",
     "sha256": "327bfe86962e84e32671678927da2555e0509cce3acf1ad1ea6ed5504c906187",
     "source_bytes": 5629740,
-    "output_bytes": 1650
+    "output_bytes": 1830
   },
   {
     "file": "7doan2.svg",
     "source": "assets/icon .svg/7doan2.svg",
     "sha256": "48b2354ad83c930707b8697e2c0c0d954c48e9675abddeec6e48ec7502561ca4",
     "source_bytes": 5894688,
-    "output_bytes": 2246
+    "output_bytes": 2410
   },
   {
     "file": "7doan4.svg",
     "source": "assets/icon .svg/7doan4.svg",
     "sha256": "d3cbe0846ada8458f8824364d018390ade9c189cf1eebcd1aaecbcbc4fdc5393",
     "source_bytes": 5872128,
-    "output_bytes": 2506
+    "output_bytes": 2730
   },
   {
     "file": "breadboard_830.svg",
     "source": "assets/icon .svg/breadboard_830.svg",
     "sha256": "2b902be244eaa02b3c4a7370df1b91f670027928ff188c84e1661b207ea23b75",
     "source_bytes": 6419304,
-    "output_bytes": 2658
+    "output_bytes": 3238
   },
   {
     "file": "buzzer_chip.svg",
     "source": "assets/icon .svg/buzzer_chip.svg",
     "sha256": "237e1be7ee87c847d9b1d27f1202abf82e6bdc5243240b9fbf550e35c549f902",
     "source_bytes": 8249248,
-    "output_bytes": 1786
+    "output_bytes": 2414
   },
   {
     "file": "capacitor.svg",
     "source": "assets/icon .svg/capacitor.svg",
     "sha256": "f464085828ef1e58251fc4440cdfac787c83e06fc11aa1f0531d5a840e84fcd1",
     "source_bytes": 6392316,
-    "output_bytes": 1674
+    "output_bytes": 2162
   },
   {
     "file": "diode.svg",
     "source": "assets/icon .svg/diode.svg",
     "sha256": "e8ebef6a05d2cda754732f9799aec7b766c3c658380f16816a08a2a62ad061f7",
     "source_bytes": 5271868,
-    "output_bytes": 990
+    "output_bytes": 1474
   },
   {
     "file": "diode_zener.svg",
     "source": "assets/icon .svg/diode_zener.svg",
     "sha256": "ca98a7f78cf82889bd79cbf46d3e2d544a39b037dd6526e814bcfa95aca9a15a",
     "source_bytes": 5669364,
-    "output_bytes": 1262
+    "output_bytes": 1782
   },
   {
     "file": "favicon.svg",
@@ -67,21 +67,21 @@
     "source": "assets/icon .svg/Generator.svg",
     "sha256": "2452297299b42d3fc869d94792f206c2ce8d19a4f79faf2e5a85f5c30e857b86",
     "source_bytes": 236754,
-    "output_bytes": 5062
+    "output_bytes": 5906
   },
   {
     "file": "ic_arithmetic.svg",
     "source": "assets/icon .svg/ic_arithmetic.svg",
     "sha256": "946e299dd8892a56f0403e49db25718d5c20d0021e92ded2b2c8f8f7417a7ce2",
     "source_bytes": 6503948,
-    "output_bytes": 3630
+    "output_bytes": 4906
   },
   {
     "file": "ic_logic.svg",
     "source": "assets/icon .svg/ic_logic.svg",
     "sha256": "0b4e66b11657a3f04d288000ade38ef6f9095865f6659b3d0dcf917a073d949d",
     "source_bytes": 5415252,
-    "output_bytes": 3210
+    "output_bytes": 4470
   },
   {
     "file": "Input.svg",
@@ -95,35 +95,35 @@
     "source": "assets/icon .svg/led.svg",
     "sha256": "d6c41dc3465c8c8062ec2224bd3f041e81ab6cc41e35a3729145888c6e7c76fe",
     "source_bytes": 5762876,
-    "output_bytes": 1606
+    "output_bytes": 2026
   },
   {
     "file": "Line.svg",
     "source": "assets/icon .svg/Line.svg",
     "sha256": "887bdb349abe07baa1554ca91d80f06287a628f928f79ad954e53e72e0fac688",
     "source_bytes": 6227588,
-    "output_bytes": 3678
+    "output_bytes": 4586
   },
   {
     "file": "Oscillocrope.svg",
     "source": "assets/icon .svg/Oscillocrope.svg",
     "sha256": "31412ce5061fc2a4a3075dcbe5262b7c5f48496098133bd3033d23db0b62c2a5",
     "source_bytes": 7454736,
-    "output_bytes": 4806
+    "output_bytes": 5502
   },
   {
     "file": "power_supply.svg",
     "source": "assets/icon .svg/power_supply.svg",
     "sha256": "36ed89805da4ef453bf437b1632bfdda4740f18a88215c26be28b1ef6e941843",
     "source_bytes": 9436676,
-    "output_bytes": 3754
+    "output_bytes": 4550
   },
   {
     "file": "resistor.svg",
     "source": "assets/icon .svg/resistor.svg",
     "sha256": "85c2e4dd50952d7734c1aa132ac8bf2a8ffbb46f342e43d124e1703c8e813b5e",
     "source_bytes": 4967016,
-    "output_bytes": 1726
+    "output_bytes": 2214
   },
   {
     "file": "signal_monitor.svg",
@@ -137,6 +137,6 @@
     "source": "assets/icon .svg/transistor.svg",
     "sha256": "f12e3ba65ebc690135448098d00cd3614d383075e7df87adfbaeb771315c707a",
     "source_bytes": 6345660,
-    "output_bytes": 1238
+    "output_bytes": 1862
   }
 ]
