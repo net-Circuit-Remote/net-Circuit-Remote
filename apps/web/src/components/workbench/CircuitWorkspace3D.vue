@@ -42,6 +42,14 @@ onUnmounted(() => { observer?.disconnect(); manager?.dispose(); canvas.value?.re
     <p v-else class="graph-loaded">{{ circuit.graph.modules.length }} graph modules loaded · 3D component rendering is pending.</p>
     <p v-if="graphicsError" class="graphics-notice" role="status">{{ graphicsError }}</p>
     <div class="workspace-hint"><span>{{ workspace.tool.toUpperCase() }}</span><span>{{ workspace.previewType ? 'Preview: ' + workspace.previewType : 'Visual grid · logical graph kept separate' }}</span></div>
-    <div class="workspace-axis" aria-hidden="true"><i class="axis-x">X</i><i class="axis-y">Y</i><i class="axis-z">Z</i></div>
+    <div class="workspace-axis" aria-hidden="true">
+      <svg viewBox="0 0 54 54" class="axis-lines" aria-hidden="true">
+        <line x1="22" y1="32" x2="22" y2="13" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" />
+        <line x1="22" y1="32" x2="41" y2="23" stroke="#ff4d4f" stroke-width="2.5" stroke-linecap="round" />
+        <line x1="22" y1="32" x2="10" y2="44" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" />
+        <circle cx="22" cy="32" r="2.5" fill="#7f9db8" />
+      </svg>
+      <i class="axis-x">X</i><i class="axis-y">Y</i><i class="axis-z">Z</i>
+    </div>
   </div>
 </template>

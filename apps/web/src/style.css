@@ -83,9 +83,12 @@ code { font-family: Consolas, monospace; }
 .workspace-hint { position: absolute; bottom: 20px; left: 22px; display: flex; gap: 12px; max-width: calc(100% - 100px); font-size: 10px; background: #101925b3; padding: 5px 7px; }
 .workspace-hint > span:first-child { color: #77c6b8; font-size: 9px; letter-spacing: 1px; }
 .workspace-hint > span:last-child { color: #688197; overflow-wrap: anywhere; }
-.workspace-axis { position: absolute; right: 22px; bottom: 22px; width: 38px; height: 38px; font: 9px Consolas, monospace; }
-.workspace-axis i { position: absolute; font-style: normal; }
-.axis-x { right: 0; top: 18px; color: #d98781; }.axis-y { top: 0; left: 12px; color: #8dc698; }.axis-z { bottom: 0; left: 0; color: #80acd4; }
+.workspace-axis { position: absolute; right: 22px; bottom: 22px; width: 54px; height: 54px; background: #131d2ae0; border: 1px solid #3b5066; border-radius: 6px; box-shadow: 0 4px 12px #0006; backdrop-filter: blur(4px); font: 700 12px/1 Consolas, monospace; pointer-events: none; user-select: none; }
+.workspace-axis svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.workspace-axis i { position: absolute; font-style: normal; text-shadow: 0 1px 3px #000; }
+.axis-x { right: 3px; top: 16px; color: #ff5252; }
+.axis-y { top: 2px; left: 18px; color: #22c55e; }
+.axis-z { bottom: 2px; left: 3px; color: #38bdf8; }
 .graphics-notice, .graph-loaded { position: absolute; bottom: 60px; left: 22px; max-width: calc(100% - 44px); padding: 8px 12px; background: #293c4d; color: #c6d7e4; font-size: 11px; }
 .floating-window-manager { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
 .floating-window { display: flex; flex-direction: column; position: absolute; pointer-events: auto; border: 1px solid #52677e; background: #1d2a3a; border-radius: 6px; box-shadow: 0 15px 45px #0009; overflow: hidden; min-width: 0; }
