@@ -8,8 +8,8 @@ import { createMemoryImage, parseMemoryImage } from '../src/services/files/memor
 
 beforeEach(() => { setActivePinia(createPinia()); useCircuitStore().createDraft(); useCircuitStore().past = [] })
 test('required families have explicit functional contracts; visual structures never create ports', () => {
-  for (const type of ['BREADBOARD', 'BOARD', 'POWER_SUPPLY', 'RESISTOR', 'CAPACITOR', 'PUSH_BUTTON', 'DIGITAL_SWITCH', 'DIP_SWITCH', 'CLOCK', 'LED', 'SEGMENT_1', 'PROBE', 'DISPLAY', '74HC08', 'ADDER', 'MULTIPLIER', 'MEMORY']) assert.ok(getDefinition(type), type)
-  for (const type of ['BREADBOARD', 'BOARD', 'POWER_SUPPLY']) assert.deepEqual(getDefinition(type)?.ports, [])
+  for (const type of ['BREADBOARD', 'BREADBOARD_630', 'BREADBOARD_100', 'BOARD', 'POWER_SUPPLY', 'RESISTOR', 'CAPACITOR', 'PUSH_BUTTON', 'DIGITAL_SWITCH', 'DIP_SWITCH', 'CLOCK', 'LED', 'SEGMENT_1', 'PROBE', 'DISPLAY', '74HC08', 'ADDER', 'MULTIPLIER', 'MEMORY']) assert.ok(getDefinition(type), type)
+  for (const type of ['BREADBOARD', 'BREADBOARD_630', 'BREADBOARD_100', 'BOARD', 'POWER_SUPPLY']) assert.deepEqual(getDefinition(type)?.ports, [])
   assert.equal(getDefinition('74HC08')?.ports.length, 12)
   assert.equal(getDefinition('ADDER')?.partNumber, undefined)
   assert.equal(getDefinition('MULTIPLIER')?.partNumber, undefined)

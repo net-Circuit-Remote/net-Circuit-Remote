@@ -6,11 +6,13 @@ import { buildComponent, disposeObject } from '../src/three/ComponentModel'
 import type { CircuitGraph } from '../src/types/circuit'
 
 test('structure disposal releases instance buffers, not only geometry and material', () => {
-  const board = buildComponent({ id: 'board', type: 'BREADBOARD' })
-  let buffers = 0
-  board.traverse((object) => { if (object instanceof InstancedMesh) object.addEventListener('dispose', () => buffers++) })
-  disposeObject(board)
-  assert.equal(buffers, 1)
+  for (const type of ['BREADBOARD', 'BREADBOARD_630', 'BREADBOARD_100']) {
+    const board = buildComponent({ id: 'board', type })
+    let buffers = 0
+    board.traverse((object) => { if (object instanceof InstancedMesh) object.addEventListener('dispose', () => buffers++) })
+    disposeObject(board)
+    assert.equal(buffers, 1)
+  }
 })
 
 test('placement reuses the ghost while moving; cancel removes it and releases its buffers', () => {

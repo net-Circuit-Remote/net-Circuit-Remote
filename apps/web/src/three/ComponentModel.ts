@@ -180,6 +180,213 @@ function createBreadboardTexture(): CanvasTexture | null {
   return texture
 }
 
+function createBreadboard630Texture(): CanvasTexture | null {
+  if (typeof document === 'undefined') return null
+  const width = 2400
+  const height = 496
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  const w = 9.0
+  const d = 1.86
+  const pitch = 0.13
+  const spanX = 62 * pitch
+
+  const toPx = (wx: number, wz: number): [number, number] => [
+    ((wx + w / 2) / w) * width,
+    ((wz + d / 2) / d) * height
+  ]
+
+  // Clean off-white ABS plastic surface
+  ctx.fillStyle = '#fafbfc'
+  ctx.fillRect(0, 0, width, height)
+
+  // Outer plastic beveled border
+  ctx.lineWidth = 3
+  ctx.strokeStyle = '#cbd5e1'
+  ctx.strokeRect(1, 1, width - 2, height - 2)
+  ctx.lineWidth = 2
+  ctx.strokeStyle = '#e2e8f0'
+  ctx.strokeRect(4, 4, width - 8, height - 8)
+
+  // Center trough / groove channel (IC divider between rows E and F)
+  const [, cyTrough] = toPx(0, 0)
+  ctx.fillStyle = '#e2e8f0'
+  ctx.fillRect(width * 0.015, cyTrough - 16, width * 0.97, 32)
+  ctx.strokeStyle = '#cbd5e1'
+  ctx.lineWidth = 1
+  ctx.strokeRect(width * 0.015, cyTrough - 16, width * 0.97, 32)
+  ctx.strokeStyle = '#94a3b8'
+  ctx.lineWidth = 2
+  ctx.beginPath(); ctx.moveTo(width * 0.015, cyTrough); ctx.lineTo(width * 0.985, cyTrough); ctx.stroke()
+
+  // 63 column coordinates with uniform pitch
+  const colsX: number[] = []
+  for (let i = 0; i < 63; i++) colsX.push(-spanX / 2 + i * pitch)
+
+  // Column numbers (1, 5, 10, ... 60, 63) bold and crisp at top and bottom margins
+  const [, cyNumTop] = toPx(0, -0.82)
+  const [, cyNumBot] = toPx(0, 0.82)
+  ctx.font = 'bold 24px "Segoe UI", Arial, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = '#0f172a'
+  for (let i = 0; i < 63; i++) {
+    const colNum = i + 1
+    if (colNum === 1 || colNum % 5 === 0 || colNum === 63) {
+      const [cx] = toPx(colsX[i], 0)
+      ctx.fillText(String(colNum), cx, cyNumTop)
+      ctx.fillText(String(colNum), cx, cyNumBot)
+    }
+  }
+
+  // Row letters: Upper strip A-E, Lower strip F-J
+  const rowZUpper = [-pitch * 5.5, -pitch * 4.5, -pitch * 3.5, -pitch * 2.5, -pitch * 1.5]
+  const rowZLower = [pitch * 1.5, pitch * 2.5, pitch * 3.5, pitch * 4.5, pitch * 5.5]
+  const lettersUpper = ['A', 'B', 'C', 'D', 'E']
+  const lettersLower = ['F', 'G', 'H', 'I', 'J']
+
+  for (const labelX of [colsX[0] - 0.28, colsX[62] + 0.28]) {
+    const [cx] = toPx(labelX, 0)
+    for (let r = 0; r < 5; r++) {
+      const [, cyU] = toPx(0, rowZUpper[r])
+      ctx.fillText(lettersUpper[r], cx, cyU)
+      const [, cyL] = toPx(0, rowZLower[r])
+      ctx.fillText(lettersLower[r], cx, cyL)
+    }
+  }
+
+  // Sockets drawing helper (square beveled funnel with dark cavity)
+  const drawSocket = (cx: number, cy: number) => {
+    ctx.fillStyle = '#f1f5f9'
+    ctx.fillRect(cx - 10, cy - 10, 20, 20)
+    ctx.strokeStyle = '#cbd5e1'
+    ctx.lineWidth = 1
+    ctx.strokeRect(cx - 9.5, cy - 9.5, 19, 19)
+    ctx.fillStyle = '#1e293b'
+    ctx.fillRect(cx - 6, cy - 6, 12, 12)
+    ctx.fillStyle = '#475569'
+    ctx.fillRect(cx - 2, cy - 4, 1, 8)
+    ctx.fillRect(cx + 2, cy - 4, 1, 8)
+  }
+
+  // Terminal sockets (63 cols x 10 rows = 630 sockets)
+  for (let c = 0; c < 63; c++) {
+    const [cx] = toPx(colsX[c], 0)
+    for (const rz of rowZUpper) {
+      const [, cy] = toPx(0, rz)
+      drawSocket(cx, cy)
+    }
+    for (const rz of rowZLower) {
+      const [, cy] = toPx(0, rz)
+      drawSocket(cx, cy)
+    }
+  }
+
+  const texture = new CanvasTexture(canvas)
+  texture.anisotropy = 16
+  texture.needsUpdate = true
+  return texture
+}
+
+function createBreadboard100Texture(): CanvasTexture | null {
+  if (typeof document === 'undefined') return null
+  const width = 2400
+  const height = 140
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  const w = 9.0
+  const d = 0.52
+  const pitch = 0.13
+  const spanX = 62 * pitch
+
+  const toPx = (wx: number, wz: number): [number, number] => [
+    ((wx + w / 2) / w) * width,
+    ((wz + d / 2) / d) * height
+  ]
+
+  // Clean off-white ABS plastic surface
+  ctx.fillStyle = '#fafbfc'
+  ctx.fillRect(0, 0, width, height)
+
+  // Outer plastic beveled border
+  ctx.lineWidth = 2
+  ctx.strokeStyle = '#cbd5e1'
+  ctx.strokeRect(1, 1, width - 2, height - 2)
+  ctx.lineWidth = 1
+  ctx.strokeStyle = '#e2e8f0'
+  ctx.strokeRect(3, 3, width - 6, height - 6)
+
+  // Power distribution lines: Top Red (+), Bottom Blue (-)
+  const [, cyRed] = toPx(0, -0.18)
+  const [, cyBlue] = toPx(0, 0.18)
+
+  const lineStartX = width * 0.038
+  const lineEndX = width * 0.962
+
+  ctx.lineWidth = 5
+  ctx.strokeStyle = '#dc2626'
+  ctx.beginPath(); ctx.moveTo(lineStartX, cyRed); ctx.lineTo(lineEndX, cyRed); ctx.stroke()
+
+  ctx.strokeStyle = '#0284c7'
+  ctx.beginPath(); ctx.moveTo(lineStartX, cyBlue); ctx.lineTo(lineEndX, cyBlue); ctx.stroke()
+
+  // Polarity markings (+ and -) bold, large, high-contrast
+  ctx.font = 'bold 36px "Segoe UI", Arial, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  for (const sx of [width * 0.022, width * 0.978]) {
+    ctx.fillStyle = '#dc2626'; ctx.fillText('+', sx, cyRed)
+    ctx.fillStyle = '#0284c7'; ctx.fillText('-', sx, cyBlue)
+  }
+
+  // 63 column coordinates with uniform pitch
+  const colsX: number[] = []
+  for (let i = 0; i < 63; i++) colsX.push(-spanX / 2 + i * pitch)
+
+  const powerCols: number[] = []
+  for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(g * 6 + i)
+  for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(34 + g * 6 + i)
+
+  const pzTop = -0.065
+  const pzBot = 0.065
+  const [, cyTop] = toPx(0, pzTop)
+  const [, cyBot] = toPx(0, pzBot)
+
+  // Sockets drawing helper
+  const drawSocket = (cx: number, cy: number) => {
+    ctx.fillStyle = '#f1f5f9'
+    ctx.fillRect(cx - 10, cy - 10, 20, 20)
+    ctx.strokeStyle = '#cbd5e1'
+    ctx.lineWidth = 1
+    ctx.strokeRect(cx - 9.5, cy - 9.5, 19, 19)
+    ctx.fillStyle = '#1e293b'
+    ctx.fillRect(cx - 6, cy - 6, 12, 12)
+    ctx.fillStyle = '#475569'
+    ctx.fillRect(cx - 2, cy - 4, 1, 8)
+    ctx.fillRect(cx + 2, cy - 4, 1, 8)
+  }
+
+  // Power rail sockets (50 cols x 2 rows = 100 sockets)
+  for (const ci of powerCols) {
+    const [cx] = toPx(colsX[ci], 0)
+    drawSocket(cx, cyTop)
+    drawSocket(cx, cyBot)
+  }
+
+  const texture = new CanvasTexture(canvas)
+  texture.anisotropy = 16
+  texture.needsUpdate = true
+  return texture
+}
+
 export function portAnchor(type: string, port: LogicalPort): Vector3 {
   const definition = getDefinition(type)!
   const side = port.direction === 'output' || (port.direction === 'inout' && definition.ports.indexOf(port) % 2 === 1) ? 1 : -1
@@ -285,6 +492,124 @@ export function buildComponent(module: CircuitModule): Group {
 
     holes.instanceMatrix.needsUpdate = true
     group.add(holes)
+  } else if (definition?.visual === 'breadboard_630') {
+    // Photorealistic 630-tie-point terminal breadboard
+    box(0, h / 2 + 0.02, 0, w, h, d, color)
+
+    const texture = createBreadboard630Texture()
+    if (texture) {
+      const decal = new Mesh(new PlaneGeometry(w, d), new MeshStandardMaterial({ map: texture, roughness: 0.5, metalness: 0.05 }))
+      decal.rotation.x = -Math.PI / 2
+      decal.position.set(0, h + 0.0205, 0)
+      group.add(decal)
+    }
+
+    // Bottom double-sided foam tape backing layer
+    const tape = new Mesh(new BoxGeometry(w * 0.995, 0.02, d * 0.995), material('#f0e9d2'))
+    tape.position.set(0, 0.01, 0)
+    group.add(tape)
+
+    // Dovetail interlocking tabs and notches matching MB-102 series
+    const tabColor = '#fafbfc'
+    const notchColor = '#cbd5e1'
+    for (const tx of [-2.7, 0, 2.7]) {
+      const tabZ = new Mesh(new BoxGeometry(0.30, h * 0.70, 0.10), material(tabColor))
+      tabZ.position.set(tx, h / 2 + 0.02, -d / 2 - 0.05)
+      group.add(tabZ)
+      const notchZ = new Mesh(new BoxGeometry(0.32, h * 0.72, 0.05), material(notchColor))
+      notchZ.position.set(tx, h / 2 + 0.02, d / 2 - 0.025)
+      group.add(notchZ)
+    }
+    const tabX = new Mesh(new BoxGeometry(0.10, h * 0.70, 0.35), material(tabColor))
+    tabX.position.set(w / 2 + 0.05, h / 2 + 0.02, 0)
+    group.add(tabX)
+    const notchX = new Mesh(new BoxGeometry(0.05, h * 0.72, 0.37), material(notchColor))
+    notchX.position.set(-w / 2 + 0.025, h / 2 + 0.02, 0)
+    group.add(notchX)
+
+    // Exactly 1 InstancedMesh with 630 contacts (63 cols x 10 rows)
+    const pitch = 0.13
+    const spanX = 62 * pitch
+    const colsX: number[] = []
+    for (let i = 0; i < 63; i++) colsX.push(-spanX / 2 + i * pitch)
+    const rowZUpper = [-pitch * 5.5, -pitch * 4.5, -pitch * 3.5, -pitch * 2.5, -pitch * 1.5]
+    const rowZLower = [pitch * 1.5, pitch * 2.5, pitch * 3.5, pitch * 4.5, pitch * 5.5]
+
+    const holeGeom = new BoxGeometry(0.046, 0.012, 0.046)
+    const holeMat = new MeshStandardMaterial({ color: '#161e27', roughness: 0.35, metalness: 0.65 })
+    const holes = new InstancedMesh(holeGeom, holeMat, 630)
+    let idx = 0
+    const matrix = new Matrix4()
+
+    for (let c = 0; c < 63; c++) {
+      const hx = colsX[c]
+      for (const hz of rowZUpper) {
+        matrix.makeTranslation(hx, h + 0.021, hz)
+        holes.setMatrixAt(idx++, matrix)
+      }
+      for (const hz of rowZLower) {
+        matrix.makeTranslation(hx, h + 0.021, hz)
+        holes.setMatrixAt(idx++, matrix)
+      }
+    }
+
+    holes.instanceMatrix.needsUpdate = true
+    group.add(holes)
+  } else if (definition?.visual === 'breadboard_100') {
+    // Photorealistic 100-tie-point power distribution breadboard
+    box(0, h / 2 + 0.02, 0, w, h, d, color)
+
+    const texture = createBreadboard100Texture()
+    if (texture) {
+      const decal = new Mesh(new PlaneGeometry(w, d), new MeshStandardMaterial({ map: texture, roughness: 0.5, metalness: 0.05 }))
+      decal.rotation.x = -Math.PI / 2
+      decal.position.set(0, h + 0.0205, 0)
+      group.add(decal)
+    }
+
+    // Bottom double-sided foam tape backing layer
+    const tape = new Mesh(new BoxGeometry(w * 0.995, 0.02, d * 0.995), material('#f0e9d2'))
+    tape.position.set(0, 0.01, 0)
+    group.add(tape)
+
+    // Dovetail interlocking tabs and notches to latch onto breadboards
+    const tabColor = '#fafbfc'
+    const notchColor = '#cbd5e1'
+    for (const tx of [-2.7, 0, 2.7]) {
+      const tabZ = new Mesh(new BoxGeometry(0.30, h * 0.70, 0.10), material(tabColor))
+      tabZ.position.set(tx, h / 2 + 0.02, -d / 2 - 0.05)
+      group.add(tabZ)
+      const notchZ = new Mesh(new BoxGeometry(0.32, h * 0.72, 0.05), material(notchColor))
+      notchZ.position.set(tx, h / 2 + 0.02, d / 2 - 0.025)
+      group.add(notchZ)
+    }
+
+    // Exactly 1 InstancedMesh with 100 contacts (50 cols x 2 rows)
+    const pitch = 0.13
+    const spanX = 62 * pitch
+    const colsX: number[] = []
+    for (let i = 0; i < 63; i++) colsX.push(-spanX / 2 + i * pitch)
+    const powerCols: number[] = []
+    for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(g * 6 + i)
+    for (let g = 0; g < 5; g++) for (let i = 0; i < 5; i++) powerCols.push(34 + g * 6 + i)
+    const powerZ = [-0.065, 0.065]
+
+    const holeGeom = new BoxGeometry(0.046, 0.012, 0.046)
+    const holeMat = new MeshStandardMaterial({ color: '#161e27', roughness: 0.35, metalness: 0.65 })
+    const holes = new InstancedMesh(holeGeom, holeMat, 100)
+    let idx = 0
+    const matrix = new Matrix4()
+
+    for (const ci of powerCols) {
+      const hx = colsX[ci]
+      for (const hz of powerZ) {
+        matrix.makeTranslation(hx, h + 0.021, hz)
+        holes.setMatrixAt(idx++, matrix)
+      }
+    }
+
+    holes.instanceMatrix.needsUpdate = true
+    group.add(holes)
   } else {
     box(0, h / 2 + 0.02, 0, w, h, d, color)
     if (definition?.visual === 'button') box(0, h + 0.12, 0, w * 0.65, 0.25, d * 0.65, module.properties?.state ? '#d7b58e' : '#835f87')
@@ -301,7 +626,7 @@ export function buildComponent(module: CircuitModule): Group {
     anchor.userData = { kind: 'port', id: module.id, endpoint: `${module.id}.${port.id}` }
     group.add(anchor)
   }
-  if (typeof document !== 'undefined' && definition?.visual !== 'breadboard') {
+  if (typeof document !== 'undefined' && !definition?.visual?.startsWith('breadboard')) {
     const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 80
     const context = canvas.getContext('2d')
     if (context) {

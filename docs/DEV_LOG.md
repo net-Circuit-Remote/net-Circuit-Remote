@@ -15,6 +15,10 @@ fpga_development_started: false
 
 Phase 2 **Interactive Circuit Workspace** is implemented, preserving Phase 1 shell and transport boundaries. Next: Phase 3 simulator/event/clock/model adapters and real output/capture data.
 
+## Breadboard 630 and Power Breadboard 100 3D Models — 2026-10-09
+
+Implemented photorealistic 3D models and high-resolution procedural textures (Anisotropy 16) for `BREADBOARD_630` (630-tie-point terminal strip: 63 cols x 10 rows A..E & F..J, center IC divider groove, dovetail joints, no power rails) and `BREADBOARD_100` (100-tie-point power bus strip: 50 cols x 2 rows in 5-hole clusters, continuous red (+) and blue (-) power lines, bold polarity indicators, modular dovetail interlocking tabs/notches). Both visual structures are registered in canonical `device-library/editor/components.json` and synchronized 1:1 with `apps/web/src/data/editorCatalog.json`. Each model utilizes exactly 1 GPU `InstancedMesh` with automated buffer disposal upon removal. Verified with pytest (11/11 PASS), npm test (55/55 PASS), and production build (PASS).
+
 ## Move-only model dragging — 2026-10-09
 
 Latest user rule: direct mouse dragging of breadboard and every other model requires the Move button. `useCircuitEditor` now creates a model gesture only for `workspace.tool === 'move'`; Select still picks/highlights without capture or preview. Empty-surface pan, right orbit, camera-oriented XYZ and nearby navigation buttons remain. Workspace help/hints and grab cursor match the active tool. Inspector coordinate edits and keyboard movement retain their existing behavior.
