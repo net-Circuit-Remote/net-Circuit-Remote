@@ -398,7 +398,7 @@ export function buildComponent(module: CircuitModule): Group {
   const definition = getDefinition(module.type)
   const [w, h, d] = definition?.size ?? [1.5, 0.5, 1]
   const group = new Group()
-  group.userData = { kind: 'module', id: module.id, signature: JSON.stringify([module.type, module.properties]) }
+  group.userData = { kind: 'module', id: module.id, type: module.type, size: [w, h, d], signature: JSON.stringify([module.type, module.properties]) }
   const material = (color: string) => new MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.12 })
   const box = (x: number, y: number, z: number, sx: number, sy: number, sz: number, color: string) => {
     const mesh = new Mesh(new BoxGeometry(sx, sy, sz), material(color)); mesh.position.set(x, y, z); group.add(mesh); return mesh

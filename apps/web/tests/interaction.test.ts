@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { createRenderer, nextTick, ref } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { Vector3 } from 'three'
-import { useCircuitEditor } from '../src/composables/useCircuitEditor'
+import { useCircuitEditor, snapPosition } from '../src/composables/useCircuitEditor'
 import { useCircuitStore } from '../src/stores/circuit'
 import { useWorkspaceStore, type WorkspaceTool } from '../src/stores/workspace'
 import { createSceneManager } from '../src/three/SceneManager'
@@ -256,4 +256,38 @@ test('active 3D model placement places on left click and exits on right click', 
     assert.equal(h.circuit.graph!.modules.length, 1)
     assert.equal(h.circuit.graph!.modules[0].type, 'RESISTOR')
   } finally { h.dispose() }
+})
+
+test('breadboard magnetic docking snaps adjacent boards seamlessly without gaps and avoids overlapping', () => {
+  const bb1 = { id: 'bb1', type: 'BREADBOARD_630', position: { x: 0, y: 0, z: 0 }, rotation: 0 }
+  const modules = [bb1]
+
+  // Test 1: BB630 approaches bottom edge of BB630 (target Z=2.0 near dock 1.86)
+  const dockSouth = snapPosition({ x: 0.1, z: 2.0 }, true, modules, 'BREADBOARD_630')
+  assert.deepEqual(dockSouth, { x: 0, y: 0, z: 1.86 })
+
+  // Test 2: BB630 approaches top edge of BB630 (target Z=-1.7 near dock -1.86)
+  const dockNorth = snapPosition({ x: -0.1, z: -1.7 }, true, modules, 'BREADBOARD_630')
+  assert.deepEqual(dockNorth, { x: 0, y: 0, z: -1.86 })
+
+  // Test 3: BB100 (Power Breadboard) approaches BB630 bottom edge (target Z=1.3 near dock 1.19)
+  const dockPower = snapPosition({ x: 0.2, z: 1.3 }, true, modules, 'BREADBOARD_100')
+  assert.deepEqual(dockPower, { x: 0, y: 0, z: 1.19 })
+
+  // Test 4: BB100 approaches BB100 bottom edge (target Z=0.6 near dock 0.52)
+  const p1 = { id: 'p1', type: 'BREADBOARD_100', position: { x: 0, y: 0, z: 0 }, rotation: 0 }
+  const dockPowerToPower = snapPosition({ x: 0.1, z: 0.6 }, true, [p1], 'BREADBOARD_100')
+  assert.deepEqual(dockPowerToPower, { x: 0, y: 0, z: 0.52 })
+
+  // Test 5: Anti-overlap: Dragging BB630 directly inside existing BB630 (target Z=0.4)
+  const antiOverlap = snapPosition({ x: 0, z: 0.4 }, true, modules, 'BREADBOARD_630')
+  assert.deepEqual(antiOverlap, { x: 0, y: 0, z: 1.86 })
+
+  // Test 6: Side-by-side docking along X (target X=8.8, Z=0.2 near dock 9.0)
+  const dockSide = snapPosition({ x: 8.8, z: 0.2 }, true, modules, 'BREADBOARD_630')
+  assert.deepEqual(dockSide, { x: 9.0, y: 0, z: 0 })
+
+  // Test 7: Resistors placed on breadboard are not blocked or pushed away
+  const resistorPos = snapPosition({ x: 0.4, z: 0.6 }, true, modules, 'RESISTOR')
+  assert.deepEqual(resistorPos, { x: 0.5, y: 0, z: 0.5 })
 })

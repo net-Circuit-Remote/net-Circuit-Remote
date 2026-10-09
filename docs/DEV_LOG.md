@@ -15,6 +15,14 @@ fpga_development_started: false
 
 Phase 2 **Interactive Circuit Workspace** is implemented, preserving Phase 1 shell and transport boundaries. Next: Phase 3 simulator/event/clock/model adapters and real output/capture data.
 
+## Breadboard Magnetic Docking & Anti-Overlap Snapping — 2026-10-09
+
+Resolved physical gap and overlapping issues when joining multiple breadboards (`BREADBOARD`, `BREADBOARD_630`, `BREADBOARD_100`). Implemented `snapPosition` in `useCircuitEditor.ts` featuring:
+1. **Mathematical Edge-to-Edge Magnetic Docking**: Calculates exact physical docking offsets along Z (North/South: $(D_1 + D_2) / 2$) and X (West/East: $(W_1 + W_2) / 2$) with magnetic capture zones ($dZ \le 0.65, dX \le 1.5$ for Z-joints, $dX \le 0.65, dZ \le 1.2$ for X-joints). Automatically filters out already-occupied docking slots.
+2. **Anti-Overlap Collision Resolution**: 3-pass AABB collision relaxation actively repels overlapping breadboards to the nearest flush boundary, preventing models from penetrating or superimposing on each other.
+3. **Component Non-Interference**: Standard grid snapping remains intact for electrical components (resistors, ICs, LEDs, etc.) to allow natural placement onto breadboard surfaces.
+4. **Verification**: 56/56 web unit tests passed, including dedicated test cases for BB630-to-BB630 ($Z=1.86$), BB100-to-BB630 ($Z=1.19$), BB100-to-BB100 ($Z=0.52$), side-by-side ($X=9.0$), penetration repulsion, and component transparency. Production build passed in 3.19s.
+
 ## Breadboard 630 and Power Breadboard 100 3D Models — 2026-10-09
 
 Implemented photorealistic 3D models and high-resolution procedural textures (Anisotropy 16) for `BREADBOARD_630` (630-tie-point terminal strip: 63 cols x 10 rows A..E & F..J, center IC divider groove, dovetail joints, no power rails) and `BREADBOARD_100` (100-tie-point power bus strip: 50 cols x 2 rows in 5-hole clusters, continuous red (+) and blue (-) power lines, bold polarity indicators, modular dovetail interlocking tabs/notches). Both visual structures are registered in canonical `device-library/editor/components.json` and synchronized 1:1 with `apps/web/src/data/editorCatalog.json`. Each model utilizes exactly 1 GPU `InstancedMesh` with automated buffer disposal upon removal. Verified with pytest (11/11 PASS), npm test (55/55 PASS), and production build (PASS).

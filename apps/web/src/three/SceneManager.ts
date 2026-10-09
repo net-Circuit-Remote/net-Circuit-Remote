@@ -1,4 +1,4 @@
-import { AmbientLight, BufferGeometry, Color, DirectionalLight, GridHelper, Group, Line, LineBasicMaterial, Mesh, MeshStandardMaterial, MOUSE, PerspectiveCamera, Plane, Raycaster, Scene, TubeGeometry, Vector2, Vector3, QuadraticBezierCurve3 } from 'three'
+import { AmbientLight, BoxGeometry, BufferGeometry, Color, DirectionalLight, GridHelper, Group, Line, LineBasicMaterial, Mesh, MeshStandardMaterial, MOUSE, PerspectiveCamera, Plane, Raycaster, Scene, TubeGeometry, Vector2, Vector3, QuadraticBezierCurve3 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { applyPose, buildComponent, disposeObject, portAnchor } from './ComponentModel'
 import { getDefinition } from '../data/editorCatalog'
@@ -54,6 +54,53 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
   }
   const ray = (x: number, y: number) => { camera.updateMatrixWorld(); raycaster.params.Line.threshold = camera.position.distanceTo(controls?.target ?? viewTarget) * 2 * Math.tan(camera.fov * Math.PI / 360) / (height * camera.zoom) * 6; raycaster.setFromCamera(new Vector2(x / width * 2 - 1, -(y / height) * 2 + 1), camera) }
   const translateView = (delta: Vector3) => { camera.position.add(delta); (controls?.target ?? viewTarget).add(delta); camera.updateMatrixWorld(); controls?.update(); schedule() }
+  let activeOutline: { id: string; group: Group } | null = null
+  const removeActiveOutline = () => {
+    if (activeOutline) {
+      if (activeOutline.group.parent) activeOutline.group.parent.remove(activeOutline.group)
+      disposeObject(activeOutline.group)
+      activeOutline = null
+    }
+  }
+  const createSelectionOutline = (size: [number, number, number]): Group => {
+    const [w, h, d] = size
+    const outline = new Group()
+    outline.userData = { ignorePick: true, isOutline: true }
+    const pad = 0.02
+    const W = w + pad * 2, D = d + pad * 2
+    const yBot = 0.015, yTop = h + 0.025
+    const H = Math.max(0.05, yTop - yBot), yMid = (yTop + yBot) / 2
+    const t = 0.038
+    const outlineMat = new MeshStandardMaterial({
+      color: '#fbbf24',
+      emissive: '#f59e0b',
+      emissiveIntensity: 1.0,
+      roughness: 0.25,
+      metalness: 0.15
+    })
+    const addBar = (x: number, y: number, z: number, sx: number, sy: number, sz: number) => {
+      const mesh = new Mesh(new BoxGeometry(sx, sy, sz), outlineMat)
+      mesh.position.set(x, y, z)
+      mesh.userData = { ignorePick: true }
+      outline.add(mesh)
+    }
+    // Top perimeter loop
+    addBar(0, yTop, -D / 2, W + t, t, t)
+    addBar(0, yTop, D / 2, W + t, t, t)
+    addBar(-W / 2, yTop, 0, t, t, D + t)
+    addBar(W / 2, yTop, 0, t, t, D + t)
+    // Bottom perimeter loop
+    addBar(0, yBot, -D / 2, W + t, t, t)
+    addBar(0, yBot, D / 2, W + t, t, t)
+    addBar(-W / 2, yBot, 0, t, t, D + t)
+    addBar(W / 2, yBot, 0, t, t, D + t)
+    // 4 Vertical corner posts
+    addBar(-W / 2, yMid, -D / 2, t, H, t)
+    addBar(W / 2, yMid, -D / 2, t, H, t)
+    addBar(-W / 2, yMid, D / 2, t, H, t)
+    addBar(W / 2, yMid, D / 2, t, H, t)
+    return outline
+  }
   return {
     scene, camera, grid, models, wires,
     endpointPosition,
@@ -68,6 +115,16 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
         if (model && model.userData.signature !== signature) { disposeObject(model); content.remove(model); models.delete(module.id); model = undefined }
         if (!model) { model = buildComponent(module); models.set(module.id, model); content.add(model) }
         applyPose(model, module)
+      }
+      if (activeOutline) {
+        if (!next || !next.modules.some((module) => module.id === activeOutline?.id)) {
+          removeActiveOutline()
+        } else {
+          const model = models.get(activeOutline.id)
+          if (model && !model.children.includes(activeOutline.group)) {
+            model.add(activeOutline.group)
+          }
+        }
       }
       refreshWires(); schedule()
     },
@@ -88,10 +145,21 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
       schedule()
     },
     highlight(id: string | null, wire?: { source: string; destination: string } | null) {
+      if (activeOutline && activeOutline.id !== id) removeActiveOutline()
+      if (id && (!activeOutline || activeOutline.id !== id)) {
+        const model = models.get(id)
+        if (model) {
+          const size = (model.userData.size as [number, number, number] | undefined) ?? [1.5, 0.5, 1]
+          const outline = createSelectionOutline(size)
+          model.add(outline)
+          activeOutline = { id, group: outline }
+        }
+      }
       models.forEach((model, key) => model.traverse((object) => {
-        if (object instanceof Mesh) {
+        if (object instanceof Mesh && !object.userData.ignorePick) {
           const mats = Array.isArray(object.material) ? object.material : [object.material]
-          mats.forEach((m) => { if ('emissive' in m) (m as MeshStandardMaterial).emissive.set(key === id ? '#244639' : '#000000') })
+          const isBreadboard = typeof model.userData.type === 'string' && model.userData.type.startsWith('breadboard')
+          mats.forEach((m) => { if ('emissive' in m) (m as MeshStandardMaterial).emissive.set(key === id ? (isBreadboard ? '#151311' : '#244639') : '#000000') })
         }
       }))
       wires.children.forEach((object) => { const mesh = object as Mesh; (mesh.material as MeshStandardMaterial).color.set(wire && object.userData.source === wire.source && object.userData.destination === wire.destination ? '#f1cd77' : '#71b3ce') })
@@ -139,6 +207,6 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
     },
     resetView() { if (disposed) return; controls?.reset(); viewTarget.set(0, 0, 0); camera.position.set(0, 11, 10); controls?.target.set(0, 0, 0); camera.lookAt(0, 0, 0); camera.zoom = 1; camera.updateProjectionMatrix(); controls?.update(); schedule() },
     suspend(value: boolean) { suspended = value; if (value && frame !== null) { cancelFrame(frame); frame = null }; if (controls) controls.enabled = !disposed && !value && !pointerLocked; if (!value) schedule() },
-    dispose() { if (disposed) return; disposed = true; if (frame !== null) cancelFrame(frame); frame = null; controls?.removeEventListener('change', schedule); controls?.dispose(); disposeObject(scene); models.clear(); scene.clear(); renderer.dispose() },
+    dispose() { if (disposed) return; disposed = true; if (frame !== null) cancelFrame(frame); frame = null; controls?.removeEventListener('change', schedule); controls?.dispose(); removeActiveOutline(); disposeObject(scene); models.clear(); scene.clear(); renderer.dispose() },
   }
 }
