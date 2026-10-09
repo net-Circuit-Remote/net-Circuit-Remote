@@ -35,7 +35,6 @@ onUnmounted(() => { document.removeEventListener('pointerdown', outside); docume
 </script>
 <template>
   <section ref="root" class="component-ribbon" aria-label="Component library">
-    <div class="ribbon-heading"><span>COMPONENT LIBRARY</span><small>Drag to workspace or click to place</small><span class="ribbon-phase">INTERACTIVE WORKSPACE <i /> PHASE 02</span></div>
     <div class="ribbon-scroll" role="toolbar" aria-label="Component families">
       <button v-for="group in ribbonGroups" :key="group.id" :data-group="group.id" :aria-expanded="ui.activeRibbonGroup === group.id" aria-controls="ribbon-palette" :class="{ active: ui.activeRibbonGroup === group.id }" @click="ui.toggleRibbon(group.id)">
         <span class="ribbon-art"><img v-if="group.icon" :src="iconUrl(group.icon)" alt="" width="44" height="44" /><WorkbenchIcon v-else :name="group.glyph || 'chip'" /></span>
