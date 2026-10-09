@@ -15,8 +15,9 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
   const grid = new GridHelper(30, 60, '#415a70', '#253747'); grid.position.y = -0.01
   const ambient = new AmbientLight('#c9def4', 2)
   const light = new DirectionalLight('#fff5dc', 3); light.position.set(-5, 10, 5)
+  const fillLight = new DirectionalLight('#a8c7e8', 1.2); fillLight.position.set(6, 8, -6)
   const wires = new Group(), content = new Group(), models = new Map<string, Group>()
-  scene.add(grid, ambient, light, content, wires)
+  scene.add(grid, ambient, light, fillLight, content, wires)
   const raycaster = new Raycaster(), plane = new Plane(new Vector3(0, 1, 0), 0)
   let width = 1, height = 1, frame: number | null = null, disposed = false, visible = false, suspended = false
   let graph: CircuitGraph | null = null, ghost: Group | null = null
@@ -73,12 +74,24 @@ export function createSceneManager({ renderer, canvas, onRender, requestFrame = 
       if (ghost && type && position && ghost.userData.type === type) { ghost.position.copy(position); ghost.updateMatrixWorld(true); schedule(); return }
       if (ghost) { disposeObject(ghost); scene.remove(ghost); ghost = null }
       if (type && position && getDefinition(type)) {
-        ghost = buildComponent({ id: 'PLACE', type, position }); ghost.userData.type = type; ghost.traverse((object) => { if (object instanceof Mesh) { const material = object.material as MeshStandardMaterial; material.transparent = true; material.opacity = 0.4 } }); scene.add(ghost)
+        ghost = buildComponent({ id: 'PLACE', type, position }); ghost.userData.type = type
+        ghost.traverse((object) => {
+          if (object instanceof Mesh) {
+            const mats = Array.isArray(object.material) ? object.material : [object.material]
+            mats.forEach((m) => { if ('transparent' in m) { m.transparent = true; m.opacity = 0.4 } })
+          }
+        })
+        scene.add(ghost)
       }
       schedule()
     },
     highlight(id: string | null, wire?: { source: string; destination: string } | null) {
-      models.forEach((model, key) => model.traverse((object) => { if (object instanceof Mesh) (object.material as MeshStandardMaterial).emissive.set(key === id ? '#244639' : '#000000') }))
+      models.forEach((model, key) => model.traverse((object) => {
+        if (object instanceof Mesh) {
+          const mats = Array.isArray(object.material) ? object.material : [object.material]
+          mats.forEach((m) => { if ('emissive' in m) (m as MeshStandardMaterial).emissive.set(key === id ? '#244639' : '#000000') })
+        }
+      }))
       wires.children.forEach((object) => { const mesh = object as Mesh; (mesh.material as MeshStandardMaterial).color.set(wire && object.userData.source === wire.source && object.userData.destination === wire.destination ? '#f1cd77' : '#71b3ce') })
       schedule()
     },
