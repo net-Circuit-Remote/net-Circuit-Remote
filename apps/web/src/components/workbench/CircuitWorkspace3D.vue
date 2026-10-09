@@ -43,13 +43,26 @@ onUnmounted(() => { observer?.disconnect(); manager?.dispose(); canvas.value?.re
     <p v-if="graphicsError" class="graphics-notice" role="status">{{ graphicsError }}</p>
     <div class="workspace-hint"><span>{{ workspace.tool.toUpperCase() }}</span><span>{{ workspace.previewType ? 'Preview: ' + workspace.previewType : 'Visual grid · logical graph kept separate' }}</span></div>
     <div class="workspace-axis" aria-hidden="true">
-      <svg viewBox="0 0 54 54" class="axis-lines" aria-hidden="true">
-        <line x1="22" y1="32" x2="22" y2="13" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" />
-        <line x1="22" y1="32" x2="41" y2="23" stroke="#ff4d4f" stroke-width="2.5" stroke-linecap="round" />
-        <line x1="22" y1="32" x2="10" y2="44" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" />
-        <circle cx="22" cy="32" r="2.5" fill="#7f9db8" />
+      <svg viewBox="0 0 84 84" class="axis-gizmo" aria-hidden="true">
+        <!-- Y Axis (Green) -->
+        <line x1="42" y1="41" x2="42" y2="15" stroke="#00e676" stroke-width="3.5" stroke-linecap="round" />
+        <polygon points="42,5 37,16 47,16" fill="#00e676" />
+        <!-- X Axis (Red) -->
+        <line x1="42" y1="45" x2="67" y2="59.5" stroke="#ff3d00" stroke-width="3.5" stroke-linecap="round" />
+        <polygon points="76,64.5 65.5,63.5 70,55.5" fill="#ff3d00" />
+        <!-- Z Axis (Blue) -->
+        <line x1="42" y1="45" x2="17" y2="59.5" stroke="#2979ff" stroke-width="3.5" stroke-linecap="round" />
+        <polygon points="8,64.5 14,55.5 18.5,63.5" fill="#2979ff" />
+        <!-- Central Cube -->
+        <g class="axis-cube">
+          <polygon points="42,40 47,43 42,46 37,43" fill="#e2e8f0" />
+          <polygon points="37,43 42,46 42,51.5 37,48.5" fill="#64748b" />
+          <polygon points="42,46 47,43 47,48.5 42,51.5" fill="#94a3b8" />
+        </g>
       </svg>
-      <i class="axis-x">X</i><i class="axis-y">Y</i><i class="axis-z">Z</i>
+      <i class="axis-x">X</i>
+      <i class="axis-y">Y</i>
+      <i class="axis-z">Z</i>
     </div>
   </div>
 </template>
