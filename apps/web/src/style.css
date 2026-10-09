@@ -36,8 +36,8 @@ code { font-family: Consolas, monospace; }
 .ribbon-scroll > button { display: flex; flex: 1 0 88px; min-width: 88px; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 3px; border: 1px solid transparent; border-right: 1px solid #364657; background: transparent; height: 86px; padding: 3px 6px; position: relative; }
 .ribbon-scroll > button:last-child { border-right-color: transparent; }
 .ribbon-scroll > button.active { background: #304655; border-color: #4b8e88; }
-.ribbon-art { width: 42px; height: 42px; display: grid; place-items: center; }
-.ribbon-art img { width: 42px; height: 42px; object-fit: contain; background: transparent; }
+.ribbon-art { width: 56px; height: 42px; display: grid; place-items: center; }
+.ribbon-art img { max-width: 56px; max-height: 42px; width: auto; height: auto; object-fit: contain; background: transparent; }
 .ribbon-art > svg { width: 32px; height: 32px; color: #a1bdcb; }
 .ribbon-label { font-size: 10px; min-height: 24px; max-width: 92px; display: grid; place-items: center; line-height: 12px; white-space: normal; overflow-wrap: anywhere; }
 .ribbon-chevron { position: absolute; bottom: 1px; height: 10px; width: 10px; color: #71889d; }
@@ -47,8 +47,8 @@ code { font-family: Consolas, monospace; }
 .palette-heading span { font-size: 10px; color: #91a6b9; }
 .palette-items { display: flex; gap: 8px; overflow-x: auto; }
 .palette-items button { width: 112px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 10px 6px; background: #1a2736; }
-.palette-art { width: 58px; height: 58px; display: grid; place-items: center; }
-.palette-art img { width: 58px; height: 58px; object-fit: contain; background: transparent; }
+.palette-art { width: 72px; height: 58px; display: grid; place-items: center; }
+.palette-art img { max-width: 72px; max-height: 58px; width: auto; height: auto; object-fit: contain; background: transparent; }
 .palette-art svg { width: 35px; height: 35px; color: #9fb9c8; }
 .palette-items strong { font-size: 11px; font-weight: 500; }
 .palette-items small { font-size: 9px; color: #7fbeaF; }
@@ -153,7 +153,7 @@ code { font-family: Consolas, monospace; }
 .monitor-channel-list { font: 9px Consolas, monospace; color: #89a9ba; padding: 12px 9px; width: 125px; flex-shrink: 0; border-right: 1px solid #2e4355; }.monitor-channel-list small { display: block; margin-top: 20px; line-height: 1.7; color: #637e91; font: 10px 'Segoe UI', sans-serif; }
 .monitor-screen svg { min-width: 0; flex: 1; height: 170px; }
 .monitor-screen + fieldset { grid-template-columns: 1fr 1fr auto; }
-.component-preview { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }.component-preview img { object-fit: contain; background: transparent; border-radius: 4px; }.component-preview > svg { width: 70px; height: 70px; color: #8cb4c3; }
+.component-preview { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }.component-preview img { max-width: 140px; max-height: 80px; width: auto; height: auto; object-fit: contain; background: transparent; border-radius: 4px; flex-shrink: 0; }.component-preview > svg { width: 70px; height: 70px; color: #8cb4c3; }
 .component-preview > div { min-width: 0; }.component-preview small { font-size: 8px; letter-spacing: 1px; }.component-preview h2 { font-size: 17px; margin: 6px 0; font-weight: 500; overflow-wrap: anywhere; }.component-preview code { font-size: 10px; color: #7ec2b9; }
 .component-description { font-size: 11px; line-height: 1.65; color: #adbfcf; }
 .metadata-list { display: grid; grid-template-columns: 95px minmax(0, 1fr); gap: 9px; border-top: 1px solid #35485b; padding-top: 12px; font-size: 10px; line-height: 1.6; }.metadata-list dt { color: #7d96aa; overflow-wrap: anywhere; }.metadata-list dd { margin: 0; overflow-wrap: anywhere; color: #bfd1df; }

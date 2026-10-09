@@ -12,7 +12,9 @@ const artwork = (type: string, name: string, icon: string): LibraryComponent => 
 const future = (type: string, name: string, glyph: string): LibraryComponent => ({ type, name, glyph, description: 'Reserved library entry. Device metadata and editor integration are not connected yet.' })
 export const ribbonGroups: RibbonGroup[] = [
   { id: 'structure', label: 'Structure', icon: 'breadboard_830', items: [
-    { ...artwork('BREADBOARD', 'Breadboard', 'breadboard_830'), metadata: deviceMetadata['generic-full-size'] },
+    { ...artwork('BREADBOARD', 'Breadboard 830', 'breadboard_830'), metadata: deviceMetadata['generic-full-size'] },
+    { ...artwork('BREADBOARD_630', 'Breadboard 630', 'breadboard_630'), description: '630 tie-point half-size solderless breadboard terminal strip without power distribution rails.' },
+    { ...artwork('BREADBOARD_100', 'Solderless Breadboard', 'breadboard_100'), description: '100 tie-point dual bus power distribution strip (+ / - rails) for modular breadboard assembly.' },
     { type: 'BOARD', name: 'Board', glyph: 'chip', description: 'Decorative board; no electrical node map is inferred.' },
     artwork('POWER_SUPPLY', 'Power supply visual', 'power_supply'),
     { ...artwork('JUMPER', 'Wire tool', 'Line'), description: 'Connect explicitly named logical ports.' },

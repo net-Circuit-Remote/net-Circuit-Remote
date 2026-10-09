@@ -51,10 +51,47 @@ def remove_white_bg(img: Image.Image) -> Image.Image:
     return Image.fromarray(rgba)
 
 
+def remove_white_bg_breadboard(orig: Image.Image) -> Image.Image:
+    """Specialized high-resolution background removal for breadboards preserving off-white ABS plastic."""
+    rgba = np.array(orig.convert("RGBA"))
+    h, w = rgba.shape[:2]
+    min_rgb = np.min(rgba[:, :, :3], axis=2)
+    is_white = min_rgb >= 252
+    bin_mask = np.zeros((h, w), dtype=np.uint8)
+    bin_mask[is_white] = 255
+    flood_mask = np.zeros((h + 2, w + 2), dtype=np.uint8)
+    seeds = [(x, 0) for x in range(w) if is_white[0, x]] + \
+            [(x, h - 1) for x in range(w) if is_white[h - 1, x]] + \
+            [(0, y) for y in range(h) if is_white[y, 0]] + \
+            [(w - 1, y) for y in range(h) if is_white[y, w - 1]]
+    for sx, sy in seeds:
+        if flood_mask[sy + 1, sx + 1] == 0 and bin_mask[sy, sx] == 255:
+            cv2.floodFill(bin_mask, flood_mask, (sx, sy), 128)
+    bg_mask = (bin_mask == 128)
+    alpha = rgba[:, :, 3].astype(np.float32)
+    alpha[bg_mask] = 0.0
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    dilated_bg = cv2.dilate(bg_mask.astype(np.uint8), kernel, iterations=1)
+    transition = (dilated_bg > 0) & (~bg_mask) & (min_rgb >= 248)
+    trans_factor = np.clip((255.0 - min_rgb[transition].astype(np.float32)) / (255.0 - 248.0), 0.0, 1.0)
+    alpha[transition] *= trans_factor
+    rgba[:, :, 3] = np.clip(alpha, 0, 255).astype(np.uint8)
+    cleaned = Image.fromarray(rgba)
+    mask = rgba[:, :, 3] > 10
+    rows = np.where(mask.any(axis=1))[0]
+    cols = np.where(mask.any(axis=0))[0]
+    pad = 8
+    y0 = max(0, rows[0] - pad)
+    y1 = min(h, rows[-1] + 1 + pad)
+    x0 = max(0, cols[0] - pad)
+    x1 = min(w, cols[-1] + 1 + pad)
+    return cleaned.crop((x0, y0, x1, y1))
+
+
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     manifest = []
-    montage = Image.new("RGB", (5 * 200, 4 * 220), "#202c3b")
+    montage = Image.new("RGB", (5 * 200, 5 * 220), "#202c3b")
     draw = ImageDraw.Draw(montage)
     for index, path in enumerate(sorted(SOURCE.glob("*.svg"))):
         raw = path.read_bytes()
@@ -62,11 +99,17 @@ def main():
         if match is None:
             raise ValueError(f"Expected embedded PNG in {path.name}")
         with Image.open(io.BytesIO(base64.b64decode(match.group(1)))) as original:
-            artwork = original.convert("RGBA")
-            artwork.thumbnail((160, 160), Image.Resampling.LANCZOS)
-        artwork = remove_white_bg(artwork)
+            if "breadboard" in path.name:
+                artwork = remove_white_bg_breadboard(original)
+                artwork.thumbnail((220, 220), Image.Resampling.LANCZOS)
+                quality = 82
+            else:
+                artwork = original.convert("RGBA")
+                artwork.thumbnail((160, 160), Image.Resampling.LANCZOS)
+                artwork = remove_white_bg(artwork)
+                quality = 82
         encoded = io.BytesIO()
-        artwork.save(encoded, format="WEBP", quality=82, method=6)
+        artwork.save(encoded, format="WEBP", quality=quality, method=6)
         payload = base64.b64encode(encoded.getvalue()).decode("ascii")
         width, height = artwork.size
         svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '

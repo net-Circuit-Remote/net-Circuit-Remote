@@ -25,21 +25,21 @@
     "source": "assets/icon .svg/breadboard_100.svg",
     "sha256": "b91da7de1b13eb8415712321692647cd6dcf737ffb503e0f6f866c4aa0d4db71",
     "source_bytes": 915925,
-    "output_bytes": 1227
+    "output_bytes": 2967
   },
   {
     "file": "breadboard_630.svg",
     "source": "assets/icon .svg/breadboard_630.svg",
     "sha256": "5676ddd0877b76502bdcc872e8ddd74d23b7e4f9a05a9254232ca3bdfc654bbf",
     "source_bytes": 1365537,
-    "output_bytes": 4755
+    "output_bytes": 9495
   },
   {
     "file": "breadboard_830.svg",
     "source": "assets/icon .svg/breadboard_830.svg",
     "sha256": "ea1b253520c9c9182ac4013eb4a9e8e68657dab9e4457e2204a08cd0ef8c64ff",
     "source_bytes": 1464221,
-    "output_bytes": 6515
+    "output_bytes": 11079
   },
   {
     "file": "buzzer_chip.svg",
@@ -114,8 +114,8 @@
   {
     "file": "Line.svg",
     "source": "assets/icon .svg/Line.svg",
-    "sha256": "887bdb349abe07baa1554ca91d80f06287a628f928f79ad954e53e72e0fac688",
-    "source_bytes": 6227588,
+    "sha256": "8f7d372be1a8d61588431b68707afe3315f6b23c60189abe3dde1d12334670c7",
+    "source_bytes": 6227591,
     "output_bytes": 4586
   },
   {
