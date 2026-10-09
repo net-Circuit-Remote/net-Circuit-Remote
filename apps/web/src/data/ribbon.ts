@@ -17,7 +17,7 @@ export const ribbonGroups: RibbonGroup[] = [
     { ...artwork('BREADBOARD_100', 'Solderless Breadboard', 'breadboard_100'), description: '100 tie-point dual bus power distribution strip (+ / - rails) for modular breadboard assembly.' },
     { type: 'BOARD', name: 'Board', glyph: 'chip', description: 'Decorative board; no electrical node map is inferred.' },
     artwork('POWER_SUPPLY', 'Power supply visual', 'power_supply'),
-    { ...artwork('JUMPER', 'Wire tool', 'Line'), description: 'Connect explicitly named logical ports.' },
+    { ...artwork('JUMPER', 'Wire tool', 'Wire'), description: 'Connect explicitly named logical ports.' },
   ] },
   { id: 'passive', label: 'Passive', icon: 'resistor', items: [artwork('RESISTOR', 'Resistor', 'resistor'), artwork('CAPACITOR', 'Capacitor', 'capacitor')] },
   { id: 'active', label: 'Active', icon: 'transistor', items: [artwork('TRANSISTOR', 'Transistor', 'transistor'), artwork('DIODE', 'Diode', 'diode'), artwork('ZENER', 'Zener diode', 'diode_zener')] },
