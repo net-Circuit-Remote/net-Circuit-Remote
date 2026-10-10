@@ -157,7 +157,12 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   const dragging = ref<'move' | 'pan' | 'transform' | 'control' | null>(null)
   const hoveredHandle = ref<TransformHandle | null>(null)
   const hoveredControl = ref<SupplyControl | null>(null)
-  const controlHint = computed(() => hoveredControl.value === 'power_on' ? 'Click to toggle power On/Off' : hoveredControl.value ? `Drag ${hoveredControl.value === 'voltage_v' ? 'Voltage (0–15 V)' : 'Ampe (0–5 A)'} knob up/right to increase, down/left to decrease. Hold Shift for fine adjustment.` : '')
+  const controlHint = computed(() => {
+    if (hoveredHandle.value === 'delete') return 'Click to delete component (or press Delete)'
+    if (hoveredControl.value === 'power_on') return 'Click to toggle power On/Off'
+    if (hoveredControl.value) return `Drag ${hoveredControl.value === 'voltage_v' ? 'Voltage (0–15 V)' : 'Ampe (0–5 A)'} knob up/right to increase, down/left to decrease. Hold Shift for fine adjustment.`
+    return ''
+  })
   const ports = ref<{ endpoint: string; x: number; y: number; direction: string }[]>([])
   const selected = computed(() => circuit.graph?.modules.find((module) => module.id === workspace.selectedModuleId))
   const attempt = (action: () => void) => { try { action(); workspace.editError = '' } catch (error) { workspace.editError = error instanceof Error ? error.message : 'Circuit edit failed.' } }
@@ -205,6 +210,12 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
     if (workspace.placementType) { if (point) place(workspace.placementType, snap(point, workspace.placementType)); return }
     const transform = manager()!.pickGizmo(x, y), module = selected.value
     if (transform && module && transform.id === module.id) {
+      if (transform.handle === 'delete') {
+        attempt(() => circuit.removeModule(transform.id))
+        event.preventDefault?.()
+        sync()
+        return
+      }
       const center = manager()!.gizmoOrigin()!, anchor = manager()!.groundPoint(x, y, center.y)
       if (!anchor) return
       const initial = { x: module.position?.x ?? 0, y: module.position?.y ?? 0, z: module.position?.z ?? 0 }

@@ -77,9 +77,12 @@ code { font-family: Consolas, monospace; }
 .component-information-note { margin: 8px 0 0; padding-top: 9px; border-top: 1px solid #344657; font-size: 10px; line-height: 1.5; color: #8ca2b5; }
 .component-information-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; padding: 9px 12px; border-top: 1px solid #3b4d5f; background: #18232e; }
 .component-information-footer > span { font-size: 9px; color: #8097ab; max-width: 150px; line-height: 1.4; }
-.component-information-footer button { display: flex; align-items: center; justify-content: center; gap: 12px; min-width: 74px; min-height: 28px; padding: 4px 10px; font-size: 11px; border-radius: 3px; border-color: #4b8585; background: #284c51; color: #d7eee9; }
+.component-information-footer button { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 74px; min-height: 28px; padding: 4px 10px; font-size: 11px; border-radius: 3px; border-color: #4b8585; background: #284c51; color: #d7eee9; }
 .component-information-footer button:hover:not(:disabled) { background: #315b60; }
+.component-information-footer button.delete-btn { background: #3d232a; border-color: #7b4249; color: #f2b7aa; min-width: 68px; }
+.component-information-footer button.delete-btn:hover:not(:disabled) { background: #522d36; border-color: #9c545d; }
 .component-information-footer button span { font-size: 15px; line-height: 1; }
+.component-information-footer button .workbench-icon { width: 13px; height: 13px; }
 .snap-toggle { display: flex; flex-direction: row; gap: 4px; align-items: center; font-size: 10px; padding-inline: 5px; }
 .snap-toggle input, input[type=checkbox] { width: auto; accent-color: var(--accent); }
 .editor-error { position: absolute; bottom: 65px; left: 22px; padding: 8px 10px; max-width: calc(100% - 44px); color: #f2b7aa; background: #462b32ee; border: 1px solid #8b5759; border-radius: 4px; font-size: 11px; }

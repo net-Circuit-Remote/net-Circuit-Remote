@@ -519,3 +519,20 @@ test('breadboard magnetic docking snaps adjacent boards seamlessly without gaps 
   const resistorPos = snapPosition({ x: 0.4, z: 0.6 }, true, modules, 'RESISTOR')
   assert.deepEqual(resistorPos, { x: 0.5, y: 0, z: 0.5 })
 })
+
+test('gizmo delete handle removes the selected component with undo support', async () => {
+  const h = setup()
+  try {
+    const id = h.circuit.placeModule('CLOCK', { x: 0, y: 0.4, z: 0 }); h.workspace.selectModule(id)
+    await nextTick(); h.circuit.past = []
+    const delPos = h.manager.gizmoHandlePosition('delete')!
+    const start = h.manager.project(delPos)
+    assert.equal(h.manager.pickGizmo(start.x, start.y)?.handle, 'delete')
+    h.editor.pointerDown(h.pointer(start.x, start.y))
+    assert.equal(h.circuit.graph!.modules.length, 0, 'component must be deleted')
+    assert.equal(h.circuit.past.length, 1)
+    h.circuit.undo(); await nextTick()
+    assert.equal(h.circuit.graph!.modules.length, 1)
+    assert.equal(h.circuit.graph!.modules[0].id, id)
+  } finally { h.dispose() }
+})

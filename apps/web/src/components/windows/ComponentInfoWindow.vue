@@ -23,6 +23,7 @@ const introductions: Record<string, string> = {
 const description = computed(() => type.value && introductions[type.value] || item.value?.description || (definition.value ? definition.value.visualOnly ? 'A visual work surface for arranging circuit components. Add another board and choose its position on the surface.' : 'An editor component with named logical ports. Arrange it on the surface before connecting its ports.' : 'An imported component. Its original properties are retained; no model contract is available for adding another instance.'))
 const note = computed(() => definition.value?.visualOnly ? 'Visual structure. Placement creates no electrical source or connection.' : definition.value ? 'Editor model with named logical ports. Physical pin mapping and execution support are separate.' : 'This entry has no placeable editor model yet.')
 function add() { if (definition.value && type.value) { workspace.armPlacement(type.value); ui.activeRibbonGroup = null } }
+function remove() { if (selected.value) { circuit.removeModule(selected.value.id); ui.closeWindow('component-info') } }
 function close() { ui.closeWindow('component-info'); void nextTick(() => document.querySelector<HTMLCanvasElement>('canvas[aria-label="Three-dimensional circuit workspace"]')?.focus()) }
 // Explicit window activation receives focus; automatic selection remains on canvas.
 watch(() => window.value?.activation, (activation) => { if (activation) void nextTick(() => header.value?.focus()) })
@@ -39,6 +40,6 @@ watch(() => window.value?.activation, (activation) => { if (activation) void nex
       <p class="component-information-introduction">{{ description }}</p>
       <p class="component-information-note">{{ note }}</p>
     </div>
-    <footer class="component-information-footer"><span>{{ definition ? 'Choose a position on the surface' : 'Model unavailable' }}</span><button :disabled="!definition" :aria-label="'Add ' + name" @click="add">Add <span aria-hidden="true">+</span></button></footer>
+    <footer class="component-information-footer"><button class="delete-btn" :aria-label="'Delete ' + name" @click="remove"><WorkbenchIcon name="delete" /> Delete</button><button :disabled="!definition" :aria-label="'Add ' + name" @click="add">Add <span aria-hidden="true">+</span></button></footer>
   </aside>
 </template>

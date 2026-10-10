@@ -1,6 +1,6 @@
 import { Box3, BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, PerspectiveCamera, Raycaster, TorusGeometry, Vector3 } from 'three'
 
-export type TransformHandle = 'x' | 'z' | 'xz' | 'rotate-y'
+export type TransformHandle = 'x' | 'z' | 'xz' | 'rotate-y' | 'delete'
 export interface GizmoObstacle { left: number; top: number; right: number; bottom: number }
 
 // A scene tool, never a circuit module, port or electrical node.
@@ -35,6 +35,17 @@ export function createComponentTransformGizmo() {
   const grip = add(rotate, new Mesh(new TorusGeometry(0.16, 0.062, 12, 32), material('#efbd48'))); grip.rotation.x = Math.PI / 2; grip.position.x = -1.35; grip.renderOrder = 22
   const gripCore = add(rotate, new Mesh(new CylinderGeometry(0.095, 0.095, 0.03, 24), material('#18252c')))
   gripCore.position.x = -1.35; gripCore.renderOrder = 23; gripCore.userData.fixedColor = true
+  const deleteBtn = handle('delete', '#ff473d', new Vector3(1.42, 0, 1.42))
+  const deleteBase = add(deleteBtn, new Mesh(new CylinderGeometry(0.30, 0.30, 0.05, 32), material('#19222b')))
+  deleteBase.renderOrder = 19; deleteBase.userData.fixedColor = true; deleteBase.position.set(1.42, 0.025, 1.42)
+  const deleteRing = add(deleteBtn, new Mesh(new TorusGeometry(0.28, 0.022, 8, 32), material('#2d3c4a')))
+  deleteRing.rotation.x = Math.PI / 2; deleteRing.renderOrder = 20; deleteRing.userData.fixedColor = true; deleteRing.position.set(1.42, 0.038, 1.42)
+  const cross1 = add(deleteBtn, new Mesh(new BoxGeometry(0.30, 0.055, 0.075), material('#ff473d')))
+  cross1.rotation.y = Math.PI / 4; cross1.position.set(1.42, 0.05, 1.42); cross1.renderOrder = 21
+  const cross2 = add(deleteBtn, new Mesh(new BoxGeometry(0.30, 0.055, 0.075), material('#ff473d')))
+  cross2.rotation.y = -Math.PI / 4; cross2.position.set(1.42, 0.05, 1.42); cross2.renderOrder = 21
+  const deleteTarget = add(deleteBtn, new Mesh(new CylinderGeometry(0.35, 0.35, 0.16, 16), material('#ff473d', true)), true)
+  deleteTarget.position.set(1.42, 0.05, 1.42)
   const paint = () => {
     for (const [id, group] of handles) for (const mesh of group.children as Mesh[]) {
       if (!mesh.userData.pickOnly && !mesh.userData.fixedColor) (mesh.material as MeshBasicMaterial).color.set(id === active || id === hovered ? '#65d8cd' : group.userData.color)

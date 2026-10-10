@@ -91,7 +91,7 @@ test('supply controls are occluded by their case and still pick correctly after 
 type TransformScene = ReturnType<typeof createSceneManager> & {
   fitCircuit?: () => boolean
   previewRotation?: (id: string, degrees: number) => void
-  gizmoHandlePosition?: (handle: 'x' | 'z' | 'xz' | 'rotate-y') => Vector3 | null
+  gizmoHandlePosition?: (handle: 'x' | 'z' | 'xz' | 'rotate-y' | 'delete') => Vector3 | null
   pickGizmo?: (x: number, y: number) => { id: string; handle: string } | null
   hoverGizmo?: (x: number, y: number) => string | null
 }
@@ -122,8 +122,8 @@ test('selected models expose pickable adjacent gizmo handles, stable screen scal
     const graph: CircuitGraph = { schema_version: '1.0', circuit_id: 'gizmo', modules: [{ id: 'A', type: 'CLOCK' }, { id: 'B', type: 'LED', position: { x: 3, y: 0, z: 0 } }], connections: [{ source: 'A.OUT', destination: 'B.IN' }] }
     manager.syncGraph(graph); manager.highlight('A')
     assert.equal(typeof manager.gizmoHandlePosition, 'function')
-    const read = (handle: 'x' | 'z' | 'xz' | 'rotate-y') => manager.gizmoHandlePosition!(handle)!
-    for (const handle of ['x', 'z', 'xz', 'rotate-y'] as const) {
+    const read = (handle: 'x' | 'z' | 'xz' | 'rotate-y' | 'delete') => manager.gizmoHandlePosition!(handle)!
+    for (const handle of ['x', 'z', 'xz', 'rotate-y', 'delete'] as const) {
       const p = manager.project(read(handle))
       assert.equal(manager.pickGizmo!(p.x, p.y)?.handle, handle)
       assert.equal(manager.hoverGizmo!(p.x, p.y), handle)
