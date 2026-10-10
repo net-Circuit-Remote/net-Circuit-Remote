@@ -60,7 +60,6 @@ export function addFunctionGeneratorModel(group: Group) {
   merged('rear_grips', [-2.15, 2.15].map(x => new RoundedBoxGeometry(0.82, 0.17, 0.40, 1, 0.035).translate(x, 3.42, -0.73)), rubber)
   const vents: BufferGeometry[] = []
   for (const x of [-3.002, 3.002]) for (const y of [1.18, 2.20]) for (let i = 0; i < 12; i++) vents.push(new BoxGeometry(0.004, 0.58, 0.035).translate(x, y, -0.70 + i * 0.11))
-  for (let i = 0; i < 3; i++) vents.push(new BoxGeometry(0.035, 0.31, 0.012).rotateZ(-0.7).translate(-1.78 + i * 0.14, 0.80, 1.108))
   merged('case_vents', vents, rubber)
   merged('case_fasteners', [-2.70, 2.70].flatMap(x => [-0.75, 0.75].map(z => new CylinderGeometry(0.036, 0.036, 0.005, 12).translate(x, 3.491, z))), silver)
 
@@ -90,7 +89,7 @@ export function addFunctionGeneratorModel(group: Group) {
     mesh.userData = { interaction: 'button', pressAxis: 'Z', visualOnly: true }; return mesh
   }
   for (const key of layout.buttons) {
-    button(key.name, key.x, key.y, 0.38, 0.24, key.name === 'waveform_button' ? yellow : key.accent ? panel : grip, key.accent ? accent(key.accent) : rubber)
+    button(key.name, key.x, key.y, key.w ?? 0.38, key.h ?? 0.24, key.name === 'waveform_button' ? yellow : key.accent ? panel : grip, key.accent ? accent(key.accent) : rubber)
     if (key.accent) rounded(`${key.name}_led`, [0.12, 0.024, 0.008], [key.x, key.y + 0.071, 1.189], ledAccent(key.accent), 0.005)
   }
   merged('soft_key_sockets', layout.softKeys.map(key => new RoundedBoxGeometry(0.300, 0.275, 0.054, 1, 0.018).translate(key.x, key.y, 1.120)), rubber)
@@ -115,8 +114,8 @@ export function addFunctionGeneratorModel(group: Group) {
   const cap = add('encoder_cap', new CylinderGeometry(r * 0.89, r * 0.89, 0.012, 24), bezel, 0, 0, 0.10, pivot); cap.rotation.x = Math.PI / 2
   add('encoder_finger_rim', new TorusGeometry(0.072, 0.007, 6, 20), grip, 0.12, -0.17, 0.110, pivot)
   const recess = add('encoder_finger_recess', new CylinderGeometry(0.068, 0.068, 0.003, 20), rubber, 0.12, -0.17, 0.109, pivot); recess.rotation.x = Math.PI / 2
-  const dots = Array.from({ length: 12 }, (_, i) => { const a = (100 + i / 11 * 160) * Math.PI / 180; return new SphereGeometry(0.018, 8, 6).translate(x + Math.cos(a) * 0.45, y + Math.sin(a) * 0.45, 1.135) })
-  const arc = merged('encoder_led_arc', dots, cyanLight); arc.userData = { role: 'encoder-indicators', dotCount: 12, visualOnly: true }
+  const dots = Array.from({ length: 24 }, (_, i) => { const a = (i / 24) * Math.PI * 2; return new SphereGeometry(0.018, 6, 4).translate(x + Math.cos(a) * 0.44, y + Math.sin(a) * 0.44, 1.135) })
+  const arc = merged('encoder_led_arc', dots, cyanLight); arc.userData = { role: 'encoder-indicators', dotCount: 24, rotation: '360-continuous', visualOnly: true }
 
   const power = new Group(); power.name = 'power_button'; power.position.set(layout.power.x, layout.power.y, 1.17); power.userData = { interaction: 'button', pressAxis: 'Z', visualOnly: true }; group.add(power)
   add('power_button_socket', new TorusGeometry(0.178, 0.016, 6, 24), rubber, 0, 0, -0.022, power)

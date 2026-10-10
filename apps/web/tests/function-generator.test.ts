@@ -47,9 +47,16 @@ test('generator preserves reference control layout, independent screen, encoder 
     })
     keys.forEach((name, i) => {
       const key = model.getObjectByName(name)!
-      assert.equal(key.position.x, model.getObjectByName(keys[i % 3])!.position.x)
-      assert.equal(key.position.y, model.getObjectByName(keys[Math.floor(i / 3) * 3])!.position.y)
+      if (i < 6) {
+        assert.equal(key.position.x, model.getObjectByName(keys[i % 3])!.position.x)
+        assert.equal(key.position.y, model.getObjectByName(keys[Math.floor(i / 3) * 3])!.position.y)
+      } else {
+        assert.equal(key.position.y, model.getObjectByName('ch1_button')!.position.y)
+      }
     })
+    assert.equal(model.getObjectByName('ok_button')!.position.x, (model.getObjectByName('ch1_button')!.position.x + model.getObjectByName('ch2_button')!.position.x) / 2)
+    assert.ok(model.getObjectByName('ch1_button')!.position.x < model.getObjectByName('ok_button')!.position.x)
+    assert.ok(model.getObjectByName('ch2_button')!.position.x > model.getObjectByName('ok_button')!.position.x)
     for (const name of ['ch1_button_led', 'ch2_button_led']) assert.ok(model.getObjectByName(name))
     const powerLight = model.getObjectByName('power_button_light') as Mesh
     assert.ok(powerLight.material instanceof MeshBasicMaterial && !powerLight.material.toneMapped, 'power ring remains illuminated independently of scene lighting')

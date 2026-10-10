@@ -6,7 +6,7 @@ export const GENERATOR_CH1 = '#ffe04a', GENERATOR_CH2 = '#20d4ee', GENERATOR_SYN
 export const GENERATOR_LAYOUT = {
   screen: { x: -1.54, y: 2.10, w: 2.34, h: 1.80 },
   recess: { x: -1.54, y: 2.10, w: 2.50, h: 1.96 },
-  panel: { x: 0.92, y: 2.43, w: 1.39, h: 1.35 },
+  panel: { x: 0.92, y: 2.61, w: 1.39, h: 0.94 },
   owl: { x: -2.55, y: 3.27, size: 0.20 },
   softKeys: Array.from({ length: 6 }, (_, i) => ({ name: `soft_key_${i + 1}`, x: -0.06, y: 2.83 - i * 0.30 })),
   buttons: [
@@ -16,18 +16,18 @@ export const GENERATOR_LAYOUT = {
     { name: 'counter_button', label: 'Counter', x: 0.45, y: 2.36, color: '#35434e' },
     { name: 'system_button', label: 'System', x: 0.92, y: 2.36, color: '#35434e' },
     { name: 'utility_button', label: 'Utility', x: 1.39, y: 2.36, color: '#35434e' },
-    { name: 'ch1_button', label: 'CH1', x: 0.45, y: 2.02, color: '#272e33', accent: GENERATOR_CH1 },
-    { name: 'ok_button', label: 'OK', x: 0.92, y: 2.02, color: '#35434e' },
-    { name: 'ch2_button', label: 'CH2', x: 1.39, y: 2.02, color: '#272e33', accent: GENERATOR_CH2 },
-  ] as { name: string; label: string; x: number; y: number; color: string; accent?: string }[],
-  encoder: { x: 2.38, y: 2.405, r: 0.35 },
-  arrows: [{ name: 'left_button', x: 2.10, y: 1.70, direction: -1 }, { name: 'right_button', x: 2.65, y: 1.70, direction: 1 }],
+    { name: 'ch1_button', label: 'CH1', x: 0.57, y: 1.70, color: '#272e33', accent: GENERATOR_CH1, w: 0.34 },
+    { name: 'ok_button', label: 'OK', x: 1.035, y: 1.70, color: '#35434e', w: 0.34 },
+    { name: 'ch2_button', label: 'CH2', x: 1.50, y: 1.70, color: '#272e33', accent: GENERATOR_CH2, w: 0.34 },
+  ] as { name: string; label: string; x: number; y: number; color: string; accent?: string; w?: number; h?: number }[],
+  encoder: { x: 2.22, y: 2.405, r: 0.35 },
+  arrows: [{ name: 'left_button', x: 1.97, y: 1.70, direction: -1 }, { name: 'right_button', x: 2.47, y: 1.70, direction: 1 }],
   outputs: [
     { name: 'ch1_output', label: 'CH1 Output', x: 0.63, y: 0.91, accent: GENERATOR_CH1, channel: 1 },
     { name: 'ch2_output', label: 'CH2 Output', x: 1.44, y: 0.91, accent: GENERATOR_CH2, channel: 2 },
     { name: 'sync_counter', label: 'Sync / Counter', x: 2.25, y: 0.91, accent: GENERATOR_SYNC, channel: null },
   ],
-  power: { x: -2.45, y: 0.91 },
+  power: { x: -2.32, y: 0.91 },
 } as const
 
 // These values and traces are display artwork, not a synthesized signal or a
@@ -68,21 +68,24 @@ export function generatorLegendsArtwork(): InstrumentArtwork {
   const text = (text: string, x: number, y: number, size = 25, color = '#e1e8ec', align: 'left' | 'center' = 'center') => commands.push({ kind: 'text', text, x: px(x), y: py(y), size, color, align })
   const path = (points: [number, number][], color = '#7b919b', width = 2) => commands.push({ kind: 'path', points: points.map(([x, y]) => [px(x), py(y)]), color, width })
   text('net', -2.39, 3.27, 34, '#e6eff3', 'left'); text('*CIRCUIT', -2.18, 3.27, 34, GENERATOR_CH2, 'left')
-  path([[-1.23, 3.18], [-1.23, 3.36]], GENERATOR_CH2)
-  text('L1571979', -1.12, 3.27, 28, '#e1e8ec', 'left')
-  path([[-0.35, 3.18], [-0.35, 3.36]], GENERATOR_CH2)
-  text('DDS Function / Arbitrary Waveform Generator', -0.23, 3.27, 21, '#e1e8ec', 'left')
-  path([[2.14, 3.19], [2.80, 3.19], [2.88, 3.35], [2.22, 3.35], [2.14, 3.19]], GENERATOR_CH1, 2)
-  text('2 Channel', 2.51, 3.27, 25, GENERATOR_CH1)
+  path([[-1.39, 3.18], [-1.39, 3.36]], GENERATOR_CH2)
+  text('L1571979', -1.18, 3.27, 28, '#e1e8ec', 'left')
+  path([[-0.49, 3.18], [-0.49, 3.36]], GENERATOR_CH2)
+  text('DDS Function / Arbitrary Waveform Generator', -0.28, 3.27, 22, '#e1e8ec', 'left')
+  path([[1.945, 3.19], [2.445, 3.19], [2.495, 3.35], [1.995, 3.35], [1.945, 3.19]], GENERATOR_CH1, 2)
+  text('2 Channel', 2.22, 3.27, 24, GENERATOR_CH1)
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * Math.PI * 2
+    path([[GENERATOR_LAYOUT.encoder.x + Math.cos(a) * 0.395, GENERATOR_LAYOUT.encoder.y + Math.sin(a) * 0.395], [GENERATOR_LAYOUT.encoder.x + Math.cos(a) * 0.420, GENERATOR_LAYOUT.encoder.y + Math.sin(a) * 0.420]], '#415967', 1.5)
+  }
   text('FUNCTION', 0.29, 2.975, 25, '#e1e8ec', 'left')
   for (const key of GENERATOR_LAYOUT.buttons) text(key.label, key.x, key.y - (key.accent ? 0.026 : 0), key.label === 'Waveform' ? 18 : 21, key.accent ?? (key.name === 'waveform_button' ? '#142027' : '#e1e8ec'))
-  for (const key of GENERATOR_LAYOUT.softKeys) path([[key.x - 0.16, key.y], [key.x - 0.21, key.y], [key.x - 0.28, key.y + (key.y > 2 ? -0.08 : 0.08)]], '#b6c4cb', 2)
+  for (const key of GENERATOR_LAYOUT.softKeys) path([[key.x - 0.16, key.y], [-0.27, key.y]], '#b6c4cb', 2)
   for (const key of GENERATOR_LAYOUT.arrows) commands.push({ kind: 'polygon', points: [[px(key.x + key.direction * 0.06), py(key.y)], [px(key.x - key.direction * 0.045), py(key.y + 0.065)], [px(key.x - key.direction * 0.045), py(key.y - 0.065)]], color: '#e1e8ec' })
   for (const output of GENERATOR_LAYOUT.outputs) {
     const width = output.channel === null ? 0.72 : 0.63
     commands.push({ kind: 'rect', x: px(output.x - width / 2), y: py(1.40), w: width * 256, h: 0.15 / 3.6 * 922, color: output.accent, r: 16 })
     text(output.label, output.x, 1.325, output.channel === null ? 18 : 20, '#06141a')
   }
-  text('POWER', GENERATOR_LAYOUT.power.x, 0.64, 23)
   return { width: 1536, height: 922, commands }
 }
