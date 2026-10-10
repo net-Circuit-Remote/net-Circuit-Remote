@@ -119,11 +119,11 @@
     "output_bytes": 5814
   },
   {
-    "file": "power_supply.svg",
-    "source": "assets/icon .svg/power_supply.svg",
-    "sha256": "36ed89805da4ef453bf437b1632bfdda4740f18a88215c26be28b1ef6e941843",
-    "source_bytes": 9436676,
-    "output_bytes": 4942
+    "file": "power_supply_upright.svg",
+    "source": "assets/icon .svg/power_supply_upright.svg",
+    "sha256": "d719ceecf19baa0fbb553409675d018f9623380980cb346cc46b6865f1ccf54f",
+    "source_bytes": 2941,
+    "output_bytes": 2941
   },
   {
     "file": "resistor.svg",

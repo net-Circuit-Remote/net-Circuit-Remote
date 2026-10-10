@@ -97,23 +97,57 @@ def remove_white_bg_breadboard(orig: Image.Image) -> Image.Image:
     return clean_artwork(orig, is_breadboard=True)
 
 
+def _is_native_svg(raw: bytes) -> bool:
+    """Return True for a normal UTF-8 SVG that does not embed the legacy PNG artwork."""
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+    return "<svg" in text[:1024]
+
+
+def _manifest_entry(path: Path, raw: bytes, output_bytes: int) -> dict[str, object]:
+    return {
+        "file": path.name,
+        "source": path.relative_to(ROOT).as_posix(),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "source_bytes": len(raw),
+        "output_bytes": output_bytes,
+    }
+
+
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     source_names = {p.name for p in SOURCE.glob("*.svg")}
     # Owned by the Three.js model exporter, not by supplied-artwork thumbnails.
-    # Keep it when refreshing the original icon derivatives.
+    # Keep them when refreshing the original icon derivatives.
     authored_names = {"oscilloscope_2ch.svg", "function_generator_2ch.svg"}
     for existing in OUTPUT.glob("*.svg"):
         if existing.name not in source_names | authored_names:
             existing.unlink()
+
     manifest = []
     montage = Image.new("RGB", (5 * 200, 5 * 220), "#202c3b")
     draw = ImageDraw.Draw(montage)
+
     for index, path in enumerate(sorted(SOURCE.glob("*.svg"))):
         raw = path.read_bytes()
+        target = OUTPUT / path.name
         match = re.search(rb"data:image/png;base64,([A-Za-z0-9+/=\s]+)", raw)
+        x, y = index % 5 * 200, index // 5 * 220
+
         if match is None:
-            raise ValueError(f"Expected embedded PNG in {path.name}")
+            # Newer project-authored icons may already be compact native SVG.
+            # Preserve them byte-for-byte instead of rasterizing them or rejecting
+            # them simply because they do not contain the legacy embedded PNG.
+            if not _is_native_svg(raw):
+                raise ValueError(f"Expected embedded PNG or native SVG in {path.name}")
+            target.write_bytes(raw)
+            manifest.append(_manifest_entry(path, raw, len(raw)))
+            draw.text((x + 8, y + 90), "native SVG", fill="white")
+            draw.text((x + 8, y + 180), path.name, fill="white")
+            continue
+
         with Image.open(io.BytesIO(base64.b64decode(match.group(1)))) as original:
             is_bb = "breadboard" in path.name
             artwork = clean_artwork(original, is_breadboard=is_bb)
@@ -123,6 +157,7 @@ def main():
             else:
                 artwork.thumbnail((140, 140), Image.Resampling.LANCZOS)
                 quality = 72
+
         encoded = io.BytesIO()
         artwork.save(encoded, format="WEBP", quality=quality, method=6)
         payload = base64.b64encode(encoded.getvalue()).decode("ascii")
@@ -130,14 +165,11 @@ def main():
         svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
                f'viewBox="0 0 {width} {height}"><image width="{width}" height="{height}" '
                f'href="data:image/webp;base64,{payload}"/></svg>\n')
-        target = OUTPUT / path.name
         target.write_text(svg, encoding="utf-8", newline="\n")
-        manifest.append({"file": path.name, "source": path.relative_to(ROOT).as_posix(),
-                         "sha256": hashlib.sha256(raw).hexdigest(), "source_bytes": len(raw),
-                         "output_bytes": len(svg.encode("utf-8"))})
-        x, y = index % 5 * 200, index // 5 * 220
+        manifest.append(_manifest_entry(path, raw, len(svg.encode("utf-8"))))
         montage.paste(artwork, (x + (200 - width) // 2, y + 10), artwork)
         draw.text((x + 8, y + 180), path.name, fill="white")
+
     (OUTPUT / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     metadata = {}
     for relative in ["logic-ic/74hc08.json", "breadboards/generic-full-size.json"]:

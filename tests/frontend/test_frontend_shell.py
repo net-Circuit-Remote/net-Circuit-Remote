@@ -93,11 +93,20 @@ def test_supplied_icons_have_small_committed_derivatives_with_verified_provenanc
     for entry in manifest:
         source = ROOT/entry['source']
         assert source.parent == ROOT/'assets/icon .svg'
-        assert hashlib.sha256(source.read_bytes()).hexdigest() == entry['sha256']
+        source_bytes = source.read_bytes()
+        assert hashlib.sha256(source_bytes).hexdigest() == entry['sha256']
         icon = (icon_dir/entry['file']).read_bytes()
         assert len(icon) == entry['output_bytes']
-        assert b'data:image/webp;base64,' in icon
-        assert b'data:image/png;base64,' not in icon
+
+        # Legacy supplied artwork embeds a large PNG and must be committed as a
+        # small WebP derivative. Compact project-authored SVGs are already an
+        # efficient derivative, so preserve them byte-for-byte.
+        if b'data:image/png;base64,' in source_bytes:
+            assert b'data:image/webp;base64,' in icon
+            assert b'data:image/png;base64,' not in icon
+        else:
+            assert source_bytes.lstrip().startswith(b'<svg')
+            assert icon == source_bytes
 
 
 def test_browser_device_metadata_matches_authoritative_device_library():
