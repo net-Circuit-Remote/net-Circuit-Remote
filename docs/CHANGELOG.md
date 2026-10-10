@@ -4,6 +4,13 @@ All notable project changes will be documented in this file. The project follows
 
 ## [Unreleased]
 
+### Added — 2026-10-10 Two-channel Oscilloscope model
+
+- Added an original graphite bench Oscilloscope with owl/net*CIRCUIT branding, illustrative yellow/cyan waveform screen, Horizontal/Trigger/independent Vertical controls, seven centered knob pivots, named buttons and exactly two BNC connectors.
+- Instruments now places the Oscilloscope model through the existing graph, selection, Move/gizmo and Undo/Redo lifecycle. The Scope tool retains the acquisition window shell; the model creates no fabricated electrical ports or acquisition ratings.
+- Committed self-contained GLB and glTF/bin/PNG assets, a reproducible exporter using shared geometry/artwork, and a development GLB/CanvasTexture viewer. Coordinate/export notes are in `apps/web/public/models/oscilloscope-2ch/README.md`; control integration notes are inline in source.
+- Verified: 96/96 frontend tests, TypeScript checks, direct WebGL GLB loading/CanvasTexture replacement, native Move/Select/Undo/Y-gizmo gestures and context/diff checks. Vite production bundling remains blocked by sandbox `EPERM`; the Python provenance test retains its pre-existing missing `power_supply.svg` failure (16/17 pass).
+
 ### Changed — 2026-10-09 Ribbon, gizmo and upright Power Supply
 
 - Removed ribbon Info rows; palettes follow the clicked family and clamp/update on resize/scroll. Embedded/Controller stays on one line.

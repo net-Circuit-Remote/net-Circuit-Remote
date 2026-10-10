@@ -7,6 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vue-tsc --noEmit && vite build",
     "test": "vue-tsc --noEmit -p tsconfig.tests.json && node scripts/test.mjs",
+    "export:oscilloscope": "node scripts/export-oscilloscope.mjs",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "@types/three": "^0.171.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "esbuild": "^0.25.12",
+    "sharp": "0.35.5",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
     "vue-tsc": "^2.2.0"

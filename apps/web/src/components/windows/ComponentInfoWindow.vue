@@ -15,13 +15,14 @@ const definition = computed(() => type.value ? getDefinition(type.value) : undef
 const item = computed(() => libraryComponents.find((entry) => entry.type === type.value))
 const name = computed(() => definition.value?.name || item.value?.name || type.value || 'Component')
 const introductions: Record<string, string> = {
+  OSCILLOSCOPE: 'A two-channel graphite bench oscilloscope with Horizontal, Trigger and independent CH1/CH2 Vertical controls. The screen shows a waveform preview; the two BNC inputs are visual connectors. Place, select, move and rotate the complete instrument on the work surface.',
   BREADBOARD: 'A solderless work surface with two terminal fields, a recessed IC channel and separate rail strips. Arrange modular boards and components before connecting logical ports.',
   BREADBOARD_630: 'A terminal strip with two fields of contacts separated by a recessed IC channel. Combine it with rail strips to organize a circuit on the work surface.',
   BREADBOARD_100: 'A narrow power rail strip for arranging a modular breadboard assembly. Place it alongside a terminal board to extend the work surface.',
   POWER_SUPPLY: 'An upright metal bench supply with a vertical V/A/W display, Vcc and Gnd posts and a power switch. In Select, drag Voltage (0–15 V) or Ampe (0–5 A) to adjust local setpoints; click I/O to toggle visual power. The W readout awaits measured output.',
 }
 const description = computed(() => type.value && introductions[type.value] || item.value?.description || (definition.value ? definition.value.visualOnly ? 'A visual work surface for arranging circuit components. Add another board and choose its position on the surface.' : 'An editor component with named logical ports. Arrange it on the surface before connecting its ports.' : 'An imported component. Its original properties are retained; no model contract is available for adding another instance.'))
-const note = computed(() => definition.value?.visualOnly ? 'Visual structure. Placement creates no electrical source or connection.' : definition.value ? 'Editor model with named logical ports. Physical pin mapping and execution support are separate.' : 'This entry has no placeable editor model yet.')
+const note = computed(() => type.value === 'OSCILLOSCOPE' ? 'Visual instrument. Knob pivots and screen texture are ready for integration; signal acquisition and control behavior are not connected yet.' : definition.value?.visualOnly ? 'Visual structure. Placement creates no electrical source or connection.' : definition.value ? 'Editor model with named logical ports. Physical pin mapping and execution support are separate.' : 'This entry has no placeable editor model yet.')
 function add() { if (definition.value && type.value) { workspace.armPlacement(type.value); ui.activeRibbonGroup = null } }
 function remove() { if (selected.value) { circuit.removeModule(selected.value.id); ui.closeWindow('component-info') } }
 function close() { ui.closeWindow('component-info'); void nextTick(() => document.querySelector<HTMLCanvasElement>('canvas[aria-label="Three-dimensional circuit workspace"]')?.focus()) }

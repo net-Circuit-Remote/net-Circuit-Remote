@@ -19,7 +19,7 @@ From repository root: `python -m pytest -q tests/frontend`. Node 22 is the CI ba
 |---|---|
 | New / Open / Save | Independent session drafts; schema 1.0 JSON download/import; shared 2 MB UTF-8 limit. Imports check geometry, unique IDs, module references and local memory images before mutation. |
 | Undo / Redo | Last 50 project/graph command snapshots. One move gesture commits one step. Failed/no-op commands preserve history. |
-| Ribbon | Twelve families with supplied SVG artwork. Drag a supported component to the surface, or click it then click the surface. Info is enabled for the selected placed component's type. Unsupported future entries report model unavailable; instruments open windows. |
+| Ribbon | Twelve families with SVG artwork. Drag a supported component to the surface, or click it then click the surface. Oscilloscope places a two-channel bench model; Generator and Signal Monitor open windows. Unsupported entries report model unavailable. |
 | Select | Click a module/wire to select it; dragging its body does not move it or the camera. Explicit gizmo handles manipulate selection. Left drag empty surface pans. Inventory/Inspector provide keyboard selection. |
 | Move | The only tool that permits direct model dragging, including Breadboard/Board: preview geometry and connected wires; release commits one position command. Cancel restores graph geometry. Click/jitter below 4 px creates no move/history. |
 | Rotate / Delete | Click a module; Rotate adds 90°. Delete cascades connected edges. Delete also removes a picked wire. |
@@ -41,11 +41,13 @@ Navigation correction: see [algorithm/source analysis](../../docs/SOURCE_ANALYSI
 
 ## Models and contracts
 
-The canonical editor catalog covers 19 types: Breadboard 830/630/100, Board/Power supply visuals; Resistor/Capacitor; Push button/Toggle/DIP/Clock; LED/7-segment/Display/Probe; 74HC08; generic Adder/Multiplier; generic Memory.
+The canonical editor catalog covers 20 types: Breadboard 830/630/100, Board/Power supply visuals; Resistor/Capacitor; Push button/Toggle/DIP/Clock; LED/7-segment/Display/Probe; 74HC08; generic Adder/Multiplier; generic Memory; a two-channel Oscilloscope visual.
+
+**Oscilloscope 2 CH:** Instruments places a graphite bench model with a separate waveform screen, seven centered knob pivots, Horizontal/Trigger/Vertical controls, Auto Set/Run-Stop/Single buttons and exactly two BNCs. It uses the same scene/graph/gizmo lifecycle as other components. Waveforms are illustrative; acquisition/control behavior is not connected. Self-contained [GLB](public/models/oscilloscope-2ch/oscilloscope-2ch.glb), [glTF](public/models/oscilloscope-2ch/oscilloscope-2ch.gltf) and [coordinate/export contract](public/models/oscilloscope-2ch/README.md) are committed. `/oscilloscope-preview.html` is a development-only GLB/CanvasTexture viewer. The Scope tool still opens the acquisition window shell.
 
 Breadboard housing has a beveled footprint, recessed terminal/rail channels and real socket cavities with tapered entrances, walls and dark floors. Deck/decal perforations share coordinates with the 830/630/100 instances. Common mating keys have clearance; bevels stay within catalog docking bounds. Selection uses a **2 CSS px Medium Gold (#d4af37)** contour without tinting the body; curved silhouettes update with the camera. The adaptive technical grid has dark minor lines, major lines every five cells, distance fade and zoom-based minor suppression. Canvas caption is removed. Details: [current source analysis](../../docs/SOURCE_ANALYSIS_TECHNICAL_WORKBENCH.md), [browser report](../../docs/verification/2026-10-09-technical-workbench-browser.md). Earlier selection reports are historical.
 
-Structures and power-supply visual have no electrical ports. 74HC08 ports A1/B1/Y1 through A4/B4/Y4 represent functional gates, not package pin numbers. Generic arithmetic uses explicit 8-bit operands, without unconfirmed part numbers. Memory's local byte contract is separate from SDRAM hardware or capture. Passive/clock defaults are model configuration, not device ratings. Outputs display their housing without fabricated signal readings.
+Structures, power-supply and Oscilloscope visuals have no electrical ports. 74HC08 ports A1/B1/Y1 through A4/B4/Y4 represent functional gates, not package pin numbers. Generic arithmetic uses explicit 8-bit operands, without unconfirmed part numbers. Memory's local byte contract is separate from SDRAM hardware or capture. Passive/clock defaults are model configuration, not device ratings. Outputs display their housing without fabricated signal readings.
 
 Unknown imported types/properties/port names are retained and exposed via Inspector; unknown geometry uses a fallback model and unknown anchors are not invented. Future Active/Controller/Notation and dual/quad display entries still await metadata/model contracts.
 
@@ -62,7 +64,7 @@ Six stores remain separate: circuit (serializable graph/files/history/validation
 
 ## Metadata and supplied icons
 
-Original artwork stays in `assets/icon .svg`. Frontend uses small committed SVG/WebP derivatives with source SHA-256/size provenance in `src/assets/icons/manifest.json`; no original PNG payload is bundled. Action glyphs remain local stroke SVGs. The current set has 20 icons.
+Original artwork stays in `assets/icon .svg`. Frontend uses small committed SVG/WebP derivatives with source SHA-256/size provenance in `src/assets/icons/manifest.json`; no original PNG payload is bundled. Action glyphs remain local stroke SVGs. The original derivative manifest covers 22 icons; the authored `oscilloscope_2ch.svg` preview is generated by `npm run export:oscilloscope` from the model's shared artwork recipe and retained by the supplied-icon refresh script.
 
 ```bash
 # Python + Pillow, after changing supplied artwork or starter device metadata

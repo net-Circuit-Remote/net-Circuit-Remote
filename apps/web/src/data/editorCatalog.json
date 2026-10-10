@@ -3,6 +3,22 @@
   "scope": "Functional editor abstractions; no physical pin numbers, routing resources or electrical ratings. Visual dimensions are arbitrary world units.",
   "components": [
     {
+      "type": "OSCILLOSCOPE",
+      "name": "Oscilloscope · 2 channels",
+      "family": "instruments",
+      "visual": "oscilloscope",
+      "size": [
+        6,
+        3.8,
+        2.8
+      ],
+      "color": "#343e47",
+      "ports": [],
+      "defaults": {},
+      "parameters": [],
+      "visualOnly": true
+    },
+    {
       "type": "BREADBOARD",
       "name": "Breadboard 830",
       "family": "structure",

@@ -3,6 +3,7 @@ import { getDefinition, type LogicalPort } from '../data/editorCatalog'
 import type { CircuitModule } from '../types/circuit'
 import { addBreadboardHousing } from './BreadboardHousing'
 import { addPowerSupplyModel, applyPowerSupplyControls } from './PowerSupplyModel'
+import { addOscilloscopeModel } from './OscilloscopeModel'
 
 export function disposeObject(root: Object3D) {
   root.traverse((object) => {
@@ -326,6 +327,8 @@ export function buildComponent(module: CircuitModule): Group {
     addBreadboardHousing(group, [w, h, d], color, createBreadboard100Texture(), false, false)
   } else if (definition?.visual === 'supply') {
     addPowerSupplyModel(group, [w, h, d])
+  } else if (definition?.visual === 'oscilloscope') {
+    addOscilloscopeModel(group)
   } else {
     box(0, h / 2 + 0.02, 0, w, h, d, color)
     if (definition?.visual === 'button') box(0, h + 0.12, 0, w * 0.65, 0.25, d * 0.65, module.properties?.state ? '#d7b58e' : '#835f87')
@@ -342,7 +345,7 @@ export function buildComponent(module: CircuitModule): Group {
     anchor.userData = { kind: 'port', id: module.id, endpoint: `${module.id}.${port.id}` }
     group.add(anchor)
   }
-  if (typeof document !== 'undefined' && !definition?.visual?.startsWith('breadboard') && definition?.visual !== 'supply') {
+  if (typeof document !== 'undefined' && !definition?.visual?.startsWith('breadboard') && definition?.visual !== 'supply' && definition?.visual !== 'oscilloscope') {
     const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 80
     const context = canvas.getContext('2d')
     if (context) {

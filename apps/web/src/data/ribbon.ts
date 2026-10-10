@@ -29,8 +29,8 @@ export const ribbonGroups: RibbonGroup[] = [
   { id: 'memory', label: 'Memory', glyph: 'memory', items: [future('MEMORY', 'Generic byte memory', 'memory')] },
   { id: 'display', label: 'Display', icon: '7doan1', items: [artwork('SEGMENT_1', '7-segment · single', '7doan1'), artwork('SEGMENT_2', '7-segment · dual', '7doan2'), artwork('SEGMENT_4', '7-segment · quad', '7doan4')] },
   { id: 'embedded', label: 'Embedded/Controller', glyph: 'chip', items: [future('CONTROLLER', 'Controller', 'chip')] },
-  { id: 'instruments', label: 'Instruments', icon: 'Oscillocrope', items: [
-    { type: 'OSCILLOSCOPE', name: 'Oscilloscope', icon: 'Oscillocrope', description: 'Acquisition window shell.', window: 'oscilloscope' },
+  { id: 'instruments', label: 'Instruments', icon: 'oscilloscope_2ch', items: [
+    { type: 'OSCILLOSCOPE', name: 'Oscilloscope · 2 channels', icon: 'oscilloscope_2ch', description: 'Two-channel bench oscilloscope visual with independent control pivots and waveform preview.' },
     { type: 'GENERATOR', name: 'Function Generator', icon: 'Generator', description: 'Generator configuration shell.', window: 'generator' },
     { type: 'SIGNAL_MONITOR', name: 'Signal Monitor', icon: 'signal_monitor', description: 'Digital acquisition window shell.', window: 'monitor' },
   ] },
