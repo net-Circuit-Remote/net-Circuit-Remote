@@ -48,7 +48,7 @@ UI migration completed on 2026-10-09; evidence in `DEV_LOG.md`:
 - [x] Three.js scene/camera/lights/grid/models/picking and disposable render/resize/context lifecycle.
 - [x] Breadboard/board/power-supply visual models, without invented electrical nodes or sources.
 - [x] Canonical metadata-driven palette and generated browser catalog (20 editor types, including visual structures and a two-channel Oscilloscope).
-- [x] Two-channel Oscilloscope bench visual, named screen/control pivots, two BNCs and reusable GLB/glTF export. Signal acquisition remains later work; see `apps/web/public/models/oscilloscope-2ch/README.md` for the model contract.
+- [x] Two-channel Oscilloscope bench visual with a silver enclosure, wide screen, complete named front controls, three aligned BNCs (two inputs and Trig Out), two inclined stands and reusable GLB/glTF export. Signal acquisition remains later work; see `apps/web/public/models/oscilloscope-2ch/README.md` for the model contract.
 - [x] Drag/drop and click-to-place from ribbon.
 - [x] Component select/move/rotate/delete; keyboard equivalents in Inspector/canvas.
 - [x] Explicit logical wire/unwire, duplicate/direction/width/input-driver checks.

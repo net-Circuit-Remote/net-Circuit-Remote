@@ -24,7 +24,7 @@ test('supply display reuses its canvas texture while knobs, calibrated scale and
     assert.equal(screen.material.map, texture); assert.ok(texture.version > initialVersion)
     assert.equal(canvases, initialCanvases); assert.equal(disposed, 0)
     assert.ok(!labels.some((text) => /LOCAL SETPOINT|VOLTAGE SET|CURRENT LIMIT|NOT MEASURED|VISUAL/.test(text)), 'front panel only shows its units and printed legends')
-    assert.ok(labels.includes('net*CIRCUIT'))
+    assert.ok(labels.includes('net*CIRCUIT') || (labels.includes('net') && labels.includes('*CIRCUIT')))
     assert.ok(labels.includes('15') && labels.includes('5'), 'calibration rings show both upper limits')
     assert.ok(model.getObjectByName('supply-brand-icon') instanceof Mesh)
     const knob = model.getObjectByName('knob-body') as Mesh<any, any>

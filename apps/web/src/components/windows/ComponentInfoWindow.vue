@@ -15,7 +15,7 @@ const definition = computed(() => type.value ? getDefinition(type.value) : undef
 const item = computed(() => libraryComponents.find((entry) => entry.type === type.value))
 const name = computed(() => definition.value?.name || item.value?.name || type.value || 'Component')
 const introductions: Record<string, string> = {
-  OSCILLOSCOPE: 'A two-channel graphite bench oscilloscope with Horizontal, Trigger and independent CH1/CH2 Vertical controls. The screen shows a waveform preview; the two BNC inputs are visual connectors. Place, select, move and rotate the complete instrument on the work surface.',
+  OSCILLOSCOPE: 'A silver bench oscilloscope with a charcoal front, two inclined stands and Horizontal, Trigger and independent CH1/CH2 Vertical controls. The screen shows a waveform preview; CH1, CH2 and Trig Out are visual BNC connectors. Place, select, move and rotate the complete instrument on the work surface.',
   BREADBOARD: 'A solderless work surface with two terminal fields, a recessed IC channel and separate rail strips. Arrange modular boards and components before connecting logical ports.',
   BREADBOARD_630: 'A terminal strip with two fields of contacts separated by a recessed IC channel. Combine it with rail strips to organize a circuit on the work surface.',
   BREADBOARD_100: 'A narrow power rail strip for arranging a modular breadboard assembly. Place it alongside a terminal board to extend the work surface.',

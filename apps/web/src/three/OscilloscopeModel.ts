@@ -1,7 +1,7 @@
-import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, SRGBColorSpace, TextureLoader, TorusGeometry, type BufferGeometry, type Material } from 'three'
+import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, SRGBColorSpace, TextureLoader, TorusGeometry, type BufferGeometry, type Material, type Object3D } from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { CH1_COLOR, CH2_COLOR, drawScopeArtwork, scopeLegendsArtwork, scopeScreenArtwork, type ScopeArtwork } from './OscilloscopeArtwork'
+import { CH1_COLOR, CH2_COLOR, SCOPE_LAYOUT, drawScopeArtwork, scopeLegendsArtwork, scopeScreenArtwork, type ScopeArtwork } from './OscilloscopeArtwork'
 
 export const OSCILLOSCOPE_SIZE = [6, 3.8, 2.8] as const
 export const OSCILLOSCOPE_KNOBS = ['time_div_knob', 'horizontal_position', 'trigger_level', 'ch1_volts_div', 'ch1_position', 'ch2_volts_div', 'ch2_position'] as const
@@ -16,16 +16,18 @@ function canvasTexture(artwork: ScopeArtwork): CanvasTexture | null {
 }
 
 // Same factory is used by workspace and GLB/glTF export. Origin: center of the
-// enclosure base, Y up, front +Z, unit scale. Dimensions are editor world units.
+// device footprint, with stands touching Y=0; Y up, front +Z, unit scale.
+// Dimensions are editor world units.
 // Named pivot groups are interaction-ready; acquisition/control behavior is a
 // separate contract. They deliberately do not masquerade as supply controls.
 export function addOscilloscopeModel(group: Group) {
+  group.name = 'net_circuit_oscilloscope_2ch'
   const standard = (name: string, color: string, metalness = 0, roughness = 0.5) => {
     const material = new MeshStandardMaterial({ color, metalness, roughness }); material.name = name; return material
   }
-  const shell = standard('scope_graphite_metal', '#343e47', 0.42, 0.42)
-  const bezel = standard('scope_bezel', '#161e25', 0.2, 0.42)
-  const panel = standard('scope_control_panels', '#25313a', 0.16, 0.55)
+  const shell = standard('scope_silver_powdercoat', '#a1aab4', 0.32, 0.54)
+  const bezel = standard('scope_bezel', '#30383e', 0.18, 0.52)
+  const panel = standard('scope_control_panels', '#272e33', 0.12, 0.57)
   const rubber = standard('scope_rubber', '#080f16', 0, 0.7)
   const grip = standard('scope_knob_grip', '#35434e', 0.18, 0.4)
   const silver = standard('scope_bnc_metal', '#b7c4cf', 0.78, 0.26)
@@ -33,21 +35,32 @@ export function addOscilloscopeModel(group: Group) {
   const yellow = standard('scope_ch1', CH1_COLOR, 0.15, 0.38)
   const cyan = standard('scope_ch2', CH2_COLOR, 0.15, 0.38)
   const gold = standard('scope_bnc_contact', '#cba669', 0.7, 0.35)
-  const add = (name: string, geometry: BufferGeometry, material: Material, x: number, y: number, z: number, parent = group) => {
+  const add = (name: string, geometry: BufferGeometry, material: Material, x: number, y: number, z: number, parent: Object3D = group) => {
     const mesh = new Mesh(geometry, material); mesh.name = name; mesh.position.set(x, y, z); parent.add(mesh); return mesh
   }
   const rounded = (name: string, size: [number, number, number], pos: [number, number, number], radius: number, material: Material, selection = false) => {
-    const mesh = add(name, new RoundedBoxGeometry(...size, 2, radius), material, ...pos); mesh.userData.selectionSurface = selection; return mesh
+    // Keep silhouette-bearing case edges smoother; small panels/buttons need
+    // only one bevel subdivision, keeping the uncompressed GLB lightweight.
+    const mesh = add(name, new RoundedBoxGeometry(...size, selection ? 2 : 1, radius), material, ...pos); mesh.userData.selectionSurface = selection; return mesh
   }
   // Lightweight curved edges, opaque metal housing, inset front panels and feet.
-  rounded('enclosure', [6, 3.6, 2.1], [0, 1.95, 0], 0.085, shell, true)
-  rounded('front_bezel', [5.96, 3.55, 0.12], [0, 1.95, 1.015], 0.065, bezel, true)
-  rounded('screen_recess', [3.69, 2.73, 0.055], [-0.96, 2.13, 1.09], 0.045, rubber)
-  rounded('horizontal_panel', [1.92, 0.97, 0.025], [1.92, 3.10, 1.085], 0.035, panel)
-  rounded('trigger_panel', [1.92, 0.65, 0.025], [1.92, 2.275, 1.085], 0.03, panel)
-  rounded('vertical_panel', [1.92, 1.5, 0.025], [1.92, 1.185, 1.085], 0.03, panel)
-  for (const x of [-2.48, 2.48]) for (const z of [-0.77, 0.77]) {
-    const foot = add(`foot_${x}_${z}`, new CylinderGeometry(0.22, 0.24, 0.18, 16), rubber, x, 0.09, z); foot.userData.selectionSurface = true
+  rounded('enclosure', [6, 3.43, 2.1], [0, 2.035, 0], 0.085, shell, true)
+  rounded('front_bezel', [5.96, 3.40, 0.12], [0, 2.035, 1.015], 0.065, bezel, true)
+  const layout = SCOPE_LAYOUT
+  rounded('screen_recess', [layout.recess.w, layout.recess.h, 0.055], [layout.recess.x, layout.recess.y, 1.09], 0.045, rubber)
+  for (const p of layout.panels) {
+    rounded(`${p.name}_rim`, [p.w + 0.025, p.h + 0.025, 0.019], [p.x, p.y, 1.08], 0.033, silver)
+    rounded(p.name, [p.w, p.h, 0.025], [p.x, p.y, 1.085], 0.03, panel)
+  }
+  rounded('connector_panel', [3.80, 0.63, 0.025], [-0.98, 0.65, 1.085], 0.035, panel)
+  // Two rectangular tilt stands: +X rotation lowers their front tips onto Y=0.
+  // Their height is derived from the rotated bounds, preserving the base origin.
+  const footAngle = 0.43, footHeight = (0.105 * Math.cos(footAngle) + 0.61 * Math.sin(footAngle)) / 2
+  for (const [side, x] of [['left', -2.48], ['right', 2.48]] as const) {
+    const foot = rounded(`tilt_foot_${side}`, [0.44, 0.105, 0.61], [x, footHeight, 0.90], 0.015, grip)
+    foot.rotation.x = footAngle; foot.userData = { role: 'front-tilt-stand', selectionSurface: true }
+    // Top tread is a child of the stand, so the incline and position stay aligned.
+    add(`stand_tread_${side}`, new BoxGeometry(0.32, 0.008, 0.20), rubber, 0, 0.055, 0.15, foot)
   }
   // Merge vents and screw heads into two meshes; no per-slot draw call overhead.
   const vents: BufferGeometry[] = [], screws: BufferGeometry[] = []
@@ -62,7 +75,7 @@ export function addOscilloscopeModel(group: Group) {
   // Reuse/update that texture rather than allocating one on every acquisition.
   const screenTexture = canvasTexture(scopeScreenArtwork())
   const screenMaterial = new MeshBasicMaterial({ map: screenTexture, color: screenTexture ? '#ffffff' : '#050b10', toneMapped: false }); screenMaterial.name = 'scope_screen'
-  const screen = add('screen', new PlaneGeometry(3.45, 2.48), screenMaterial, -0.96, 2.13, 1.122)
+  const screen = add('screen', new PlaneGeometry(layout.screen.w, layout.screen.h), screenMaterial, layout.screen.x, layout.screen.y, 1.122)
   screen.userData = { role: 'waveform-screen', channels: 2, waveform: 'illustrative-preview', textureSize: [1024, 704] }
   const legendsMaterial = new MeshBasicMaterial({ map: canvasTexture(scopeLegendsArtwork()), transparent: true, depthWrite: false, toneMapped: false }); legendsMaterial.name = 'scope_legends'
   const legends = add('front_legends', new PlaneGeometry(6, 3.8), legendsMaterial, 0, 1.9, 1.149)
@@ -71,7 +84,7 @@ export function addOscilloscopeModel(group: Group) {
   // opaque decal. The export script supplies this slot with the recipe's PNG.
   if (!legendsMaterial.map) legendsMaterial.opacity = 0
   const logoMaterial = new MeshBasicMaterial({ transparent: true, depthWrite: false, toneMapped: false }); logoMaterial.name = 'scope_brand'
-  const owl = add('brand_owl', new PlaneGeometry(0.23, 0.23), logoMaterial, -2.62, 3.63, 1.12); owl.userData.asset = 'favicon.svg'; owl.userData.ignorePick = true
+  const owl = add('brand_owl', new PlaneGeometry(layout.owl.size, layout.owl.size), logoMaterial, layout.owl.x, layout.owl.y, 1.12); owl.userData.asset = 'favicon.svg'; owl.userData.ignorePick = true
   if (typeof document !== 'undefined' && typeof document.createElementNS === 'function') {
     logoMaterial.map = new TextureLoader().load(new URL('../assets/icons/favicon.svg', import.meta.url).href, () => group.userData.onVisualChange?.())
     logoMaterial.map.colorSpace = SRGBColorSpace
@@ -90,31 +103,30 @@ export function addOscilloscopeModel(group: Group) {
     const cap = add(`${name}_cap`, new CylinderGeometry(radius * 0.88, radius * 0.88, 0.012, 24), bezel, 0, 0, 0.077, pivot); cap.rotation.x = Math.PI / 2
     add(`${name}_index`, new BoxGeometry(0.014, radius * 0.53, 0.004), ivory, 0, radius * 0.46, 0.086, pivot)
   }
-  knob('time_div_knob', 1.35, 3.10, 0.23, cyan); knob('horizontal_position', 2.02, 3.10, 0.135)
-  knob('trigger_level', 1.35, 2.24, 0.165)
-  for (const [channel, x, accent] of [[1, 1.43, yellow], [2, 2.43, cyan]] as const) {
-    knob(`ch${channel}_volts_div`, x, 1.35, 0.215, accent); knob(`ch${channel}_position`, x, 0.77, 0.12, accent)
-  }
-  const button = (name: string, x: number, y: number, width: number, material: Material = grip) => {
-    rounded(`${name}_socket`, [width + 0.035, 0.225, 0.035], [x, y, 1.11], 0.025, rubber)
-    const mesh = rounded(name, [width, 0.19, 0.04], [x, y, 1.12], 0.025, material)
+  const accents = (color: string) => color === CH1_COLOR ? yellow : color === CH2_COLOR ? cyan : silver
+  for (const control of layout.knobs) knob(control.name, control.x, control.y, control.r, accents(control.accent))
+  const button = (name: string, x: number, y: number, width: number, height: number, material: Material = grip) => {
+    rounded(`${name}_socket`, [width + 0.035, height + 0.035, 0.035], [x, y, 1.11], 0.022, rubber)
+    const mesh = rounded(name, [width, height, 0.04], [x, y, 1.12], 0.02, material)
     mesh.userData = { interaction: 'button', pressAxis: 'Z' }
   }
-  button('auto_set_button', 2.60, 3.36, 0.46, cyan)
-  button('run_stop_button', 2.60, 3.10, 0.46, standard('scope_run_green', '#36d790', 0.1, 0.4))
-  button('single_button', 2.60, 2.84, 0.46)
-  button('trigger_source_button', 2.17, 2.32, 0.425); button('trigger_mode_button', 2.66, 2.32, 0.425); button('trigger_slope_button', 2.42, 2.08, 0.45)
-  for (const [channel, x, accent] of [[1, -1.40, yellow], [2, -0.18, cyan]] as const) {
-    const port = new Group(); port.name = `ch${channel}_bnc`; port.position.set(x, 0.45, 1.12)
-    port.userData = { interaction: 'connector', channel, connector: 'BNC', visualOnly: true }; group.add(port)
-    add(`ch${channel}_ring`, new TorusGeometry(0.185, 0.025, 8, 32), accent, 0, 0, 0, port)
-    const collar = add(`ch${channel}_barrel`, new CylinderGeometry(0.15, 0.15, 0.17, 24, 1, true), silver, 0, 0, 0.07, port); collar.rotation.x = Math.PI / 2
-    add(`ch${channel}_rim`, new TorusGeometry(0.14, 0.02, 8, 32), silver, 0, 0, 0.16, port)
-    const insulator = add(`ch${channel}_insulator`, new CylinderGeometry(0.119, 0.119, 0.04, 24), ivory, 0, 0, 0.129, port); insulator.rotation.x = Math.PI / 2
-    add(`ch${channel}_contact`, new TorusGeometry(0.041, 0.011, 6, 20), gold, 0, 0, 0.157, port)
-    const bore = add(`ch${channel}_bore`, new CylinderGeometry(0.03, 0.03, 0.004, 16), rubber, 0, 0, 0.151, port); bore.rotation.x = Math.PI / 2
+  const green = standard('scope_run_green', '#36d790', 0.1, 0.4)
+  for (const control of layout.buttons) button(control.name, control.x, control.y, control.w, control.h, control.color === CH2_COLOR ? cyan : control.name === 'run_stop_button' ? green : control.name === 'power_button' ? panel : grip)
+  const ledMaterial = standard('scope_power_indicator', '#31e96d', 0.05, 0.4)
+  const led = rounded('power_led', [0.047, 0.047, 0.015], [layout.led.x, layout.led.y, 1.12], 0.008, ledMaterial)
+  led.userData = { role: 'status-indicator', visualOnly: true }
+  for (const connector of layout.bncs) {
+    const { name, x, y, channel } = connector, accent = accents(connector.accent)
+    const port = new Group(); port.name = name; port.position.set(x, y, 1.12)
+    port.userData = { interaction: 'connector', ...(channel === null ? { role: 'trigger-output' } : { channel }), connector: 'BNC', visualOnly: true }; group.add(port)
+    add(`${name}_ring`, new TorusGeometry(0.185, 0.025, 8, 32), accent, 0, 0, 0, port)
+    const collar = add(`${name}_barrel`, new CylinderGeometry(0.15, 0.15, 0.17, 24, 1, true), silver, 0, 0, 0.07, port); collar.rotation.x = Math.PI / 2
+    add(`${name}_rim`, new TorusGeometry(0.14, 0.02, 8, 32), silver, 0, 0, 0.16, port)
+    const insulator = add(`${name}_insulator`, new CylinderGeometry(0.119, 0.119, 0.04, 24), ivory, 0, 0, 0.129, port); insulator.rotation.x = Math.PI / 2
+    add(`${name}_contact`, new TorusGeometry(0.041, 0.011, 6, 20), gold, 0, 0, 0.157, port)
+    const bore = add(`${name}_bore`, new CylinderGeometry(0.03, 0.03, 0.004, 16), rubber, 0, 0, 0.151, port); bore.rotation.x = Math.PI / 2
     // Two bayonet lugs, merged into one geometry, give the BNC a real silhouette.
     const lugs = [-1, 1].map((s) => new BoxGeometry(0.035, 0.055, 0.04).translate(s * 0.15, 0, 0.07))
-    add(`ch${channel}_bayonet`, mergeGeometries(lugs)!, silver, 0, 0, 0, port); lugs.forEach((g) => g.dispose())
+    add(`${name}_bayonet`, mergeGeometries(lugs)!, silver, 0, 0, 0, port); lugs.forEach((g) => g.dispose())
   }
 }

@@ -4,6 +4,14 @@ All notable project changes will be documented in this file. The project follows
 
 ## [Unreleased]
 
+### Changed — 2026-10-10 Oscilloscope reference refinement
+
+- Refined the existing Oscilloscope factory against the supplied design: cool silver powder-coated enclosure, charcoal front, wide left display and stacked Horizontal/Trigger/Vertical controls.
+- Added Default, Trigger Menu, power button/LED and Trig Out; the three BNCs share one row. Two inclined rectangular front stands replace the four cylinder feet.
+- Preserved the root name, `[6,3.8,2.8]` size, Y-up/front +Z, seven centered knob pivots, independent CanvasTexture screen and visual-only graph/gizmo/Undo-Redo contract.
+- Shared front coordinates now drive geometry, printed artwork and SVG export. Regenerated GLB/glTF/bin/PNG/SVG assets; the asset viewer provides reference front and angled views.
+- Verified 97/97 frontend tests, production TypeScript checks, GLTFLoader round trips and native WebGL/CanvasTexture/Move/Rotate/Y-gizmo/Undo-Redo checks. Vite bundling retains sandbox `EPERM`; Python checks remain 16/17 due to the missing original `power_supply.svg`.
+
 ### Added — 2026-10-10 Two-channel Oscilloscope model
 
 - Added an original graphite bench Oscilloscope with owl/net*CIRCUIT branding, illustrative yellow/cyan waveform screen, Horizontal/Trigger/independent Vertical controls, seven centered knob pivots, named buttons and exactly two BNC connectors.

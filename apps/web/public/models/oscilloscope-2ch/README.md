@@ -13,11 +13,12 @@ Undo/Redo and circuit JSON persistence use the existing editor commands.
 ## Coordinate contract
 
 - Root: `net_circuit_oscilloscope_2ch`; translation/rotation zero, scale `[1,1,1]`.
-- Origin at the center of the enclosure base on the work surface; Y up, front +Z.
+- Origin at the center of the device footprint; stand tips touch Y=0 on the work
+  surface. Y up, front +Z.
 - Catalog size: `[6,3.8,2.8]` **editor world units**, consistent with workspace
   models. These are visual dimensions, not measurements in meters or device ratings.
-- 15,602 triangles, 76 meshes, 7 knob pivots, exactly two channel BNC connectors.
-  GLB is approximately 1.14 MB. Shared materials, merged vents/flutes/fasteners,
+- 15,198 triangles, 94 meshes, 7 knob pivots, three BNC assemblies: two channel
+  inputs and Trig Out. GLB is approximately 1.04 MB. Shared materials, merged vents/flutes/fasteners,
   1024×704 screen, 1536×960 transparent legends and a 64×64 supplied owl decal.
 
 ## Named objects
@@ -30,14 +31,33 @@ Undo/Redo and circuit JSON persistence use the existing editor commands.
 | `ch1_volts_div`, `ch1_position` | CH1 knob pivot groups |
 | `ch2_volts_div`, `ch2_position` | CH2 knob pivot groups |
 | `run_stop_button`, `auto_set_button`, `single_button` | Independent button meshes |
-| `trigger_source_button`, `trigger_mode_button`, `trigger_slope_button` | Independent trigger button meshes |
+| `default_button` | Fourth Horizontal button |
+| `trigger_source_button`, `trigger_mode_button`, `trigger_slope_button`, `trigger_menu_button` | Independent 2×2 trigger button meshes |
+| `power_button`, `power_led` | Bottom-left power button and separate visual status indicator |
 | `ch1_bnc`, `ch2_bnc` | Separate connector assemblies, channel-colored rings |
+| `trig_out_bnc` | Third aligned BNC; trigger-output role, no third input channel |
+| `tilt_foot_left`, `tilt_foot_right` | Two rectangular front stands inclined around local X |
 | `brand_owl`, `front_legends` | Owl and original net*CIRCUIT panel legends |
 
 Each knob group has its own center pivot; rotate its local **Z** to turn its body,
 flutes, cap and index together. Rotate the instrument root about **Y** to orient
 it on the bench. Button press direction is local Z. Interactive scene picking
 continues to select the complete module; controls are prepared for later wiring.
+
+## Reference layout and materials
+
+The existing factory follows the supplied front design: a wide left screen,
+stacked Horizontal/Trigger/Vertical panels on the right, four Horizontal buttons,
+a 2×2 Trigger button bank and independent CH1/CH2 columns. Three BNCs share one
+row beneath the display; the power button and LED occupy its lower-left corner.
+Two inclined front stands replace the former four cylinder feet.
+
+The case is cool industrial silver `#a1aab4` (metalness 0.32, roughness 0.54),
+the frame is matte charcoal `#30383e` and the inset panels are `#272e33`.
+`SCOPE_LAYOUT` in `OscilloscopeArtwork.ts` owns front coordinates for geometry,
+printed CanvasTexture/PNG legends and the regenerated SVG palette preview.
+Housing silhouettes retain two bevel subdivisions; small panels/buttons use one.
+The model does not reuse the Power Supply control layout.
 
 The initial yellow square trace and cyan sine trace are **illustrative previews**.
 No acquisition, sample rate, bandwidth, physical pinout or working button behavior
@@ -68,3 +88,9 @@ GLB buffer/PNG validation and GLTFLoader round trips. For development WebGL
 inspection, run Vite and open `/oscilloscope-preview.html`: it loads the delivered
 GLB directly and provides a CanvasTexture replacement test. This standalone asset
 viewer adds no navigation to the single workspace application.
+
+Verification on 2026-10-10: 97/97 frontend tests and production TypeScript checks
+passed. GLB front/angled views, CanvasTexture replacement, native Move, Rotate,
+Y-gizmo and Undo/Redo were checked in the browser. Vite bundling is blocked by
+sandbox `EPERM` resolving `src/main.ts`. The separate Python checks pass 16/17;
+their existing icon-provenance failure is the missing original `power_supply.svg`.

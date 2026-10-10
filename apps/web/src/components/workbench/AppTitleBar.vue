@@ -55,7 +55,7 @@ onUnmounted(() => window.removeEventListener('keydown', shortcuts))
 </script>
 <template>
   <header class="app-titlebar">
-    <div class="brand" aria-label="net*CIRCUIT Remote"><span class="brand-mark"><img :src="iconUrl('favicon')" alt="net*CIRCUIT Remote" width="38" height="38" /></span><strong>net*CIRCUIT <span>Remote</span></strong></div>
+    <div class="brand" aria-label="net*CIRCUIT Remote"><span class="brand-mark"><img :src="iconUrl('favicon')" alt="net*CIRCUIT Remote" width="38" height="38" /></span><strong>net<span class="brand-circuit">*CIRCUIT</span> <span class="brand-remote">Remote</span></strong></div>
     <div class="file-actions" role="toolbar" aria-label="File actions">
       <button title="New circuit (Ctrl+N)" @click="newFile"><WorkbenchIcon name="new" />New</button>
       <button title="Open Circuit Graph JSON (Ctrl+O)" @click="fileInput?.click()"><WorkbenchIcon name="open" />Open</button>

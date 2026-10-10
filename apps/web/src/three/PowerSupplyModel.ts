@@ -70,7 +70,7 @@ function legendsTexture(w: number, h: number) {
   return canvasTexture(960, 1120, (ctx) => {
     const px = (x: number) => (x / (w - 0.16) + 0.5) * 960
     const py = (y: number) => (0.5 - (y - (h + 0.14) / 2) / (h - 0.26)) * 1120
-    const text = (label: string, x: number, y: number, size = 34) => { ctx.font = `500 ${size}px Segoe UI`; ctx.fillText(label, px(x), py(y)) }
+    const text = (label: string, x: number, y: number, size = 34, weight: string | number = 500) => { ctx.font = `${weight} ${size}px Segoe UI`; ctx.fillText(label, px(x), py(y)) }
     ctx.fillStyle = '#c7d0d4'; ctx.textAlign = 'center'
     for (const [label, fraction, maximum, unit] of [['Voltage', 0.76, 15, 'V'], ['Ampe', 0.43, 5, 'A']] as const) {
       // The complete numbered ring fits inside the control strip, including
@@ -85,9 +85,23 @@ function legendsTexture(w: number, h: number) {
       }
       text(`${label} · ${unit}`, x, y - w * 0.073 - 0.17, 32)
     }
-    text('Vcc', -w * 0.02, h * 0.245, 38); text('Gnd', w * 0.31, h * 0.245, 38)
-    text('POWER', -w * 0.35, h * 0.245, 21)
-    ctx.fillStyle = '#d5dde2'; text('net*CIRCUIT', w * 0.265, h * 0.928, 35)
+    text('Vcc', -w * 0.02, h * 0.222, 42, 'bold'); text('Gnd', w * 0.31, h * 0.222, 42, 'bold')
+    text('POWER', -w * 0.35, h * 0.237, 22, 'bold')
+
+    // Header labels: 'Power Bench Supply' aligned horizontally with 'net*CIRCUIT'
+    const textY = py(h * 0.932)
+    ctx.font = 'bold 36px Segoe UI'
+    ctx.fillStyle = '#dae3e7'
+    ctx.fillText('Power Bench Supply', px(-w * 0.135), textY)
+
+    ctx.font = '600 48px Segoe UI'
+    const netWidth = (ctx.measureText ? ctx.measureText('net').width : 0) || 68
+    const circuitWidth = (ctx.measureText ? ctx.measureText('*CIRCUIT').width : 0) || 178
+    const totalWidth = netWidth + circuitWidth
+    const startX = px(w * 0.335) - totalWidth / 2
+    ctx.textAlign = 'left'
+    ctx.fillStyle = '#e6eff3'; ctx.fillText('net', startX, textY)
+    ctx.fillStyle = '#20d4ee'; ctx.fillText('*CIRCUIT', startX + netWidth, textY)
   })
 }
 
@@ -116,9 +130,9 @@ export function addPowerSupplyModel(group: Group, [w, h, d]: readonly number[]) 
   if (legends) add('front-legends', new Mesh(new PlaneGeometry(w - 0.16, h - 0.26), new MeshBasicMaterial({ map: legends, transparent: true, depthWrite: false, toneMapped: false })), 0, panelY, front + 0.055)
   const logoUrl = new URL('../assets/icons/favicon.svg', import.meta.url).href
   const logoTexture = typeof document !== 'undefined' && typeof document.createElementNS === 'function'
-    ? new TextureLoader().load(logoUrl, () => group.userData.onVisualChange?.()) : null
+  ? new TextureLoader().load(logoUrl, () => group.userData.onVisualChange?.()) : null
   if (logoTexture) logoTexture.colorSpace = SRGBColorSpace
-  const logo = add('supply-brand-icon', new Mesh(new PlaneGeometry(0.112, 0.112), new MeshBasicMaterial({ map: logoTexture, transparent: true, depthWrite: false, toneMapped: false })), w * 0.105, h * 0.94, front + 0.06)
+  const logo = add('supply-brand-icon', new Mesh(new PlaneGeometry(0.155, 0.155), new MeshBasicMaterial({ map: logoTexture, transparent: true, depthWrite: false, toneMapped: false })), w * 0.165, h * 0.947, front + 0.06)
   logo.userData.asset = 'favicon.svg'
 
   for (const [i, fraction] of [0.76, 0.43].entries()) {

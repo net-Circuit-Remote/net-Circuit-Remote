@@ -16,7 +16,7 @@ const temp = new URL('.test-build/scope-export/', web)
 await mkdir(temp, { recursive: true })
 await build({ entryPoints: [source('OscilloscopeModel'), source('OscilloscopeArtwork')], outdir: fileURLToPath(temp), outExtension: { '.js': '.mjs' }, bundle: true, packages: 'external', platform: 'node', format: 'esm' })
 const { addOscilloscopeModel, OSCILLOSCOPE_SIZE, OSCILLOSCOPE_KNOBS } = await import(new URL('OscilloscopeModel.mjs', temp).href)
-const { scopeArtworkSvg, scopeScreenArtwork, scopeLegendsArtwork } = await import(new URL('OscilloscopeArtwork.mjs', temp).href)
+const { SCOPE_LAYOUT, scopeArtworkSvg, scopeScreenArtwork, scopeLegendsArtwork } = await import(new URL('OscilloscopeArtwork.mjs', temp).href)
 
 // GLTFExporter uses FileReader for Blob serialization. No DOM or fake canvas is
 // needed: geometry exports first; actual encoded PNGs are embedded afterwards.
@@ -87,12 +87,15 @@ for (const image of images) await writeFile(new URL(image.filename, output), ima
 // A compact SVG palette preview shares the screen/legend artwork with the model.
 const px = (x) => (x / 6 + 0.5) * 1536, py = (y) => (1 - y / 3.8) * 960
 const artworkBody = (artwork) => scopeArtworkSvg(artwork).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')
-const knobLayout = [[1.35, 3.10, .23], [2.02, 3.10, .135], [1.35, 2.24, .165], [1.43, 1.35, .215], [1.43, .77, .12], [2.43, 1.35, .215], [2.43, .77, .12]]
-const controls = knobLayout.map(([x, y, r]) => `<circle cx="${px(x)}" cy="${py(y)}" r="${r * 256}" fill="#121c24" stroke="#7894a1" stroke-width="5"/><path d="M ${px(x)} ${py(y) - r * 210} v ${r * 95}" stroke="#e2ebef" stroke-width="7"/>`).join('')
-const bncs = [-1.4, -.18].map((x, i) => `<circle cx="${px(x)}" cy="${py(.45)}" r="52" fill="#c6d2d9" stroke="${i ? '#20d4ee' : '#ffe04a'}" stroke-width="10"/><circle cx="${px(x)}" cy="${py(.45)}" r="22" fill="#111c24"/>`).join('')
-const buttonRects = [[2.60, 3.36, '#20d4ee'], [2.60, 3.10, '#36d790'], [2.60, 2.84, '#35434e'], [2.17, 2.32, '#35434e'], [2.66, 2.32, '#35434e'], [2.42, 2.08, '#35434e']].map(([x, y, color]) => `<rect x="${px(x) - 60}" y="${py(y) - 24}" width="120" height="48" rx="9" fill="${color}"/>`).join('')
-const preview = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160" viewBox="-30 -20 1596 1050"><rect x="110" y="930" width="150" height="65" rx="12" fill="#111b23"/><rect x="1270" y="930" width="150" height="65" rx="12" fill="#111b23"/><rect width="1536" height="960" rx="38" fill="#343e47" stroke="#617580" stroke-width="12"/><rect x="26" y="78" width="948" height="710" rx="20" fill="#090f14"/><rect x="1020" y="82" width="482" height="782" rx="18" fill="#25313a"/><g transform="translate(80 108) scale(.8625 .8898)">${artworkBody(scopeScreenArtwork())}</g>${controls}${buttonRects}${bncs}<image x="68" y="16" width="60" height="60" href="data:image/png;base64,${images[2].png.toString('base64')}"/>${artworkBody(scopeLegendsArtwork())}</svg>`
+const rectangle = (x, y, w, h, color, radius = 8) => `<rect x="${px(x - w / 2)}" y="${py(y + h / 2)}" width="${w * 256}" height="${h / 3.8 * 960}" rx="${radius}" fill="${color}"/>`
+const controls = SCOPE_LAYOUT.knobs.map(({ x, y, r, accent }) => `<circle cx="${px(x)}" cy="${py(y)}" r="${(r + .014) * 256}" fill="#080f16" stroke="${accent}" stroke-width="5"/><circle cx="${px(x)}" cy="${py(y)}" r="${r * 224}" fill="#30383e"/><path d="M ${px(x)} ${py(y) - r * 210} v ${r * 95}" stroke="#e2ebef" stroke-width="5"/>`).join('')
+const bncs = SCOPE_LAYOUT.bncs.map(({ x, y, accent }) => `<circle cx="${px(x)}" cy="${py(y)}" r="50" fill="#080f16" stroke="${accent}" stroke-width="9"/><circle cx="${px(x)}" cy="${py(y)}" r="37" fill="#e1e8ec" stroke="#b7c4cf" stroke-width="10"/><circle cx="${px(x)}" cy="${py(y)}" r="11" fill="#080f16" stroke="#cba669" stroke-width="4"/>`).join('')
+const buttonRects = SCOPE_LAYOUT.buttons.map(({ x, y, w, h, color }) => rectangle(x, y, w + .035, h + .035, '#080f16') + rectangle(x, y, w, h, color)).join('')
+const { screen, recess, owl, led } = SCOPE_LAYOUT
+const panels = SCOPE_LAYOUT.panels.map(({ x, y, w, h }) => rectangle(x, y, w + .025, h + .025, '#b7c4cf', 12) + rectangle(x, y, w, h, '#272e33', 12)).join('')
+const stands = [-2.48, 2.48].map((x) => `<path d="M ${px(x - .22)} ${py(.33)} h ${.44 * 256} l 8 78 h -${.44 * 256 + 16} Z" fill="#35434e" stroke="#62717a" stroke-width="3"/>${rectangle(x, .075, .31, .095, '#080f16', 2)}`).join('')
+const preview = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160" viewBox="-30 -20 1596 1010">${stands}${rectangle(0, 2.035, 6, 3.43, '#a1aab4', 28)}${rectangle(0, 2.035, 5.96, 3.40, '#30383e', 24)}${rectangle(recess.x, recess.y, recess.w, recess.h, '#080f16', 12)}${panels}${rectangle(-.98, .65, 3.80, .63, '#272e33', 12)}<g transform="translate(${px(screen.x - screen.w / 2)} ${py(screen.y + screen.h / 2)}) scale(${screen.w * 256 / 1024} ${screen.h / 3.8 * 960 / 704})">${artworkBody(scopeScreenArtwork())}</g>${controls}${buttonRects}${bncs}${rectangle(led.x, led.y, .047, .047, '#31e96d', 3)}<image x="${px(owl.x - owl.size / 2)}" y="${py(owl.y + owl.size / 2)}" width="${owl.size * 256}" height="${owl.size / 3.8 * 960}" href="data:image/png;base64,${images[2].png.toString('base64')}"/>${artworkBody(scopeLegendsArtwork())}</svg>`
 await writeFile(new URL('src/assets/icons/oscilloscope_2ch.svg', web), preview + '\n')
 let triangles = 0, meshes = 0
 root.traverse((node) => { if (node instanceof Mesh) { meshes++; triangles += (node.geometry.index?.count ?? node.geometry.attributes.position.count) / 3 } })
-console.log(JSON.stringify({ output: fileURLToPath(output), triangles, meshes, glbBytes: glb.length, knobs: OSCILLOSCOPE_KNOBS.length, channelInputs: 2 }))
+console.log(JSON.stringify({ output: fileURLToPath(output), triangles, meshes, glbBytes: glb.length, knobs: OSCILLOSCOPE_KNOBS.length, channelInputs: 2, bncConnectors: SCOPE_LAYOUT.bncs.length, tiltFeet: 2 }))
