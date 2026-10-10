@@ -16,6 +16,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets" / "icon .svg"
 OUTPUT = ROOT / "apps/web/src/assets/icons"
+NATIVE_SVG_MAX_BYTES = 100_000
 
 
 def clean_artwork(orig: Image.Image, is_breadboard: bool = False) -> Image.Image:
@@ -98,12 +99,26 @@ def remove_white_bg_breadboard(orig: Image.Image) -> Image.Image:
 
 
 def _is_native_svg(raw: bytes) -> bool:
-    """Return True for a normal UTF-8 SVG that does not embed the legacy PNG artwork."""
+    """Return True when raw bytes are a normal UTF-8 SVG document."""
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError:
         return False
     return "<svg" in text[:1024]
+
+
+def _preserve_svg_as_authored(raw: bytes, has_embedded_png: bool) -> bool:
+    """Keep authored SVG structure instead of flattening it to one raster image.
+
+    The legacy supplied assets are multi-hundred-KB or multi-MB SVG wrappers around
+    one PNG and should still be converted to compact WebP derivatives. Newer icons
+    are compact authored SVGs; some intentionally contain a tiny PNG sub-image
+    (for example the logo inside the power-supply artwork). Those must remain
+    byte-for-byte intact so their vector composition is not destroyed.
+    """
+    if not _is_native_svg(raw):
+        return False
+    return not has_embedded_png or len(raw) <= NATIVE_SVG_MAX_BYTES
 
 
 def _manifest_entry(path: Path, raw: bytes, output_bytes: int) -> dict[str, object]:
@@ -136,17 +151,15 @@ def main():
         match = re.search(rb"data:image/png;base64,([A-Za-z0-9+/=\s]+)", raw)
         x, y = index % 5 * 200, index // 5 * 220
 
-        if match is None:
-            # Newer project-authored icons may already be compact native SVG.
-            # Preserve them byte-for-byte instead of rasterizing them or rejecting
-            # them simply because they do not contain the legacy embedded PNG.
-            if not _is_native_svg(raw):
-                raise ValueError(f"Expected embedded PNG or native SVG in {path.name}")
+        if _preserve_svg_as_authored(raw, match is not None):
             target.write_bytes(raw)
             manifest.append(_manifest_entry(path, raw, len(raw)))
             draw.text((x + 8, y + 90), "native SVG", fill="white")
             draw.text((x + 8, y + 180), path.name, fill="white")
             continue
+
+        if match is None:
+            raise ValueError(f"Expected embedded PNG or native SVG in {path.name}")
 
         with Image.open(io.BytesIO(base64.b64decode(match.group(1)))) as original:
             is_bb = "breadboard" in path.name
