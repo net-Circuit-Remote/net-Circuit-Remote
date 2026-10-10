@@ -11,7 +11,7 @@ export const useWorkspaceStore = defineStore('workspace', {
     selectWire(source: string, destination: string) { this.selectedModuleId = null; this.selectedWire = { source, destination }; this.placementType = null },
     cancelPlacement() { this.placementType = null; this.pendingPort = null },
     clearSelection() { this.selectedModuleId = null; this.selectedWire = null; this.previewType = null; this.cancelPlacement(); this.editError = '' },
-    setZoom(value: number) { this.zoom = Math.min(200, Math.max(50, value)) },
+    setZoom(value: number) { if (Number.isFinite(value)) this.zoom = Math.min(200, Math.max(50, value)) },
     fitEntireCircuit() { this.zoom = 100; this.fitRequest++ },
   },
 })

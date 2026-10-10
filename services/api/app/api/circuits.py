@@ -6,7 +6,7 @@ from app.services.circuit_validator import validate_circuit_graph
 router = APIRouter(prefix="/api/circuits")
 
 @router.post("/validate")
-def validate_circuit(payload: dict[str, Any] = Body(...)):
+def validate_circuit(payload: Any = Body(default=None)):
     valid, code, message = validate_circuit_graph(payload)
     body = {"valid": valid, "code": code, "message": message}
     if not valid:

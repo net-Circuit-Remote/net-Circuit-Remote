@@ -1,10 +1,10 @@
 ---
 project: net-Circuit-Remote
-current_phase: interactive-workspace-ribbon-gizmo-supply-refinement
-status: implemented-tests-browser-verified-build-unverified
-last_updated: 2026-10-09
+current_phase: interactive-workspace-stability-audit
+status: source-audit-verified-artwork-provenance-pending
+last_updated: 2026-10-10
 next_task: phase-3-simulator-event-clock-model-integration
-blocking_issue: final-vite-bundle-sandbox-eperm-prior-elevation-declined
+blocking_issue: concurrent-user-icon-provenance-edit
 hardware_mode: simulation
 fpga_development_started: false
 ---
@@ -14,6 +14,18 @@ fpga_development_started: false
 ## Current Goal
 
 Phase 2 **Interactive Circuit Workspace** is implemented, preserving Phase 1 shell and transport boundaries. Next: Phase 3 simulator/event/clock/model adapters and real output/capture data.
+
+## Whole-project stability audit — 2026-10-10
+
+Reviewed 63 TypeScript/Vue production files, 24 API/hardware/simulator Python files, procedural factories/artwork/export contracts, stylesheet/canvas sizing, repository scripts, deployment templates and the explicit RTL scaffold. Navigation does not change model root scale or graph poses. Toolbar/wheel zoom now share target-relative dolly, the existing 50–200% UI range and reported magnification; Fit resets the reference while preserving heading. Non-finite inputs, near-horizon pan jumps, finite extreme rotation overflow and captured orbit during zero-height resize are guarded. Partial scene initialization cleans up its manager.
+
+Added keyed WireLayer reconciliation and incident-edge preview updates; unrelated wire buffers/materials and selected-wire colors survive. Supply setting commits reuse its assembly/display/outline. Docking caches footprints and rejects distant sites before collision checks (one local 400-board/10-call probe: 105.5→8.6 ms). Placement IDs use linear Set lookup. Geometry/material/all direct texture slots dispose once per owned subtree; labels own Sprite geometry; pending logo loads release removed roots and suppress callbacks. Controlled Three buffer paths returned counts to zero across 21 model cycles, and disposed roots were collected while image requests remained pending.
+
+Combined Undo/Redo string storage is bounded at 20 MB/50 entries, retaining one immediate oversized snapshot; unreachable saved fingerprints release. Newer station events survive older discovery; cancellation is rechecked after JSON; obsolete validation aborts. Circuit/memory file reads respect request/lifecycle/module/image revisions, so newer selections/Apply/Initialize/Undo cannot be overwritten; canceled pickers support same-file reselection. Backend now follows canonical optional-field types, handles binary WS frames cleanly, rejects unsupported modes, preserves explicit driver failure flags, closes gRPC on interruption and rejects float logic levels before bitwise operations. Windows documentation tests use explicit UTF-8.
+
+Final frontend **153/153 PASS**, production **build PASS**, Python **96 PASS / 1 FAIL**. The sole failure is supplied-icon provenance: manifest22 versus source19 while the user edits artwork. The user explicitly asked to keep their icon files; no icon regeneration/restoration or test suppression occurred. Scoped backend/hardware/simulator **53/53 PASS**, schema parity26 cases, native gRPC termination20 servers. Browser verifies real models, toolbar/wheel zoom, Fit/Orbit/grab-Pan and portrait/landscape proportions; final warning/error logs empty. Independent reviewer reproduced and rechecked four findings, with no outstanding material code finding. Existing large-bundle/dependency deprecation advisories remain. Python dependencies reside only in ignored `.audit-runtime`; no system Python changes.
+
+Generator/scope's shared -10° visual chassis, grounded supports, root Y-up/yaw and control pivots remain verified, including existing GLB/glTF round trips; visual exports were unchanged by this lifecycle audit. Real hardware, complete simulator execution, generated RPC handlers, FPGA synthesis and long-duration browser GPU heap measurements remain untested/unimplemented boundaries. No commit/push/deployment. Detailed algorithms/findings: `SOURCE_ANALYSIS_STABILITY_AUDIT.md`; browser evidence: `verification/2026-10-10-stability-audit-browser.md`.
 
 ## Ribbon, rotating grip and upright Power Supply — 2026-10-09
 

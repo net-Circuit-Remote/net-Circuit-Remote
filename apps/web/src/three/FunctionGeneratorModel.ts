@@ -1,8 +1,8 @@
-import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, SphereGeometry, SRGBColorSpace, TextureLoader, TorusGeometry, type BufferGeometry, type Material, type Object3D } from 'three'
+import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, SphereGeometry, SRGBColorSpace, TorusGeometry, type BufferGeometry, type Material, type Object3D } from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { GENERATOR_CH1, GENERATOR_CH2, GENERATOR_SYNC, GENERATOR_LAYOUT, drawInstrumentArtwork, generatorLegendsArtwork, generatorScreenArtwork } from './FunctionGeneratorArtwork'
-import type { InstrumentArtwork } from './InstrumentArtwork'
+import { loadInstrumentLogo, type InstrumentArtwork } from './InstrumentArtwork'
 import { createInstrumentChassis, mountInstrumentChassis } from './InstrumentChassis'
 
 export const FUNCTION_GENERATOR_SIZE = [6, 3.6, 2.8] as const
@@ -84,7 +84,7 @@ export function addFunctionGeneratorModel(group: Group) {
   const logoMaterial = new MeshBasicMaterial({ transparent: true, depthWrite: false, toneMapped: false }); logoMaterial.name = 'generator_brand'
   const owl = add('brand_owl', new PlaneGeometry(layout.owl.size, layout.owl.size), logoMaterial, layout.owl.x, layout.owl.y, 1.12); owl.userData = { asset: 'favicon.svg', ignorePick: true }
   if (typeof document !== 'undefined' && typeof document.createElementNS === 'function') {
-    logoMaterial.map = new TextureLoader().load(new URL('../assets/icons/favicon.svg', import.meta.url).href, () => group.userData.onVisualChange?.()); logoMaterial.map.colorSpace = SRGBColorSpace
+    logoMaterial.map = loadInstrumentLogo(group, new URL('../assets/icons/favicon.svg', import.meta.url).href)
   } else logoMaterial.opacity = 0
 
   const button = (name: string, x: number, y: number, width: number, height: number, material: Material = grip, socket: Material = rubber) => {

@@ -603,7 +603,7 @@ test('technical grid suppresses minor detail at distant zoom and preserves major
     assert.equal(material.uniforms.minorStep.value, 0.5)
     assert.equal(material.uniforms.majorStep.value, 2.5)
     assert.ok(material.uniforms.minorVisibility.value > 0.8)
-    manager.camera.position.multiplyScalar(3); manager.setZoom(50); frame?.(0)
+    manager.setZoom(50); manager.camera.position.multiplyScalar(3); frame?.(0)
     assert.equal(material.uniforms.minorVisibility.value, 0)
     assert.equal(material.uniforms.majorStep.value, 2.5)
     manager.resetView(); frame?.(0)

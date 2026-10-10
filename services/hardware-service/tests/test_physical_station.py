@@ -55,3 +55,14 @@ def test_physical_station_refuses_to_fake_unimplemented_driver_method():
     station=PhysicalHardwareStation('physical-station-01', driver=object())
     with pytest.raises(NotImplementedError):
         station.run()
+
+
+def test_physical_station_preserves_driver_failure_to_apply_safe_state():
+    class UnavailableDriver:
+        def safe_state(self):
+            return {'state': 'fault', 'hardware_applied': False, 'code': 'DRIVER_UNAVAILABLE'}
+
+    station = PhysicalHardwareStation('physical-station-01', driver=UnavailableDriver())
+    assert station.safe_state() == {
+        'state': 'fault', 'hardware_applied': False, 'code': 'DRIVER_UNAVAILABLE',
+    }

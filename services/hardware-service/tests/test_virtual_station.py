@@ -3,6 +3,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from hardware_service.station.virtual import VirtualHardwareStation
+import pytest
 
 
 def test_virtual_station_reports_capabilities_and_safe_state():
@@ -21,3 +22,11 @@ def test_virtual_station_can_apply_minimal_circuit_and_run():
     assert station.apply_circuit(graph)['accepted'] is True
     assert station.run()['state']=='running'
     assert station.stop()['state']=='stopped'
+
+
+@pytest.mark.parametrize('value', [0.0, 1.0, '1', None, 2])
+def test_virtual_station_rejects_invalid_integer_logic_levels(value):
+    station = VirtualHardwareStation('virtual-station-01')
+    assert station.set_input('SW1.OUT', value) == {
+        'accepted': False, 'code': 'INVALID_LOGIC_LEVEL',
+    }

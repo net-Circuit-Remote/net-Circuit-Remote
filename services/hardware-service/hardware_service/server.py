@@ -20,9 +20,12 @@ def build_server() -> grpc.Server:
 
 def serve(address: str = "127.0.0.1:50051") -> None:
     server = build_server()
-    server.add_insecure_port(address)
-    server.start()
-    server.wait_for_termination()
+    try:
+        server.add_insecure_port(address)
+        server.start()
+        server.wait_for_termination()
+    finally:
+        server.stop(0).wait()
 
 if __name__ == "__main__":
     serve()

@@ -4,11 +4,16 @@ router = APIRouter()
 
 @router.websocket("/ws/events")
 async def events_socket(websocket: WebSocket):
-    await websocket.accept()
-    await websocket.send_json({"type":"hello","service":"netcircuit-api"})
     try:
+        await websocket.accept()
+        await websocket.send_json({"type":"hello","service":"netcircuit-api"})
         while True:
-            message = await websocket.receive_text()
-            await websocket.send_json({"type":"echo","payload":message})
+            message = await websocket.receive()
+            if message["type"] == "websocket.disconnect":
+                return
+            if message.get("text") is None:
+                await websocket.close(code=1003)
+                return
+            await websocket.send_json({"type":"echo","payload":message["text"]})
     except WebSocketDisconnect:
         return

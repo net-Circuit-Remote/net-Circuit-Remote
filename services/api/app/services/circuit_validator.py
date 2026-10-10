@@ -1,8 +1,9 @@
 from pydantic import ValidationError
+from typing import Any
 from app.models.circuit import CircuitGraph
 
 
-def validate_circuit_graph(payload: dict) -> tuple[bool, str, str]:
+def validate_circuit_graph(payload: Any) -> tuple[bool, str, str]:
     try:
         graph = CircuitGraph.model_validate(payload)
     except ValidationError as exc:

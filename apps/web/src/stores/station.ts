@@ -14,6 +14,8 @@ export const useStationStore = defineStore('station', {
     error: null as string | null,
     eventsConnected: false,
     refreshVersion: 0,
+    eventVersion: 0,
+    stationEventVersions: new Map<string, number>(),
   }),
   getters: {
     selected: (state): Station | null => state.stations.find((station) => station.station_id === state.stationId) ?? null,
@@ -27,10 +29,13 @@ export const useStationStore = defineStore('station', {
   actions: {
     setStations(stations: StationDescriptor[]) {
       this.stations = stations.map((station) => ({ ...station, status: stationStatus(station) }))
+      const ids = new Set(stations.map((station) => station.station_id))
+      for (const id of this.stationEventVersions.keys()) if (!ids.has(id)) this.stationEventVersions.delete(id)
       this.loaded = true
       this.error = null
     },
     updateStation(station: StationDescriptor) {
+      this.stationEventVersions.set(station.station_id, ++this.eventVersion)
       const stations = this.stations.filter((item) => item.station_id !== station.station_id)
       this.setStations([...stations, station])
     },
@@ -44,10 +49,18 @@ export const useStationStore = defineStore('station', {
     setEventsConnected(connected: boolean) { this.eventsConnected = connected },
     async refresh(signal?: AbortSignal) {
       const version = ++this.refreshVersion
+      const eventVersion = this.eventVersion
       this.loading = true
       try {
         const stations = await stationsApi.list(signal)
-        if (version === this.refreshVersion) this.setStations(stations)
+        if (version === this.refreshVersion && !signal?.aborted) {
+          // Events observed after discovery began supersede that older HTTP snapshot.
+          const latest = new Map(stations.map((station) => [station.station_id, station]))
+          for (const station of this.stations) {
+            if ((this.stationEventVersions.get(station.station_id) ?? 0) > eventVersion) latest.set(station.station_id, station)
+          }
+          this.setStations([...latest.values()])
+        }
       } catch (error) {
         if (version === this.refreshVersion && !signal?.aborted) this.error = errorMessage(error)
       } finally { if (version === this.refreshVersion) this.loading = false }

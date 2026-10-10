@@ -1,5 +1,6 @@
-import { BoxGeometry, CanvasTexture, CylinderGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, SRGBColorSpace, TextureLoader, TorusGeometry } from 'three'
+import { BoxGeometry, CanvasTexture, CylinderGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, SRGBColorSpace, TorusGeometry } from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import { loadInstrumentLogo } from './InstrumentArtwork'
 
 export type SupplyControl = 'voltage_v' | 'current_limit_a' | 'power_on'
 export const supplyControlMaximum = (control: SupplyControl) => control === 'voltage_v' ? 15 : 5
@@ -130,8 +131,7 @@ export function addPowerSupplyModel(group: Group, [w, h, d]: readonly number[]) 
   if (legends) add('front-legends', new Mesh(new PlaneGeometry(w - 0.16, h - 0.26), new MeshBasicMaterial({ map: legends, transparent: true, depthWrite: false, toneMapped: false })), 0, panelY, front + 0.055)
   const logoUrl = new URL('../assets/icons/favicon.svg', import.meta.url).href
   const logoTexture = typeof document !== 'undefined' && typeof document.createElementNS === 'function'
-  ? new TextureLoader().load(logoUrl, () => group.userData.onVisualChange?.()) : null
-  if (logoTexture) logoTexture.colorSpace = SRGBColorSpace
+  ? loadInstrumentLogo(group, logoUrl) : null
   const logo = add('supply-brand-icon', new Mesh(new PlaneGeometry(0.155, 0.155), new MeshBasicMaterial({ map: logoTexture, transparent: true, depthWrite: false, toneMapped: false })), w * 0.165, h * 0.947, front + 0.06)
   logo.userData.asset = 'favicon.svg'
 

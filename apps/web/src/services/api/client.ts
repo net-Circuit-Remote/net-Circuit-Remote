@@ -37,6 +37,7 @@ export function createApiClient(options: { baseUrl?: string; timeoutMs?: number;
           if (controller.signal.aborted) throw new ApiError(0, timedOut ? 'REQUEST_TIMEOUT' : 'REQUEST_CANCELLED', timedOut ? 'API request timed out. Please retry.' : 'Request cancelled.')
           throw new ApiError(response.status, 'INVALID_RESPONSE', 'The API returned an unreadable response.')
         }
+        if (controller.signal.aborted) throw new ApiError(0, timedOut ? 'REQUEST_TIMEOUT' : 'REQUEST_CANCELLED', timedOut ? 'API request timed out. Please retry.' : 'Request cancelled.')
         if (!response.ok && !request.acceptStatuses?.includes(response.status)) {
           throw new ApiError(response.status,
             isRecord(data) && typeof data.code === 'string' ? data.code : 'HTTP_ERROR',

@@ -235,6 +235,28 @@ test('breadboard snap uses the rotated footprint after a non-quarter-turn gizmo 
   assert.ok(position.z - rotatedDepth / 2 >= 2.66 / 2 - 0.005, 'snap must not overlap rotated housing')
 })
 
+test('extreme finite imported yaw docks and rotates like its equivalent heading, with one undo', async () => {
+  const rotation = Number.MAX_VALUE, heading = rotation % 360
+  const board = { id: 'B', type: 'BREADBOARD', rotation, position: { x: 0, y: 0, z: 0 } }
+  assert.deepEqual(snapPosition({ x: 0, z: 0 }, true, [board], 'BREADBOARD'), snapPosition({ x: 0, z: 0 }, true, [{ ...board, rotation: heading }], 'BREADBOARD'))
+  const h = setup()
+  try {
+    h.circuit.importGraph({ schema_version: '1.0', circuit_id: 'extreme', modules: [{ id: 'C', type: 'CLOCK', rotation }], connections: [] })
+    h.workspace.selectModule('C'); h.workspace.snap = false
+    await nextTick(); h.circuit.past = []
+    const origin = h.manager.gizmoOrigin()!, handle = h.manager.gizmoHandlePosition('rotate-y')!
+    const start = h.manager.project(handle)
+    const target = h.manager.project(handle.clone().sub(origin).applyAxisAngle(new Vector3(0, 1, 0), Math.PI / 3).add(origin))
+    h.editor.pointerDown(h.pointer(start.x, start.y)); h.editor.pointerUp(h.pointer(target.x, target.y))
+    assert.ok(Math.abs(h.circuit.graph!.modules[0].rotation! - (heading + 60) % 360) < 0.01)
+    assert.equal(h.circuit.past.length, 1)
+    assert.ok(h.manager.models.get('C')!.matrixWorld.elements.every(Number.isFinite))
+    h.circuit.undo(); await nextTick()
+    assert.equal(h.circuit.graph!.modules[0].rotation, rotation)
+    assert.ok(h.manager.models.get('C')!.matrixWorld.elements.every(Number.isFinite))
+  } finally { h.dispose() }
+})
+
 test('Move left drag moves a breadboard, previews without graph mutation and commits one undo', async () => {
   const h = setup('move')
   try {

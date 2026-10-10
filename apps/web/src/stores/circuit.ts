@@ -9,6 +9,9 @@ import { errorMessage } from '../services/api/client'
 import { MAX_CIRCUIT_FILE_BYTES, parseCircuitFile } from '../services/files/circuitFile'
 
 export interface CircuitDraft { id: string; name: string; graph: CircuitGraph }
+// Conservative UTF-16 string storage budget, shared by both history directions.
+export const MAX_HISTORY_STORAGE_BYTES = 20_000_000
+const validationControllers = new WeakMap<object, AbortController>()
 export const useCircuitStore = defineStore('circuit', {
   state: () => ({
     drafts: [] as CircuitDraft[], activeId: null as string | null,
@@ -34,8 +37,9 @@ export const useCircuitStore = defineStore('circuit', {
       const definition = getDefinition(type)
       if (!definition) throw new Error('Placement metadata is unavailable for this type.')
       if (!Object.values(position).every(Number.isFinite)) throw new Error('Position must be finite.')
+      const ids = new Set(this.graph.modules.map((module) => module.id))
       let serial = 1
-      while (this.graph.modules.some((module) => module.id === `${type}_${serial}`)) serial++
+      while (ids.has(`${type}_${serial}`)) serial++
       const id = `${type}_${serial}`
       const properties = structuredClone(definition.defaults)
       if (definition.memoryContract) properties.memory = createMemoryImage()
@@ -50,7 +54,7 @@ export const useCircuitStore = defineStore('circuit', {
     rotateModule(id: string, degrees = 90) {
       if (!Number.isFinite(degrees)) throw new Error('Rotation must be finite.')
       if (!this.graph?.modules.some((module) => module.id === id)) return
-      this.commitGraph({ ...this.graph, modules: this.graph.modules.map((module) => module.id === id ? { ...module, rotation: (((module.rotation ?? 0) + degrees) % 360 + 360) % 360 } : module) })
+      this.commitGraph({ ...this.graph, modules: this.graph.modules.map((module) => module.id === id ? { ...module, rotation: (((module.rotation ?? 0) % 360 + degrees % 360) % 360 + 360) % 360 } : module) })
     },
     removeModule(id: string) {
       if (!this.graph?.modules.some((module) => module.id === id)) return
@@ -91,16 +95,35 @@ export const useCircuitStore = defineStore('circuit', {
     snapshot(): string { return JSON.stringify({ drafts: this.drafts, activeId: this.activeId }) },
     recordChange() {
       this.past.push(this.snapshot())
-      if (this.past.length > 50) this.past.shift()
       this.future = []
+      this.trimHistory()
+    },
+    trimHistory() {
+      let bytes = [...this.past, ...this.future].reduce((total, snapshot) => total + snapshot.length * 2, 0)
+      // Keep one immediate Undo/Redo even when a multi-draft snapshot exceeds the budget.
+      while (this.past.length + this.future.length > 1 && (this.past.length + this.future.length > 50 || bytes > MAX_HISTORY_STORAGE_BYTES)) {
+        const removed = this.past.length ? this.past.shift()! : this.future.shift()!
+        bytes -= removed.length * 2
+      }
+      this.pruneSaved()
+    },
+    pruneSaved() {
+      const reachable = new Set(this.drafts.map((draft) => draft.id))
+      const candidates = Object.keys(this.saved).filter((id) => !reachable.has(id))
+      if (!candidates.length) return
+      for (const snapshot of [...this.past, ...this.future]) {
+        const state = JSON.parse(snapshot) as { drafts: CircuitDraft[] }
+        for (const draft of state.drafts) reachable.add(draft.id)
+      }
+      for (const id of candidates) if (!reachable.has(id)) delete this.saved[id]
     },
     restore(snapshot: string) {
       const state = JSON.parse(snapshot) as { drafts: CircuitDraft[]; activeId: string | null }
       this.drafts = state.drafts; this.activeId = state.activeId
       this.clearValidation()
     },
-    undo() { const previous = this.past.pop(); if (previous) { this.future.push(this.snapshot()); this.restore(previous) } },
-    redo() { const next = this.future.pop(); if (next) { this.past.push(this.snapshot()); this.restore(next) } },
+    undo() { const previous = this.past.pop(); if (previous) { this.future.push(this.snapshot()); this.restore(previous); this.trimHistory() } },
+    redo() { const next = this.future.pop(); if (next) { this.past.push(this.snapshot()); this.restore(next); this.trimHistory() } },
     markSaved() { if (this.current) this.saved[this.current.id] = JSON.stringify(this.current) },
     importGraph(graph: CircuitGraph) {
       const copy = parseCircuitFile(JSON.stringify(graph))
@@ -121,6 +144,8 @@ export const useCircuitStore = defineStore('circuit', {
       return new TextEncoder().encode(pretty).length <= MAX_CIRCUIT_FILE_BYTES ? pretty : compact
     },
     clearValidation() {
+      validationControllers.get(this)?.abort()
+      validationControllers.delete(this)
       this.validationVersion++
       this.validationResult = null
       this.validationError = null
@@ -151,16 +176,21 @@ export const useCircuitStore = defineStore('circuit', {
       this.clearValidation()
       const version = this.validationVersion
       const snapshot = JSON.stringify(this.graph)
+      const controller = new AbortController()
+      validationControllers.set(this, controller)
       this.validating = true
       try {
-        const result = await circuitsApi.validate(JSON.parse(snapshot) as CircuitGraph)
+        const result = await circuitsApi.validate(JSON.parse(snapshot) as CircuitGraph, controller.signal)
         if (version === this.validationVersion && JSON.stringify(this.graph) === snapshot) {
           this.validationResult = result
           this.validatedSnapshot = snapshot
         }
       } catch (error) {
         if (version === this.validationVersion && JSON.stringify(this.graph) === snapshot) this.validationError = errorMessage(error)
-      } finally { if (version === this.validationVersion) this.validating = false }
+      } finally {
+        if (validationControllers.get(this) === controller) validationControllers.delete(this)
+        if (version === this.validationVersion) this.validating = false
+      }
     },
   },
 })

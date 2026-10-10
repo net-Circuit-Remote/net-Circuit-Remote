@@ -72,7 +72,7 @@ class PhysicalHardwareStation(HardwareStation):
         if self._driver is None:
             return {"state": "safe", "hardware_applied": False, "code": "HARDWARE_UNAVAILABLE"}
         result = self._invoke("safe_state")
-        return {**result, "hardware_applied": True}
+        return {"hardware_applied": True, **result}
 
     def reset(self) -> dict[str, Any]:
         return self._invoke("reset")

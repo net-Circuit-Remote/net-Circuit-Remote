@@ -1,3 +1,23 @@
+import { SRGBColorSpace, TextureLoader, type Group } from 'three'
+
+// TextureLoader cannot cancel an image in flight. Dropping the owner on disposal
+// keeps the pending load from retaining a deleted model and its scene callback.
+export function loadInstrumentLogo(root: Group, url: string) {
+  const owner: { root: Group | null } = { root }
+  const texture = new TextureLoader().load(url, (loaded) => {
+    if (!owner.root) { loaded.image = null; return }
+    owner.root.userData.onVisualChange?.()
+  })
+  const release = () => {
+    owner.root = null
+    texture.image = null
+    texture.removeEventListener('dispose', release)
+  }
+  texture.addEventListener('dispose', release)
+  texture.colorSpace = SRGBColorSpace
+  return texture
+}
+
 // Canvas and SVG primitives for authored instrument decals.
 export type ArtworkCommand =
   | { kind: 'rect'; x: number; y: number; w: number; h: number; color: string; r?: number }

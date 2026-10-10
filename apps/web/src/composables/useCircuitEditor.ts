@@ -24,7 +24,7 @@ interface TransformGesture extends DragGesture {
 }
 
 function footprint(size: readonly number[], degrees: number) {
-  const angle = degrees * Math.PI / 180, c = Math.abs(Math.cos(angle)), s = Math.abs(Math.sin(angle))
+  const angle = (degrees % 360) * Math.PI / 180, c = Math.abs(Math.cos(angle)), s = Math.abs(Math.sin(angle))
   return [size[0] * c + size[2] * s, size[0] * s + size[2] * c]
 }
 
@@ -45,10 +45,12 @@ export function snapPosition(
   const activeDef = getDefinition(activeType)
   if (!activeDef?.visual?.startsWith('breadboard')) return { x: clean(baseX), y: elevation, z: clean(baseZ) }
 
-  const otherBoards = modules.filter((m) => {
-    if (activeId && m.id === activeId) return false
+  const otherBoards = modules.flatMap((m) => {
+    if (activeId && m.id === activeId) return []
     const def = getDefinition(m.type)
-    return def?.visual?.startsWith('breadboard')
+    if (!def?.visual?.startsWith('breadboard')) return []
+    const [w, d] = footprint(def.size, m.rotation ?? 0)
+    return [{ id: m.id, x: m.position?.x ?? 0, z: m.position?.z ?? 0, w, d }]
   })
   if (otherBoards.length === 0) return { x: clean(baseX), y: elevation, z: clean(baseZ) }
 
@@ -61,12 +63,7 @@ export function snapPosition(
   let minDist = Infinity
 
   for (const m of otherBoards) {
-    const mDef = getDefinition(m.type)
-    if (!mDef) continue
-    const mRot = m.rotation ?? 0
-    const [mW, mD] = footprint(mDef.size, mRot)
-    const mX = m.position?.x ?? 0
-    const mZ = m.position?.z ?? 0
+    const { x: mX, z: mZ, w: mW, d: mD } = m
 
     const sites = [
       // Top (North)
@@ -80,15 +77,12 @@ export function snapPosition(
     ]
 
     for (const s of sites) {
+      const dx = Math.abs(point.x - s.x), dz = Math.abs(point.z - s.z)
+      if (dx > s.threshX || dz > s.threshZ) continue
       const eps = 0.005
       const siteOverlapsOther = otherBoards.some((b) => {
         if (b.id === m.id) return false
-        const bDef = getDefinition(b.type)
-        if (!bDef) return false
-        const bRot = b.rotation ?? 0
-        const [bW, bD] = footprint(bDef.size, bRot)
-        const bX = b.position?.x ?? 0
-        const bZ = b.position?.z ?? 0
+        const { x: bX, z: bZ, w: bW, d: bD } = b
         return (s.x - activeW / 2 < bX + bW / 2 - eps) &&
                (s.x + activeW / 2 > bX - bW / 2 + eps) &&
                (s.z - activeD / 2 < bZ + bD / 2 - eps) &&
@@ -96,8 +90,6 @@ export function snapPosition(
       })
       if (siteOverlapsOther) continue
 
-      const dx = Math.abs(point.x - s.x)
-      const dz = Math.abs(point.z - s.z)
       if (dx <= s.threshX && dz <= s.threshZ) {
         const dist = Math.hypot(dx, dz)
         if (dist < minDist) {
@@ -115,12 +107,7 @@ export function snapPosition(
   for (let iter = 0; iter < 3; iter++) {
     let collided = false
     for (const m of otherBoards) {
-      const mDef = getDefinition(m.type)
-      if (!mDef) continue
-      const mRot = m.rotation ?? 0
-      const [mW, mD] = footprint(mDef.size, mRot)
-      const mX = m.position?.x ?? 0
-      const mZ = m.position?.z ?? 0
+      const { x: mX, z: mZ, w: mW, d: mD } = m
 
       const eps = 0.005
       const overlapX = (candX - activeW / 2 < mX + mW / 2 - eps) && (candX + activeW / 2 > mX - mW / 2 + eps)
@@ -219,7 +206,8 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
       const center = manager()!.gizmoOrigin()!, anchor = manager()!.groundPoint(x, y, center.y)
       if (!anchor) return
       const initial = { x: module.position?.x ?? 0, y: module.position?.y ?? 0, z: module.position?.z ?? 0 }
-      gesture = { kind: 'transform', pointer: event.pointerId, start: { x, y }, dragged: false, id: module.id, draft: circuit.activeId, handle: transform.handle, center, anchor, initial, position: initial, initialRotation: module.rotation ?? 0, rotation: module.rotation ?? 0, lastAngle: Math.atan2(-(anchor.z - center.z), anchor.x - center.x), angle: 0 }
+      const initialRotation = (module.rotation ?? 0) % 360
+      gesture = { kind: 'transform', pointer: event.pointerId, start: { x, y }, dragged: false, id: module.id, draft: circuit.activeId, handle: transform.handle, center, anchor, initial, position: initial, initialRotation, rotation: initialRotation, lastAngle: Math.atan2(-(anchor.z - center.z), anchor.x - center.x), angle: 0 }
       manager()!.activateGizmo(transform.handle); manager()!.lockPointer(true); canvas.value.setPointerCapture(event.pointerId); event.preventDefault?.(); return
     }
     const hit = manager()!.pick(x, y)

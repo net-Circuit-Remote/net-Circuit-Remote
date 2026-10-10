@@ -34,10 +34,10 @@ onMounted(() => {
   try {
     renderer = new WebGLRenderer({ canvas: canvas.value, antialias: true, alpha: false })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    manager = createSceneManager({ renderer, canvas: canvas.value, onRender: rendered })
+    manager = createSceneManager({ renderer, canvas: canvas.value, onRender: rendered, onZoomChange: (percent) => workspace.setZoom(percent) })
     manager.setZoom(workspace.zoom)
     editor.sync(); visibility()
-  } catch { renderer?.dispose(); graphicsError.value = '3D graphics unavailable. Edit graph coordinates and ports using Inspector.' }
+  } catch { if (manager) manager.dispose(); else renderer?.dispose(); manager = undefined; graphicsError.value = '3D graphics unavailable. Edit graph coordinates and ports using Inspector.' }
   observer = new ResizeObserver(size)
   if (host.value) observer.observe(host.value)
   canvas.value?.addEventListener('webglcontextlost', lost)
@@ -45,7 +45,7 @@ onMounted(() => {
   document.addEventListener('visibilitychange', visibility)
   size()
 })
-watch(() => workspace.zoom, (zoom) => { editor.cancel(); manager?.setZoom(zoom) })
+watch(() => workspace.zoom, (zoom) => { if (manager && Math.abs(manager.zoomPercent() - zoom) > 0.02) { editor.cancel(); manager.setZoom(zoom) } })
 watch(() => workspace.fitRequest, () => { editor.cancel(); manager?.fitCircuit() })
 watch(() => ui.windows, () => { void nextTick(updateGizmoObstacles) }, { deep: true })
 onUnmounted(() => { observer?.disconnect(); manager?.dispose(); canvas.value?.removeEventListener('webglcontextlost', lost); canvas.value?.removeEventListener('webglcontextrestored', restored); document.removeEventListener('visibilitychange', visibility) })

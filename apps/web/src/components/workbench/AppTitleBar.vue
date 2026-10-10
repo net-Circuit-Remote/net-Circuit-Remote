@@ -11,18 +11,22 @@ const ui = useUiStore()
 const instrument = useInstrumentStore()
 const fileInput = ref<HTMLInputElement>()
 const error = ref('')
-const newFile = () => { circuit.createDraft(); error.value = '' }
+let readVersion = 0, disposed = false
+const newFile = () => { readVersion++; if (fileInput.value) fileInput.value.value = ''; circuit.createDraft(); error.value = '' }
 async function openFile(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
+  const version = ++readVersion
   try {
     if (file.size > MAX_CIRCUIT_FILE_BYTES) throw new Error('Circuit file is too large (maximum 2 MB).')
-    circuit.importGraph(parseCircuitFile(await file.text()))
+    const contents = await file.text()
+    if (disposed || version !== readVersion) return
+    circuit.importGraph(parseCircuitFile(contents))
     error.value = ''
     instrument.log(`Opened ${file.name} locally.`)
-  } catch (reason) { error.value = reason instanceof Error ? reason.message : 'Cannot open circuit file.' }
-  finally { input.value = '' }
+  } catch (reason) { if (!disposed && version === readVersion) error.value = reason instanceof Error ? reason.message : 'Cannot open circuit file.' }
+  finally { if (version === readVersion) input.value = '' }
 }
 function saveFile() {
   if (!circuit.current) return
@@ -51,7 +55,7 @@ function shortcuts(event: KeyboardEvent) {
   if (key === 'y') circuit.redo()
 }
 onMounted(() => window.addEventListener('keydown', shortcuts))
-onUnmounted(() => window.removeEventListener('keydown', shortcuts))
+onUnmounted(() => { disposed = true; readVersion++; window.removeEventListener('keydown', shortcuts) })
 </script>
 <template>
   <header class="app-titlebar">

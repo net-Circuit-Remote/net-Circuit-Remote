@@ -121,9 +121,9 @@
   {
     "file": "power_supply_upright.svg",
     "source": "assets/icon .svg/power_supply_upright.svg",
-    "sha256": "d719ceecf19baa0fbb553409675d018f9623380980cb346cc46b6865f1ccf54f",
-    "source_bytes": 2941,
-    "output_bytes": 2941
+    "sha256": "20f2bf690763a727a5b451b99a49c64699f103b7812a6a98f8941ceaafafd0d0",
+    "source_bytes": 6143,
+    "output_bytes": 6143
   },
   {
     "file": "resistor.svg",

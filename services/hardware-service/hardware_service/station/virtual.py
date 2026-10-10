@@ -33,7 +33,7 @@ class VirtualHardwareStation(HardwareStation):
         return {"accepted": True, "state": self._state}
 
     def set_input(self, input_id: str, value: int) -> dict[str, Any]:
-        if value not in (0, 1):
+        if not isinstance(value, int) or value not in (0, 1):
             return {"accepted": False, "code": "INVALID_LOGIC_LEVEL"}
         self._inputs[input_id] = value
         return {"accepted": True, "input_id": input_id, "value": value}

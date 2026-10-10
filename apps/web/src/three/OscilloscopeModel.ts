@@ -1,8 +1,9 @@
-import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, SRGBColorSpace, TextureLoader, TorusGeometry, type BufferGeometry, type Material, type Object3D } from 'three'
+import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PlaneGeometry, SRGBColorSpace, TorusGeometry, type BufferGeometry, type Material, type Object3D } from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { CH1_COLOR, CH2_COLOR, SCOPE_LAYOUT, drawScopeArtwork, scopeLegendsArtwork, scopeScreenArtwork, type ScopeArtwork } from './OscilloscopeArtwork'
 import { createInstrumentChassis, mountInstrumentChassis } from './InstrumentChassis'
+import { loadInstrumentLogo } from './InstrumentArtwork'
 
 export const OSCILLOSCOPE_SIZE = [6, 3.8, 2.8] as const
 export const OSCILLOSCOPE_KNOBS = ['time_div_knob', 'horizontal_position', 'trigger_level', 'ch1_volts_div', 'ch1_position', 'ch2_volts_div', 'ch2_position'] as const
@@ -79,8 +80,7 @@ export function addOscilloscopeModel(group: Group) {
   const logoMaterial = new MeshBasicMaterial({ transparent: true, depthWrite: false, toneMapped: false }); logoMaterial.name = 'scope_brand'
   const owl = add('brand_owl', new PlaneGeometry(layout.owl.size, layout.owl.size), logoMaterial, layout.owl.x, layout.owl.y, 1.12); owl.userData.asset = 'favicon.svg'; owl.userData.ignorePick = true
   if (typeof document !== 'undefined' && typeof document.createElementNS === 'function') {
-    logoMaterial.map = new TextureLoader().load(new URL('../assets/icons/favicon.svg', import.meta.url).href, () => group.userData.onVisualChange?.())
-    logoMaterial.map.colorSpace = SRGBColorSpace
+    logoMaterial.map = loadInstrumentLogo(group, new URL('../assets/icons/favicon.svg', import.meta.url).href)
   } else logoMaterial.opacity = 0
 
   const knob = (name: string, x: number, y: number, radius: number, accent: Material = silver) => {

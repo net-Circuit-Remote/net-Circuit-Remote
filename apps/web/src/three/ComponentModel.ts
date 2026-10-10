@@ -1,4 +1,4 @@
-import { Box3, BoxGeometry, CanvasTexture, CylinderGeometry, Group, InstancedMesh, Mesh, MeshStandardMaterial, Object3D, SphereGeometry, Sprite, SpriteMaterial, Vector3 } from 'three'
+import { Box3, BoxGeometry, CanvasTexture, CylinderGeometry, Group, InstancedMesh, Mesh, MeshStandardMaterial, Object3D, SphereGeometry, Sprite, SpriteMaterial, Texture, Vector3, type BufferGeometry, type Material } from 'three'
 import { getDefinition, type LogicalPort } from '../data/editorCatalog'
 import type { CircuitModule } from '../types/circuit'
 import { addBreadboardHousing } from './BreadboardHousing'
@@ -7,13 +7,21 @@ import { addOscilloscopeModel } from './OscilloscopeModel'
 import { addFunctionGeneratorModel } from './FunctionGeneratorModel'
 
 export function disposeObject(root: Object3D) {
+  const geometries = new Set<BufferGeometry>(), materials = new Set<Material>(), textures = new Set<Texture>()
   root.traverse((object) => {
+    delete object.userData.onVisualChange
     if (object instanceof InstancedMesh) object.dispose()
     const renderable = object as Mesh
-    renderable.geometry?.dispose()
-    const materials = renderable.material ? (Array.isArray(renderable.material) ? renderable.material : [renderable.material]) : []
-    materials.forEach((material) => { if ('map' in material) (material.map as CanvasTexture | null)?.dispose(); material.dispose() })
+    if (renderable.geometry) geometries.add(renderable.geometry)
+    const owned = renderable.material ? (Array.isArray(renderable.material) ? renderable.material : [renderable.material]) : []
+    owned.forEach((material) => materials.add(material))
   })
+  // Factories share materials within a model; maps can also be shared across
+  // material slots. Release every owned resource once, including PBR maps.
+  for (const material of materials) for (const value of Object.values(material)) if (value instanceof Texture) textures.add(value)
+  geometries.forEach((geometry) => geometry.dispose())
+  textures.forEach((texture) => texture.dispose())
+  materials.forEach((material) => material.dispose())
 }
 
 function createBreadboardTexture(): CanvasTexture | null {
@@ -354,7 +362,11 @@ export function buildComponent(module: CircuitModule): Group {
     if (context) {
       context.fillStyle = '#172332e8'; context.fillRect(0, 0, 512, 80)
       context.fillStyle = '#d5e8ee'; context.textAlign = 'center'; context.font = '36px Segoe UI'; context.fillText(module.id + (definition?.visualOnly ? ' · visual' : ''), 256, 53, 500)
-      const label = new Sprite(new SpriteMaterial({ map: new CanvasTexture(canvas), depthTest: false, transparent: true })); label.position.set(0, h + 0.7, 0); label.scale.set(3.2, 0.5, 1); label.userData.ignorePick = true; group.add(label)
+      const label = new Sprite(new SpriteMaterial({ map: new CanvasTexture(canvas), depthTest: false, transparent: true }))
+      // Three's default Sprite geometry is global. Each disposable model owns
+      // its label geometry so removal cannot invalidate other live labels.
+      label.geometry = label.geometry.clone()
+      label.position.set(0, h + 0.7, 0); label.scale.set(3.2, 0.5, 1); label.userData.ignorePick = true; group.add(label)
     }
   }
   // Cache unposed visual bounds once, before rotation/translation. Projecting a
@@ -366,7 +378,7 @@ export function buildComponent(module: CircuitModule): Group {
 }
 export function applyPose(group: Group, module: CircuitModule) {
   group.position.set(module.position?.x ?? 0, module.position?.y ?? 0, module.position?.z ?? 0)
-  group.rotation.y = (module.rotation ?? 0) * Math.PI / 180
+  group.rotation.y = ((module.rotation ?? 0) % 360) * Math.PI / 180
   if (getDefinition(module.type)?.visual === 'supply') applyPowerSupplyControls(group, module.properties)
   group.updateMatrixWorld(true)
 }
