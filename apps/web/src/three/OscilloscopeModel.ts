@@ -38,10 +38,10 @@ export function addOscilloscopeModel(group: Group) {
   const add = (name: string, geometry: BufferGeometry, material: Material, x: number, y: number, z: number, parent: Object3D = group) => {
     const mesh = new Mesh(geometry, material); mesh.name = name; mesh.position.set(x, y, z); parent.add(mesh); return mesh
   }
-  const rounded = (name: string, size: [number, number, number], pos: [number, number, number], radius: number, material: Material, selection = false) => {
+  const rounded = (name: string, size: [number, number, number], pos: [number, number, number], radius: number, material: Material, selection = false, segments = selection ? 2 : 1) => {
     // Keep silhouette-bearing case edges smoother; small panels/buttons need
-    // only one bevel subdivision, keeping the uncompressed GLB lightweight.
-    const mesh = add(name, new RoundedBoxGeometry(...size, selection ? 2 : 1, radius), material, ...pos); mesh.userData.selectionSurface = selection; return mesh
+    // only one or two bevel subdivisions, keeping the uncompressed GLB lightweight.
+    const mesh = add(name, new RoundedBoxGeometry(...size, segments, radius), material, ...pos); mesh.userData.selectionSurface = selection; return mesh
   }
   // Lightweight curved edges, opaque metal housing, inset front panels and feet.
   rounded('enclosure', [6, 3.43, 2.1], [0, 2.035, 0], 0.085, shell, true)
@@ -78,7 +78,7 @@ export function addOscilloscopeModel(group: Group) {
   const screen = add('screen', new PlaneGeometry(layout.screen.w, layout.screen.h), screenMaterial, layout.screen.x, layout.screen.y, 1.122)
   screen.userData = { role: 'waveform-screen', channels: 2, waveform: 'illustrative-preview', textureSize: [1024, 704] }
   const legendsMaterial = new MeshBasicMaterial({ map: canvasTexture(scopeLegendsArtwork()), transparent: true, depthWrite: false, toneMapped: false }); legendsMaterial.name = 'scope_legends'
-  const legends = add('front_legends', new PlaneGeometry(6, 3.8), legendsMaterial, 0, 1.9, 1.149)
+  const legends = add('front_legends', new PlaneGeometry(6, 3.8), legendsMaterial, 0, 1.9, 1.166)
   legends.userData.ignorePick = true
   // No-texture server/export geometry retains the material slot but not a white
   // opaque decal. The export script supplies this slot with the recipe's PNG.
@@ -106,8 +106,8 @@ export function addOscilloscopeModel(group: Group) {
   const accents = (color: string) => color === CH1_COLOR ? yellow : color === CH2_COLOR ? cyan : silver
   for (const control of layout.knobs) knob(control.name, control.x, control.y, control.r, accents(control.accent))
   const button = (name: string, x: number, y: number, width: number, height: number, material: Material = grip) => {
-    rounded(`${name}_socket`, [width + 0.035, height + 0.035, 0.035], [x, y, 1.11], 0.022, rubber)
-    const mesh = rounded(name, [width, height, 0.04], [x, y, 1.12], 0.02, material)
+    rounded(`${name}_socket`, [width + 0.035, height + 0.035, 0.032], [x, y, 1.108], 0.018, rubber)
+    const mesh = rounded(name, [width, height, 0.056], [x, y, 1.137], 0.016, material, false, 2)
     mesh.userData = { interaction: 'button', pressAxis: 'Z' }
   }
   const green = standard('scope_run_green', '#36d790', 0.1, 0.4)

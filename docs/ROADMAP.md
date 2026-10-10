@@ -47,7 +47,8 @@ UI migration completed on 2026-10-09; evidence in `DEV_LOG.md`:
 
 - [x] Three.js scene/camera/lights/grid/models/picking and disposable render/resize/context lifecycle.
 - [x] Breadboard/board/power-supply visual models, without invented electrical nodes or sources.
-- [x] Canonical metadata-driven palette and generated browser catalog (20 editor types, including visual structures and a two-channel Oscilloscope).
+- [x] Canonical metadata-driven palette and generated browser catalog (21 editor types, including visual structures and two-channel Oscilloscope/Function Generator).
+- [x] L1571979 two-channel Function Generator visual, reference front layout, silver case, independent screen/encoder/keys/BNCs/stand, shared GLB/glTF/PNG/SVG export and existing Move/Rotate/gizmo/Undo-Redo integration. DDS output remains later work; see `apps/web/public/models/function-generator-2ch/README.md`.
 - [x] Two-channel Oscilloscope bench visual with a silver enclosure, wide screen, complete named front controls, three aligned BNCs (two inputs and Trig Out), two inclined stands and reusable GLB/glTF export. Signal acquisition remains later work; see `apps/web/public/models/oscilloscope-2ch/README.md` for the model contract.
 - [x] Drag/drop and click-to-place from ribbon.
 - [x] Component select/move/rotate/delete; keyboard equivalents in Inspector/canvas.

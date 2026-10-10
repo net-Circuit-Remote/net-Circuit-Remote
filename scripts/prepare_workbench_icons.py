@@ -102,7 +102,7 @@ def main():
     source_names = {p.name for p in SOURCE.glob("*.svg")}
     # Owned by the Three.js model exporter, not by supplied-artwork thumbnails.
     # Keep it when refreshing the original icon derivatives.
-    authored_names = {"oscilloscope_2ch.svg"}
+    authored_names = {"oscilloscope_2ch.svg", "function_generator_2ch.svg"}
     for existing in OUTPUT.glob("*.svg"):
         if existing.name not in source_names | authored_names:
             existing.unlink()

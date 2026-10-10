@@ -8,6 +8,7 @@
     "build": "vue-tsc --noEmit && vite build",
     "test": "vue-tsc --noEmit -p tsconfig.tests.json && node scripts/test.mjs",
     "export:oscilloscope": "node scripts/export-oscilloscope.mjs",
+    "export:generator": "node scripts/export-function-generator.mjs",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

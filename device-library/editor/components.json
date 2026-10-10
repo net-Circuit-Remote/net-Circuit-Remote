@@ -2,6 +2,7 @@
   "version": "1.0",
   "scope": "Functional editor abstractions; no physical pin numbers, routing resources or electrical ratings. Visual dimensions are arbitrary world units.",
   "components": [
+    {"type":"GENERATOR","name":"Function Generator · 2 channels","family":"instruments","visual":"generator","size":[6,3.6,2.8],"color":"#a1aab4","ports":[],"defaults":{},"parameters":[],"visualOnly":true},
     {"type":"OSCILLOSCOPE","name":"Oscilloscope · 2 channels","family":"instruments","visual":"oscilloscope","size":[6,3.8,2.8],"color":"#a1aab4","ports":[],"defaults":{},"parameters":[],"visualOnly":true},
     {"type":"BREADBOARD","name":"Breadboard 830","family":"structure","visual":"breadboard","size":[9.0,0.3,2.66],"color":"#fafbfc","ports":[],"defaults":{},"parameters":[],"visualOnly":true},
     {"type":"BREADBOARD_630","name":"Breadboard 630","family":"structure","visual":"breadboard_630","size":[9.0,0.3,1.86],"color":"#fafbfc","ports":[],"defaults":{},"parameters":[],"visualOnly":true},

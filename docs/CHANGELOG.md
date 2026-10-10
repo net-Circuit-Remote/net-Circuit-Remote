@@ -4,6 +4,13 @@ All notable project changes will be documented in this file. The project follows
 
 ## [Unreleased]
 
+### Added — 2026-10-10 L1571979 Function Generator 2 CH
+
+- Added the reference-based silver/charcoal bench model with owl/net*CIRCUIT branding, two channel parameter/waveform panels, six screen keys, 3×3 function keypad, illuminated channel keys, centered encoder/LED arc, arrow keys, three colored BNCs, round power key and inclined bail stand.
+- Instruments now places the visual-only Generator through the existing graph, Move/Rotate/gizmo and Undo-Redo lifecycle. Screen values/waveforms are illustrative; no DDS output or electrical ports are fabricated.
+- Shared source geometry/artwork export GLB/glTF/bin/PNG/SVG. Budget: 18,386 triangles, 86 meshes, 1,481,888-byte GLB. Named control and screen/CanvasTexture integration notes are in source and the model README.
+- Verified 102/102 frontend tests, production TypeScript, GLTFLoader round trips and browser GLB/CanvasTexture/placement/Move/Rotate/Y-gizmo/Undo-Redo checks.
+
 ### Changed — 2026-10-10 Oscilloscope reference refinement
 
 - Refined the existing Oscilloscope factory against the supplied design: cool silver powder-coated enclosure, charcoal front, wide left display and stacked Horizontal/Trigger/Vertical controls.
