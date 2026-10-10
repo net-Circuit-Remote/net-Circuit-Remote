@@ -13,15 +13,16 @@
 <body>
   <!-- Development asset viewer: loads the delivered GLB, separate from app routing.
        Run Vite and open /function-generator-preview.html; this is not a workflow page. -->
-  <header><strong>net*CIRCUIT · Function Generator 2 CH</strong><span id="status">Loading GLB…</span><button id="front-view">Front view</button><button id="angled-view">Angled view</button><button id="canvas-test" disabled>Test CanvasTexture</button></header>
+  <header><strong>net*CIRCUIT · Function Generator 2 CH</strong><span id="status">Loading GLB…</span><button id="front-view">Front view</button><button id="side-view">Side view</button><button id="angled-view">Angled view</button><button id="canvas-test" disabled>Test CanvasTexture</button></header>
   <footer>GLB asset preview · Drag to orbit · Wheel to zoom · Waveforms are illustrative</footer>
   <script type="module">
-    import { AmbientLight, CanvasTexture, Color, DirectionalLight, PerspectiveCamera, Scene, SRGBColorSpace, WebGLRenderer } from 'three'
+    import { AmbientLight, CanvasTexture, Color, DirectionalLight, GridHelper, PerspectiveCamera, Scene, SRGBColorSpace, WebGLRenderer } from 'three'
     import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
     import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
     import { drawInstrumentArtwork, generatorScreenArtwork } from './src/three/FunctionGeneratorArtwork.ts'
     const renderer = new WebGLRenderer({ antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); document.body.append(renderer.domElement)
     const scene = new Scene(); scene.background = new Color('#111b24')
+    scene.add(new GridHelper(16, 32, '#425967', '#263945'))
     const camera = new PerspectiveCamera(32, innerWidth / innerHeight, 0.1, 100); camera.position.set(-4.2, 4.0, 9.0)
     const controls = new OrbitControls(camera, renderer.domElement); controls.target.set(0, 1.8, 0); controls.update()
     scene.add(new AmbientLight('#d8e9fa', 1.1))
@@ -30,6 +31,7 @@
     const render = () => renderer.render(scene, camera)
     // Reference-comparison views use the delivered GLB, not a second model.
     document.querySelector('#front-view').addEventListener('click', () => { camera.position.set(0, 1.8, 11.6); controls.target.set(0, 1.8, 0); controls.update(); render() })
+    document.querySelector('#side-view').addEventListener('click', () => { camera.position.set(11.6, 1.8, 0); controls.target.set(0, 1.8, 0); controls.update(); render() })
     document.querySelector('#angled-view').addEventListener('click', () => { camera.position.set(-4.2, 4, 9); controls.target.set(0, 1.8, 0); controls.update(); render() })
     const resize = () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); render() }
     controls.addEventListener('change', render); window.addEventListener('resize', resize); resize()

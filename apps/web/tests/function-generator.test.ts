@@ -11,6 +11,7 @@ import { getDefinition } from '../src/data/editorCatalog'
 import { ribbonGroups } from '../src/data/ribbon'
 import { useCircuitStore } from '../src/stores/circuit'
 import { createSceneManager } from '../src/three/SceneManager'
+import { assertSupportedChassis } from './helpers/instrument-chassis'
 
 const keys = ['waveform_button', 'sweep_button', 'vco_button', 'counter_button', 'system_button', 'utility_button', 'ch1_button', 'ok_button', 'ch2_button']
 export const generatorNodes = ['screen', 'encoder_knob', 'power_button', 'tilt_stand', 'brand_owl', 'front_legends', 'encoder_led_arc', ...keys, 'left_button', 'right_button', ...Array.from({ length: 6 }, (_, i) => `soft_key_${i + 1}`), 'ch1_output', 'ch2_output', 'sync_counter']
@@ -69,7 +70,7 @@ test('generator preserves reference control layout, independent screen, encoder 
     assert.equal(ports[2].userData.role, 'sync-counter'); assert.equal(ports[2].userData.channel, undefined)
     const material = (model.getObjectByName('enclosure') as Mesh).material as MeshStandardMaterial
     assert.equal(material.color.getHexString(), 'a1aab4'); assert.ok(material.roughness >= 0.45)
-    const bounds = new Box3().setFromObject(model)
+    const bounds = new Box3().setFromObject(model, true)
     assert.ok(Math.abs(bounds.min.y) < 0.001); assert.ok(bounds.max.y <= 3.61)
     let meshes = 0, triangles = 0
     model.traverse(node => { if (node instanceof Mesh) { meshes++; triangles += (node.geometry.index?.count ?? node.geometry.attributes.position.count) / 3 } })
@@ -118,6 +119,7 @@ test('delivered GLB and glTF round-trip through GLTFLoader with all controls and
     try {
       const root = loaded.scene.getObjectByName('net_circuit_function_generator_2ch')!
       assert.ok(root); assert.deepEqual(root.position.toArray(), [0, 0, 0]); assert.deepEqual(root.scale.toArray(), [1, 1, 1])
+      assertSupportedChassis(root)
       for (const name of generatorNodes) assert.ok(root.getObjectByName(name), name)
       assert.equal(((root.getObjectByName('enclosure') as Mesh).material as MeshStandardMaterial).color.getHexString(), 'a1aab4')
       const ports = ['ch1_output', 'ch2_output', 'sync_counter'].map((name) => root.getObjectByName(name)!)

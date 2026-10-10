@@ -10,6 +10,7 @@ import { createSceneManager } from '../src/three/SceneManager'
 import { readFile } from 'node:fs/promises'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { Texture } from 'three'
+import { assertSupportedChassis } from './helpers/instrument-chassis'
 
 const knobs = ['time_div_knob', 'horizontal_position', 'trigger_level', 'ch1_volts_div', 'ch1_position', 'ch2_volts_div', 'ch2_position']
 const buttons = ['run_stop_button', 'auto_set_button', 'single_button', 'default_button', 'trigger_source_button', 'trigger_mode_button', 'trigger_slope_button', 'trigger_menu_button', 'power_button']
@@ -57,9 +58,11 @@ test('scope has centered local knob pivots, independent screen, three BNCs and a
     })
     assert.equal(bnc, 3)
     assert.ok(triangles < 25000, `${triangles} triangles`); assert.ok(meshes < 100, `${meshes} meshes`)
-    const bounds = new Box3().setFromObject(model)
+    const bounds = new Box3().setFromObject(model, true)
     assert.ok(Math.abs(bounds.min.y) < 0.001, 'origin sits on the work surface')
-    assert.ok(bounds.max.y <= getDefinition('OSCILLOSCOPE')!.size[1] + 0.01)
+    // Catalog height describes the unpitched layout. Pitch adds the projected
+    // depth and rear-pad clearance; the complete supported model stays below 4.
+    assert.ok(bounds.max.y <= 4)
     assert.ok(Math.abs(bounds.min.x + bounds.max.x) < 0.01, 'base centered on X')
     assert.deepEqual(model.position.toArray(), [0, 0, 0]); assert.deepEqual(model.scale.toArray(), [1, 1, 1])
   } finally { disposeObject(model) }
@@ -152,6 +155,7 @@ test('delivered GLB and glTF round-trip through GLTFLoader with all controls and
     try {
       const root = loaded.scene.getObjectByName('net_circuit_oscilloscope_2ch')!
       assert.ok(root); assert.deepEqual(root.position.toArray(), [0, 0, 0]); assert.deepEqual(root.scale.toArray(), [1, 1, 1])
+      assertSupportedChassis(root)
       for (const name of [...knobs, ...buttons, ...connectors, ...feet, 'screen', 'power_led']) assert.ok(root.getObjectByName(name), name)
       assert.equal(((root.getObjectByName('enclosure') as Mesh).material as MeshStandardMaterial).color.getHexString(), 'a1aab4')
       const ports = connectors.map((name) => root.getObjectByName(name)!)

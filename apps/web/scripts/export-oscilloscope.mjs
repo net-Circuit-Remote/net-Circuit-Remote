@@ -2,7 +2,7 @@ import { build } from 'esbuild'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
-import { Group, Mesh } from 'three'
+import { Box3, Group, Mesh } from 'three'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
 
 // Offline authoring tool. sharp is only a PNG rasterizer here, never a browser
@@ -93,9 +93,9 @@ const bncs = SCOPE_LAYOUT.bncs.map(({ x, y, accent }) => `<circle cx="${px(x)}" 
 const buttonRects = SCOPE_LAYOUT.buttons.map(({ x, y, w, h, color }) => rectangle(x, y, w + .035, h + .035, '#080f16') + rectangle(x, y, w, h, color)).join('')
 const { screen, recess, owl, led } = SCOPE_LAYOUT
 const panels = SCOPE_LAYOUT.panels.map(({ x, y, w, h }) => rectangle(x, y, w + .025, h + .025, '#b7c4cf', 12) + rectangle(x, y, w, h, '#272e33', 12)).join('')
-const stands = [-2.48, 2.48].map((x) => `<path d="M ${px(x - .22)} ${py(.33)} h ${.44 * 256} l 8 78 h -${.44 * 256 + 16} Z" fill="#35434e" stroke="#62717a" stroke-width="3"/>${rectangle(x, .075, .31, .095, '#080f16', 2)}`).join('')
+const stands = [-2.48, 2.48].map((x) => `<path d="M ${px(x - .22)} ${py(.33)} h ${.44 * 256} l 8 95 h -${.44 * 256 + 16} Z" fill="#35434e" stroke="#62717a" stroke-width="3"/>`).join('')
 const preview = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="160" viewBox="-30 -20 1596 1010">${stands}${rectangle(0, 2.035, 6, 3.43, '#a1aab4', 28)}${rectangle(0, 2.035, 5.96, 3.40, '#30383e', 24)}${rectangle(recess.x, recess.y, recess.w, recess.h, '#080f16', 12)}${panels}${rectangle(-.98, .65, 3.80, .63, '#272e33', 12)}<g transform="translate(${px(screen.x - screen.w / 2)} ${py(screen.y + screen.h / 2)}) scale(${screen.w * 256 / 1024} ${screen.h / 3.8 * 960 / 704})">${artworkBody(scopeScreenArtwork())}</g>${controls}${buttonRects}${bncs}${rectangle(led.x, led.y, .047, .047, '#31e96d', 3)}<image x="${px(owl.x - owl.size / 2)}" y="${py(owl.y + owl.size / 2)}" width="${owl.size * 256}" height="${owl.size / 3.8 * 960}" href="data:image/png;base64,${images[2].png.toString('base64')}"/>${artworkBody(scopeLegendsArtwork())}</svg>`
 await writeFile(new URL('src/assets/icons/oscilloscope_2ch.svg', web), preview + '\n')
 let triangles = 0, meshes = 0
 root.traverse((node) => { if (node instanceof Mesh) { meshes++; triangles += (node.geometry.index?.count ?? node.geometry.attributes.position.count) / 3 } })
-console.log(JSON.stringify({ output: fileURLToPath(output), triangles, meshes, glbBytes: glb.length, knobs: OSCILLOSCOPE_KNOBS.length, channelInputs: 2, bncConnectors: SCOPE_LAYOUT.bncs.length, tiltFeet: 2 }))
+console.log(JSON.stringify({ output: fileURLToPath(output), triangles, meshes, glbBytes: glb.length, knobs: OSCILLOSCOPE_KNOBS.length, channelInputs: 2, bncConnectors: SCOPE_LAYOUT.bncs.length, tiltFeet: 2, chassisPitchDegrees: root.getObjectByName('visual_chassis').rotation.x * 180 / Math.PI, minimumY: new Box3().setFromObject(root, true).min.y }))

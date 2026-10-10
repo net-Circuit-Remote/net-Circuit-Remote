@@ -3,6 +3,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { GENERATOR_CH1, GENERATOR_CH2, GENERATOR_SYNC, GENERATOR_LAYOUT, drawInstrumentArtwork, generatorLegendsArtwork, generatorScreenArtwork } from './FunctionGeneratorArtwork'
 import type { InstrumentArtwork } from './InstrumentArtwork'
+import { createInstrumentChassis, mountInstrumentChassis } from './InstrumentChassis'
 
 export const FUNCTION_GENERATOR_SIZE = [6, 3.6, 2.8] as const
 function canvasTexture(artwork: InstrumentArtwork) {
@@ -19,6 +20,7 @@ function canvasTexture(artwork: InstrumentArtwork) {
 // physical ratings are implied by the preview artwork or the visual BNCs.
 export function addFunctionGeneratorModel(group: Group) {
   group.name = 'net_circuit_function_generator_2ch'
+  const chassis = createInstrumentChassis()
   const standard = (name: string, color: string, metalness = 0, roughness = 0.5) => {
     const material = new MeshStandardMaterial({ color, metalness, roughness }); material.name = name; return material
   }
@@ -39,7 +41,7 @@ export function addFunctionGeneratorModel(group: Group) {
   const cyanLight = light('generator_ch2_light', GENERATOR_CH2)
   const greenLight = light('generator_sync_light', GENERATOR_SYNC)
   const ledAccent = (color: string) => color === GENERATOR_CH1 ? yellowLight : color === GENERATOR_CH2 ? cyanLight : greenLight
-  const add = (name: string, geometry: BufferGeometry, material: Material, x: number, y: number, z: number, parent: Object3D = group) => {
+  const add = (name: string, geometry: BufferGeometry, material: Material, x: number, y: number, z: number, parent: Object3D = chassis) => {
     const mesh = new Mesh(geometry, material); mesh.name = name; mesh.position.set(x, y, z); parent.add(mesh); return mesh
   }
   const rounded = (name: string, size: [number, number, number], pos: [number, number, number], material: Material, radius = 0.02, selection = false, segments = selection ? 2 : 1) => {
@@ -63,19 +65,21 @@ export function addFunctionGeneratorModel(group: Group) {
   merged('case_vents', vents, rubber)
   merged('case_fasteners', [-2.70, 2.70].flatMap(x => [-0.75, 0.75].map(z => new CylinderGeometry(0.036, 0.036, 0.005, 12).translate(x, 3.491, z))), silver)
 
-  // Wide hinged bail, baked incline: its rotated bounds put the base at Y=0.
-  const parts = [new RoundedBoxGeometry(5.94, 0.23, 0.20, 1, 0.025).translate(0, -0.25, 0), ...[-2.85, 2.85].map(x => new RoundedBoxGeometry(0.23, 0.66, 0.16, 1, 0.025).translate(x, 0.10, 0))]
-  const standGeometry = mergeGeometries(parts)!.rotateX(-0.27); parts.forEach(g => g.dispose()); standGeometry.computeBoundingBox()
-  const stand = add('tilt_stand', standGeometry, bezel, 0, -standGeometry.boundingBox!.min.y, 0.85)
-  stand.userData = { role: 'hinged-bail', inclineRadians: -0.27, selectionSurface: true }
-  for (const x of [-2.68, 2.68]) rounded(`stand_pad_${x < 0 ? 'left' : 'right'}`, [0.42, 0.07, 0.29], [x, 0.035, 0.95], rubber, 0.015)
-
   const screenTexture = canvasTexture(generatorScreenArtwork())
   const screenMaterial = new MeshBasicMaterial({ map: screenTexture, color: screenTexture ? '#ffffff' : '#030b0f', toneMapped: false }); screenMaterial.name = 'generator_screen'
   const screen = add('screen', new PlaneGeometry(layout.screen.w, layout.screen.h), screenMaterial, layout.screen.x, layout.screen.y, 1.122)
   screen.userData = { role: 'waveform-screen', channels: 2, waveform: 'illustrative-preview', textureSize: [1024, 768] }
   const legendsMaterial = new MeshBasicMaterial({ map: canvasTexture(generatorLegendsArtwork()), transparent: true, depthWrite: false, toneMapped: false }); legendsMaterial.name = 'generator_legends'
-  const legends = add('front_legends', new PlaneGeometry(6, 3.6), legendsMaterial, 0, 1.8, 1.189); legends.userData.ignorePick = true
+  const legendsGeo = new PlaneGeometry(6, 3.6)
+  const lpos = legendsGeo.getAttribute('position'), luv = legendsGeo.getAttribute('uv')
+  for (let i = 0; i < lpos.count; i++) {
+    if (lpos.getY(i) < 0) {
+      lpos.setY(i, -1.8 + 0.48)
+      luv.setY(i, 0.48 / 3.6)
+    }
+  }
+  legendsGeo.computeVertexNormals()
+  const legends = add('front_legends', legendsGeo, legendsMaterial, 0, 1.8, 1.189); legends.userData.ignorePick = true
   if (!legendsMaterial.map) legendsMaterial.opacity = 0
   const logoMaterial = new MeshBasicMaterial({ transparent: true, depthWrite: false, toneMapped: false }); logoMaterial.name = 'generator_brand'
   const owl = add('brand_owl', new PlaneGeometry(layout.owl.size, layout.owl.size), logoMaterial, layout.owl.x, layout.owl.y, 1.12); owl.userData = { asset: 'favicon.svg', ignorePick: true }
@@ -107,7 +111,7 @@ export function addFunctionGeneratorModel(group: Group) {
   const { x, y, r } = layout.encoder
   add('encoder_collar', new TorusGeometry(r + 0.018, 0.015, 6, 24), silver, x, y, 1.12)
   const pivot = new Group(); pivot.name = 'encoder_knob'; pivot.position.set(x, y, 1.20)
-  pivot.userData = { interaction: 'knob', rotationAxis: 'Z', pivot: 'center', visualOnly: true }; group.add(pivot)
+  pivot.userData = { interaction: 'knob', rotationAxis: 'Z', pivot: 'center', visualOnly: true }; chassis.add(pivot)
   const body = add('encoder_knob_body', new CylinderGeometry(r, r, 0.19, 24), rubber, 0, 0, 0, pivot); body.rotation.x = Math.PI / 2
   const flutes = Array.from({ length: 28 }, (_, i) => { const a = i / 28 * Math.PI * 2; return new BoxGeometry(0.021, 0.025, 0.16).rotateZ(-a).translate(Math.sin(a) * r, Math.cos(a) * r, 0) })
   add('encoder_flutes', mergeGeometries(flutes)!, grip, 0, 0, 0, pivot); flutes.forEach(g => g.dispose())
@@ -117,7 +121,7 @@ export function addFunctionGeneratorModel(group: Group) {
   const dots = Array.from({ length: 24 }, (_, i) => { const a = (i / 24) * Math.PI * 2; return new SphereGeometry(0.018, 6, 4).translate(x + Math.cos(a) * 0.44, y + Math.sin(a) * 0.44, 1.135) })
   const arc = merged('encoder_led_arc', dots, cyanLight); arc.userData = { role: 'encoder-indicators', dotCount: 24, rotation: '360-continuous', visualOnly: true }
 
-  const power = new Group(); power.name = 'power_button'; power.position.set(layout.power.x, layout.power.y, 1.17); power.userData = { interaction: 'button', pressAxis: 'Z', visualOnly: true }; group.add(power)
+  const power = new Group(); power.name = 'power_button'; power.position.set(layout.power.x, layout.power.y, 1.17); power.userData = { interaction: 'button', pressAxis: 'Z', visualOnly: true }; chassis.add(power)
   add('power_button_socket', new TorusGeometry(0.178, 0.016, 6, 24), rubber, 0, 0, -0.022, power)
   const powerBody = add('power_button_body', new CylinderGeometry(0.14, 0.14, 0.060, 24), panel, 0, 0, -0.008, power); powerBody.rotation.x = Math.PI / 2
   add('power_button_light', new TorusGeometry(0.159, 0.015, 6, 24), cyanLight, 0, 0, 0.015, power)
@@ -126,7 +130,7 @@ export function addFunctionGeneratorModel(group: Group) {
   add('power_glyph_bar', new BoxGeometry(0.013, 0.070, 0.003), white, 0, 0.038, 0.026, power)
   for (const output of layout.outputs) {
     const { name, x, y, channel } = output
-    const port = new Group(); port.name = name; port.position.set(x, y, 1.12); group.add(port)
+    const port = new Group(); port.name = name; port.position.set(x, y, 1.12); chassis.add(port)
     port.userData = { interaction: 'connector', connector: 'BNC', visualOnly: true, ...(channel === null ? { role: 'sync-counter' } : { channel }) }
     add(`${name}_ring`, new TorusGeometry(0.185, 0.025, 8, 32), accent(output.accent), 0, 0, 0, port)
     const barrel = add(`${name}_barrel`, new CylinderGeometry(0.15, 0.15, 0.17, 24, 1, true), silver, 0, 0, 0.07, port); barrel.rotation.x = Math.PI / 2
@@ -137,4 +141,5 @@ export function addFunctionGeneratorModel(group: Group) {
     const lugs = [-1, 1].map(s => new BoxGeometry(0.035, 0.055, 0.04).translate(s * 0.15, 0, 0.07))
     add(`${name}_bayonet`, mergeGeometries(lugs)!, silver, 0, 0, 0, port); lugs.forEach(g => g.dispose())
   }
+  mountInstrumentChassis(group, chassis, bezel, rubber, 'bail')
 }

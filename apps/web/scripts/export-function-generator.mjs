@@ -2,7 +2,7 @@ import { build } from 'esbuild'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
-import { Group, Mesh } from 'three'
+import { Box3, Group, Mesh } from 'three'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
 
 // Offline authoring tool. sharp is only a PNG rasterizer here, never a browser
@@ -100,12 +100,12 @@ const arrows = GENERATOR_LAYOUT.arrows.map(k => rect(k.x, k.y, .308, .268, '#080
 const bncs = GENERATOR_LAYOUT.outputs.map(k => circle(k.x, k.y, .185, '#080f16', k.accent, 10) + circle(k.x, k.y, .14, '#e1e8ec', '#b7c4cf', 10) + circle(k.x, k.y, .041, '#080f16', '#cba669', 4)).join('')
 const dots = Array.from({ length: 24 }, (_, i) => { const a = (i / 24) * Math.PI * 2; return circle(encoder.x + Math.cos(a) * .44, encoder.y + Math.sin(a) * .44, .018, '#20d4ee') }).join('')
 const corners = [-2.80, 2.80].flatMap(x => [.72, 3.20].map(y => rect(x, y, .36, .50, '#30383e', 14))).join('')
-const stand = rect(0, .15, 5.94, .23, '#30383e', 10) + [-2.85, 2.85].map(x => rect(x, .46, .23, .66, '#30383e', 10)).join('')
+const stand = rect(0, .06, 5.94, .12, '#30383e', 10) + [-2.85, 2.85].map(x => rect(x, .38, .23, .66, '#30383e', 10)).join('')
 const preview = `<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="922" viewBox="-30 -20 1596 962">${stand}${rect(0, 1.98, 6, 3.02, '#a1aab4', 25)}${rect(0, 1.98, 5.96, 3.00, '#30383e', 22)}${rect(0, 1.98, 5.65, 2.66, '#272e33', 16)}${corners}${rect(recess.x, recess.y, recess.w, recess.h, '#080f16', 12)}${rect(panel.x, panel.y, panel.w + .025, panel.h + .025, '#35434e')}${rect(panel.x, panel.y, panel.w, panel.h, '#272e33')}<g transform="translate(${px(screen.x - screen.w / 2)} ${py(screen.y + screen.h / 2)}) scale(${screen.w * 256 / 1024} ${screen.h / 3.6 * 922 / 768})">${body(generatorScreenArtwork())}</g>${soft}${keys}${arrows}${dots}${circle(encoder.x, encoder.y, .365, '#080f16', '#b7c4cf', 5)}${circle(encoder.x, encoder.y, .315, '#30383e')}${circle(encoder.x + .12, encoder.y - .17, .068, '#080f16')}${bncs}${circle(power.x, power.y, .159, '#272e33', '#20d4ee', 8)}<path d="M ${px(power.x)} ${py(power.y + .08)} v 20" stroke="#e1e8ec" stroke-width="4"/>${circle(power.x, power.y, .057, 'none', '#e1e8ec', 4)}<image x="${px(owl.x - owl.size / 2)}" y="${py(owl.y + owl.size / 2)}" width="${owl.size * 256}" height="${owl.size / 3.6 * 922}" href="data:image/png;base64,${images[2].png.toString('base64')}"/>${body(generatorLegendsArtwork())}</svg>`
 await writeFile(new URL('preview.svg', output), preview + '\n')
 await writeFile(new URL('preview.png', output), await sharp(Buffer.from(preview)).resize(1200).png().toBuffer())
 await writeFile(new URL('src/assets/icons/function_generator_2ch.svg', web), preview.replace('width="1536" height="922"', 'width="240" height="160"') + '\n')
 let triangles = 0, meshes = 0
 root.traverse(node => { if (node instanceof Mesh) { meshes++; triangles += (node.geometry.index?.count ?? node.geometry.attributes.position.count) / 3 } })
-console.log(JSON.stringify({ output: fileURLToPath(output), triangles, meshes, glbBytes: glb.length, encoderPivots: 1, channels: 2, bncConnectors: 3 }))
+console.log(JSON.stringify({ output: fileURLToPath(output), triangles, meshes, glbBytes: glb.length, encoderPivots: 1, channels: 2, bncConnectors: 3, chassisPitchDegrees: root.getObjectByName('visual_chassis').rotation.x * 180 / Math.PI, minimumY: new Box3().setFromObject(root, true).min.y }))
 

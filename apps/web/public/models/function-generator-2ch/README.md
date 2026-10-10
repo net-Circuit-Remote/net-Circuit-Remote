@@ -9,6 +9,12 @@ charcoal bezel/panels (`#30383e` / `#272e33`) and gently beveled edges.
 
 - Root `net_circuit_function_generator_2ch`, unit scale, center-bottom origin.
 - Y-up, front +Z, catalog size `[6,3.6,2.8]` in editor world units.
+- `visual_chassis` contains every case/front detail and local control pivot;
+  it pitches backward **10°** around local X (`-Math.PI / 18`). The root retains
+  its supplied position, Y rotation and scale for editor transforms.
+- `InstrumentChassis.ts` measures actual detached-assembly vertices to derive
+  the chassis Y offset. The horizontal bail crossbar and the rear edge of the
+  pitched enclosure rest directly and flush on the workspace plane (Y=0).
 - Catalog type `GENERATOR`, Instruments family, `visualOnly: true`, no logical ports/parameters.
 - Palette click arms placement. Existing selection, Move-only body dragging,
   X/Z/free/Y gizmo and graph Undo/Redo manipulate the complete instrument.
@@ -31,7 +37,8 @@ charcoal bezel/panels (`#30383e` / `#272e33`) and gently beveled edges.
 | `encoder_led_arc`, `left_button`, `right_button` | Curved LED dots and arrow keys |
 | `ch1_output`, `ch2_output`, `sync_counter` | Hollow BNC assemblies, yellow/cyan/green rings; Sync/Counter is not a third channel |
 | `power_button` | Round key with light ring and power glyph |
-| `tilt_stand`, `stand_pad_left`, `stand_pad_right` | Inclined hinged bail and ground-contact pads |
+| `tilt_stand` | Inclined hinged bail resting directly on the workspace plane (Y=0) |
+| `visual_chassis`, `visual_supports` | Pitched case assembly and ground-aligned supports |
 
 Animate `encoder_knob.rotation.z` to rotate around its own center. Buttons expose
 `interaction: 'button'` / `pressAxis: 'Z'` for later bindings. These parts currently
@@ -54,13 +61,14 @@ npm run dev
 ```
 
 Open `/function-generator-preview.html` to verify the actual delivered GLB,
-switch front/angled views and test CanvasTexture replacement. This is a
+switch front/side/angled views over the Y=0 grid and test CanvasTexture replacement. This is a
 development entry, separate from application routing.
 
 Source of truth: `src/three/FunctionGeneratorModel.ts` (geometry),
 `FunctionGeneratorArtwork.ts` (layout/decals), `InstrumentArtwork.ts` (Canvas/SVG),
 `scripts/export-function-generator.mjs` (export) and
-`tests/function-generator.test.ts` (placement/history/layout/pivot/budget/round trips).
+`tests/function-generator.test.ts` (placement/history/layout/pivot/budget/round trips)
+and `tests/instrument-chassis.test.ts` (pitch, root pose and physical support contact).
 
 The export regenerates self-contained `function-generator-2ch.glb`, external
 `.gltf` + `.bin` + `screen.png`/`legends.png`/`owl.png`, `preview.svg`, `preview.png`
@@ -68,7 +76,8 @@ and authored palette icon `src/assets/icons/function_generator_2ch.svg`.
 PNG decals share the live CanvasTexture recipe. The front SVG/PNG are illustrations;
 the GLB viewer shows actual geometry and materials.
 
-Budget: **18,386 triangles, 86 meshes, 1,481,888-byte GLB**. Repeated vents, grips,
+Budget: **18,086 triangles, 88 meshes, approximately 1.47 MB GLB**. Repeated vents, grips,
 bumpers, LED dots and encoder flutes are merged. sharp is an offline authoring
 dependency only. Tests round-trip both exported formats through GLTFLoader and
-verify embedded PNGs, named nodes, UV orientation and centered pivots.
+verify embedded PNGs, named nodes, UV orientation, centered pivots, enclosure
+pitch and actual ray intersections between case, stands and ground pads.

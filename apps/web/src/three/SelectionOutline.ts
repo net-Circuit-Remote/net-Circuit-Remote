@@ -15,14 +15,18 @@ export function updateSelectionOutline(outline: Group, camera: Vector3, width: n
 // Weld triangle positions across UV/normal seams; keep only silhouette and visible creases.
 function surfaceEdges(model: Group): ContourEdge[] {
   const edges: ContourEdge[] = []
+  model.updateWorldMatrix(true, true)
+  const worldToModel = model.matrixWorld.clone().invert()
   model.traverse((object) => {
     if (!(object instanceof Mesh) || !object.userData.selectionSurface) return
-    object.updateMatrix()
+    // Contours attach to model root. Include every visual parent transform,
+    // while removing the root's world pose so movement/yaw is applied once.
+    const meshToModel = worldToModel.clone().multiply(object.matrixWorld)
     const positions = object.geometry.getAttribute('position'), index = object.geometry.getIndex()
     const count = index?.count ?? positions.count, map = new Map<string, ContourEdge>()
     const key = (point: Vector3) => [point.x, point.y, point.z].map((value) => Math.round(value * 1e5)).join(',')
     for (let i = 0; i < count; i += 3) {
-      const points = [0, 1, 2].map((offset) => new Vector3().fromBufferAttribute(positions, index ? index.getX(i + offset) : i + offset).applyMatrix4(object.matrix))
+      const points = [0, 1, 2].map((offset) => new Vector3().fromBufferAttribute(positions, index ? index.getX(i + offset) : i + offset).applyMatrix4(meshToModel))
       const [a, b, c] = points, normal = b.clone().sub(a).cross(c.clone().sub(a))
       if (normal.lengthSq() < 1e-12) continue
       const face = { normal: normal.normalize(), center: a.clone().add(b).add(c).multiplyScalar(1 / 3) }

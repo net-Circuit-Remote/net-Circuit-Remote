@@ -2,6 +2,7 @@ import { BoxGeometry, CanvasTexture, CylinderGeometry, Group, Mesh, MeshBasicMat
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { CH1_COLOR, CH2_COLOR, SCOPE_LAYOUT, drawScopeArtwork, scopeLegendsArtwork, scopeScreenArtwork, type ScopeArtwork } from './OscilloscopeArtwork'
+import { createInstrumentChassis, mountInstrumentChassis } from './InstrumentChassis'
 
 export const OSCILLOSCOPE_SIZE = [6, 3.8, 2.8] as const
 export const OSCILLOSCOPE_KNOBS = ['time_div_knob', 'horizontal_position', 'trigger_level', 'ch1_volts_div', 'ch1_position', 'ch2_volts_div', 'ch2_position'] as const
@@ -22,6 +23,7 @@ function canvasTexture(artwork: ScopeArtwork): CanvasTexture | null {
 // separate contract. They deliberately do not masquerade as supply controls.
 export function addOscilloscopeModel(group: Group) {
   group.name = 'net_circuit_oscilloscope_2ch'
+  const chassis = createInstrumentChassis()
   const standard = (name: string, color: string, metalness = 0, roughness = 0.5) => {
     const material = new MeshStandardMaterial({ color, metalness, roughness }); material.name = name; return material
   }
@@ -35,7 +37,7 @@ export function addOscilloscopeModel(group: Group) {
   const yellow = standard('scope_ch1', CH1_COLOR, 0.15, 0.38)
   const cyan = standard('scope_ch2', CH2_COLOR, 0.15, 0.38)
   const gold = standard('scope_bnc_contact', '#cba669', 0.7, 0.35)
-  const add = (name: string, geometry: BufferGeometry, material: Material, x: number, y: number, z: number, parent: Object3D = group) => {
+  const add = (name: string, geometry: BufferGeometry, material: Material, x: number, y: number, z: number, parent: Object3D = chassis) => {
     const mesh = new Mesh(geometry, material); mesh.name = name; mesh.position.set(x, y, z); parent.add(mesh); return mesh
   }
   const rounded = (name: string, size: [number, number, number], pos: [number, number, number], radius: number, material: Material, selection = false, segments = selection ? 2 : 1) => {
@@ -53,15 +55,6 @@ export function addOscilloscopeModel(group: Group) {
     rounded(p.name, [p.w, p.h, 0.025], [p.x, p.y, 1.085], 0.03, panel)
   }
   rounded('connector_panel', [3.80, 0.63, 0.025], [-0.98, 0.65, 1.085], 0.035, panel)
-  // Two rectangular tilt stands: +X rotation lowers their front tips onto Y=0.
-  // Their height is derived from the rotated bounds, preserving the base origin.
-  const footAngle = 0.43, footHeight = (0.105 * Math.cos(footAngle) + 0.61 * Math.sin(footAngle)) / 2
-  for (const [side, x] of [['left', -2.48], ['right', 2.48]] as const) {
-    const foot = rounded(`tilt_foot_${side}`, [0.44, 0.105, 0.61], [x, footHeight, 0.90], 0.015, grip)
-    foot.rotation.x = footAngle; foot.userData = { role: 'front-tilt-stand', selectionSurface: true }
-    // Top tread is a child of the stand, so the incline and position stay aligned.
-    add(`stand_tread_${side}`, new BoxGeometry(0.32, 0.008, 0.20), rubber, 0, 0.055, 0.15, foot)
-  }
   // Merge vents and screw heads into two meshes; no per-slot draw call overhead.
   const vents: BufferGeometry[] = [], screws: BufferGeometry[] = []
   for (const x of [-3.002, 3.002]) for (const y of [1.1, 2.2]) for (let i = 0; i < 13; i++) {
@@ -93,7 +86,7 @@ export function addOscilloscopeModel(group: Group) {
   const knob = (name: string, x: number, y: number, radius: number, accent: Material = silver) => {
     add(`${name}_collar`, new TorusGeometry(radius + 0.014, 0.011, 6, 32), accent, x, y, 1.12)
     const pivot = new Group(); pivot.name = name; pivot.position.set(x, y, 1.17)
-    pivot.userData = { interaction: 'knob', rotationAxis: 'Z', pivot: 'center' }; group.add(pivot)
+    pivot.userData = { interaction: 'knob', rotationAxis: 'Z', pivot: 'center' }; chassis.add(pivot)
     const body = add(`${name}_body`, new CylinderGeometry(radius, radius, 0.14, 24), rubber, 0, 0, 0, pivot); body.rotation.x = Math.PI / 2
     const flutes = Array.from({ length: 24 }, (_, i) => {
       const angle = i * Math.PI / 12
@@ -118,7 +111,7 @@ export function addOscilloscopeModel(group: Group) {
   for (const connector of layout.bncs) {
     const { name, x, y, channel } = connector, accent = accents(connector.accent)
     const port = new Group(); port.name = name; port.position.set(x, y, 1.12)
-    port.userData = { interaction: 'connector', ...(channel === null ? { role: 'trigger-output' } : { channel }), connector: 'BNC', visualOnly: true }; group.add(port)
+    port.userData = { interaction: 'connector', ...(channel === null ? { role: 'trigger-output' } : { channel }), connector: 'BNC', visualOnly: true }; chassis.add(port)
     add(`${name}_ring`, new TorusGeometry(0.185, 0.025, 8, 32), accent, 0, 0, 0, port)
     const collar = add(`${name}_barrel`, new CylinderGeometry(0.15, 0.15, 0.17, 24, 1, true), silver, 0, 0, 0.07, port); collar.rotation.x = Math.PI / 2
     add(`${name}_rim`, new TorusGeometry(0.14, 0.02, 8, 32), silver, 0, 0, 0.16, port)
@@ -129,4 +122,5 @@ export function addOscilloscopeModel(group: Group) {
     const lugs = [-1, 1].map((s) => new BoxGeometry(0.035, 0.055, 0.04).translate(s * 0.15, 0, 0.07))
     add(`${name}_bayonet`, mergeGeometries(lugs)!, silver, 0, 0, 0, port); lugs.forEach((g) => g.dispose())
   }
+  mountInstrumentChassis(group, chassis, grip, rubber, 'feet')
 }

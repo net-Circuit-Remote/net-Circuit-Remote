@@ -13,12 +13,21 @@ Undo/Redo and circuit JSON persistence use the existing editor commands.
 ## Coordinate contract
 
 - Root: `net_circuit_oscilloscope_2ch`; translation/rotation zero, scale `[1,1,1]`.
-- Origin at the center of the device footprint; stand tips touch Y=0 on the work
+- Origin at the center of the device footprint; beveled feet soles and enclosure rear touch Y=0 on the work
   surface. Y up, front +Z.
 - Catalog size: `[6,3.8,2.8]` **editor world units**, consistent with workspace
   models. These are visual dimensions, not measurements in meters or device ratings.
-- 15,198 triangles, 94 meshes, 7 knob pivots, three BNC assemblies: two channel
-  inputs and Trig Out. GLB is approximately 1.04 MB. Shared materials, merged vents/flutes/fasteners,
+- `visual_chassis` pitches the entire case, screen, printed artwork, control
+  pivots and BNCs backward **10°** around local X (`-Math.PI / 18`), matching the
+  Function Generator. Root position, Y rotation and scale remain unchanged.
+- `InstrumentChassis.ts` derives the chassis Y offset from actual vertices in
+  the detached assembly. The front feet have level soles resting flush on the
+  workspace plane (Y=0), and the rear edge of the pitched enclosure rests directly at Y=0.
+- Catalog size describes the original front layout; the tilted assembly has a
+  slightly larger projected height (below 4 world units). Editor gizmo bounds
+  are measured from the full assembly.
+- 16,974 triangles, 98 meshes, 7 knob pivots, three BNC assemblies: two channel
+  inputs and Trig Out. GLB is approximately 1.23 MB. Shared materials, merged vents/flutes/fasteners,
   1024×704 screen, 1536×960 transparent legends and a 64×64 supplied owl decal.
 
 ## Named objects
@@ -36,7 +45,8 @@ Undo/Redo and circuit JSON persistence use the existing editor commands.
 | `power_button`, `power_led` | Bottom-left power button and separate visual status indicator |
 | `ch1_bnc`, `ch2_bnc` | Separate connector assemblies, channel-colored rings |
 | `trig_out_bnc` | Third aligned BNC; trigger-output role, no third input channel |
-| `tilt_foot_left`, `tilt_foot_right` | Two rectangular front stands inclined around local X |
+| `tilt_foot_left`, `tilt_foot_right` | Two inclined front feet with level soles resting directly on the workspace plane (Y=0) |
+| `visual_chassis`, `visual_supports` | Pitched case assembly and ground-aligned supports |
 | `brand_owl`, `front_legends` | Owl and original net*CIRCUIT panel legends |
 
 Each knob group has its own center pivot; rotate its local **Z** to turn its body,
@@ -86,11 +96,11 @@ original SVG palette preview. No external image service or model download is use
 Run `npm test` for names, pivots, geometry budget, catalog/graph/gizmo integration,
 GLB buffer/PNG validation and GLTFLoader round trips. For development WebGL
 inspection, run Vite and open `/oscilloscope-preview.html`: it loads the delivered
-GLB directly and provides a CanvasTexture replacement test. This standalone asset
+GLB directly and provides front/side/angled views over a Y=0 grid and a
+CanvasTexture replacement test. This standalone asset
 viewer adds no navigation to the single workspace application.
 
-Verification on 2026-10-10: 97/97 frontend tests and production TypeScript checks
-passed. GLB front/angled views, CanvasTexture replacement, native Move, Rotate,
-Y-gizmo and Undo/Redo were checked in the browser. Vite bundling is blocked by
-sandbox `EPERM` resolving `src/main.ts`. The separate Python checks pass 16/17;
-their existing icon-provenance failure is the missing original `power_supply.svg`.
+The regression suite verifies enclosure pitch, root transform preservation,
+ground clearance, actual case/stand/pad surface intersections, centered pivots,
+gizmo integration and both exported formats. The same assertions run after
+GLTFLoader round trips, so stale upright exports cannot pass.

@@ -82,10 +82,34 @@ export function generatorLegendsArtwork(): InstrumentArtwork {
   for (const key of GENERATOR_LAYOUT.buttons) text(key.label, key.x, key.y - (key.accent ? 0.026 : 0), key.label === 'Waveform' ? 18 : 21, key.accent ?? (key.name === 'waveform_button' ? '#142027' : '#e1e8ec'))
   for (const key of GENERATOR_LAYOUT.softKeys) path([[key.x - 0.16, key.y], [-0.27, key.y]], '#b6c4cb', 2)
   for (const key of GENERATOR_LAYOUT.arrows) commands.push({ kind: 'polygon', points: [[px(key.x + key.direction * 0.06), py(key.y)], [px(key.x - key.direction * 0.045), py(key.y + 0.065)], [px(key.x - key.direction * 0.045), py(key.y - 0.065)]], color: '#e1e8ec' })
+  const circlePath = (cx: number, cy: number, r: number, seg = 20): [number, number][] =>
+    Array.from({ length: seg + 1 }, (_, i) => {
+      const a = (i / seg) * Math.PI * 2
+      return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]
+    })
+  const circlePoly = (cx: number, cy: number, r: number, seg = 14): [number, number][] =>
+    Array.from({ length: seg }, (_, i) => {
+      const a = (i / seg) * Math.PI * 2
+      return [px(cx + Math.cos(a) * r), py(cy + Math.sin(a) * r)]
+    })
+  const gndColor = '#b6c4cb'
   for (const output of GENERATOR_LAYOUT.outputs) {
     const width = output.channel === null ? 0.72 : 0.63
     commands.push({ kind: 'rect', x: px(output.x - width / 2), y: py(1.40), w: width * 256, h: 0.15 / 3.6 * 922, color: output.accent, r: 16 })
     text(output.label, output.x, 1.325, output.channel === null ? 18 : 20, '#06141a')
+
+    // Coaxial Ground (GND) schematic symbol beside each BNC socket (IEC 60417-5019)
+    const gndX = output.x + 0.27, gndY = output.y, circleR = 0.038, dotR = 0.013
+    path([[output.x + 0.20, gndY], [gndX - circleR, gndY]], gndColor, 2)
+    path(circlePath(gndX, gndY, circleR), gndColor, 2)
+    commands.push({ kind: 'polygon', points: circlePoly(gndX, gndY, dotR), color: gndColor })
+    const stemBotY = gndY - circleR - 0.038
+    path([[gndX, gndY - circleR], [gndX, stemBotY]], gndColor, 2)
+    const barWidths = [0.084, 0.054, 0.024]
+    barWidths.forEach((w, i) => {
+      const barY = stemBotY - i * 0.018
+      path([[gndX - w / 2, barY], [gndX + w / 2, barY]], gndColor, 2)
+    })
   }
   return { width: 1536, height: 922, commands }
 }

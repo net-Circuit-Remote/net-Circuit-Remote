@@ -5,7 +5,7 @@
   <title>Oscilloscope GLB · net*CIRCUIT</title>
   <style>
     * { box-sizing: border-box } body { margin: 0; background: #111b24; color: #d8e5ec; font: 14px Arial, sans-serif }
-    header { position: absolute; top: 20px; left: 24px; right: 24px; display: flex; align-items: center; gap: 18px }
+    header { position: absolute; top: 20px; left: 24px; right: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px }
     strong { font-size: 18px } #status { color: #93b0be } button { margin-left: auto; background: #263b49; border: 1px solid #526d7d; color: #d8e5ec; padding: 8px 14px; cursor: pointer }
     canvas { display: block; width: 100vw; height: 100vh } footer { position: absolute; bottom: 18px; left: 24px; color: #839daa }
   </style>
@@ -13,15 +13,16 @@
 <body>
   <!-- Development asset viewer: loads the delivered GLB, separate from app routing.
        Run Vite and open /oscilloscope-preview.html; this is not a workflow page. -->
-  <header><strong>net*CIRCUIT · Oscilloscope 2 CH</strong><span id="status">Loading GLB…</span><button id="front-view">Front view</button><button id="angled-view">Angled view</button><button id="canvas-test" disabled>Test CanvasTexture</button></header>
+  <header><strong>net*CIRCUIT · Oscilloscope 2 CH</strong><span id="status">Loading GLB…</span><button id="front-view">Front view</button><button id="side-view">Side view</button><button id="angled-view">Angled view</button><button id="canvas-test" disabled>Test CanvasTexture</button></header>
   <footer>GLB asset preview · Drag to orbit · Wheel to zoom · Waveforms are illustrative</footer>
   <script type="module">
-    import { AmbientLight, CanvasTexture, Color, DirectionalLight, PerspectiveCamera, Scene, SRGBColorSpace, WebGLRenderer } from 'three'
+    import { AmbientLight, CanvasTexture, Color, DirectionalLight, GridHelper, PerspectiveCamera, Scene, SRGBColorSpace, WebGLRenderer } from 'three'
     import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
     import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
     import { drawScopeArtwork, scopeScreenArtwork } from './src/three/OscilloscopeArtwork.ts'
     const renderer = new WebGLRenderer({ antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); document.body.append(renderer.domElement)
     const scene = new Scene(); scene.background = new Color('#111b24')
+    scene.add(new GridHelper(16, 32, '#425967', '#263945'))
     const camera = new PerspectiveCamera(32, innerWidth / innerHeight, 0.1, 100); camera.position.set(-4.2, 4.0, 9.0)
     const controls = new OrbitControls(camera, renderer.domElement); controls.target.set(0, 1.9, 0); controls.update()
     scene.add(new AmbientLight('#d8e9fa', 1.1))
@@ -30,6 +31,7 @@
     const render = () => renderer.render(scene, camera)
     // Reference-comparison views use the delivered GLB, not a second model.
     document.querySelector('#front-view').addEventListener('click', () => { camera.position.set(0, 1.9, 11.6); controls.target.set(0, 1.9, 0); controls.update(); render() })
+    document.querySelector('#side-view').addEventListener('click', () => { camera.position.set(11.6, 1.9, 0); controls.target.set(0, 1.9, 0); controls.update(); render() })
     document.querySelector('#angled-view').addEventListener('click', () => { camera.position.set(-4.2, 4, 9); controls.target.set(0, 1.9, 0); controls.update(); render() })
     const resize = () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); render() }
     controls.addEventListener('change', render); window.addEventListener('resize', resize); resize()
