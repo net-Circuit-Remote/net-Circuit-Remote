@@ -11,7 +11,7 @@ npm test
 npm run build
 ```
 
-From repository root: `python -m pytest -q tests/frontend`. Node 22 is the CI baseline. Vite proxies `/api` and `/ws` to `127.0.0.1:8000`; start FastAPI using `services/api/README.md`. Local graph editing works without backend; structural validation, station discovery and connection state require it. Optional `VITE_API_BASE_URL` / `VITE_WS_URL` configure deployed endpoints.
+From repository root: `python -m pytest -q tests/frontend`. Node 22 is the CI baseline. `npm run dev` starts the frontend only. Vite proxies `/api` and `/ws` to `127.0.0.1:8000`; keep FastAPI running in another terminal using the [API startup instructions, including Windows PowerShell](../../services/api/README.md#local-run). If Vite reports `ECONNREFUSED 127.0.0.1:8000`, the API is not listening on its configured port. Local graph editing works without backend; structural validation, station discovery and connection state require it. Optional `VITE_API_BASE_URL` / `VITE_WS_URL` configure deployed endpoints.
 
 ## Editor controls
 
