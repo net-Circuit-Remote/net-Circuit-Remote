@@ -13,6 +13,7 @@ export type Position = { x: number; y: number; z: number }
 interface DragGesture { pointer: number; start: { x: number; y: number }; dragged: boolean }
 interface MoveGesture extends DragGesture { kind: 'move'; id: string; draft: string | null; planeHeight: number; offset: Position; position: Position }
 interface PanGesture extends DragGesture { kind: 'pan'; anchor: Vector3 }
+interface ZoomAreaGesture extends DragGesture { kind: 'zoom-area'; end: { x: number; y: number } }
 interface ControlGesture extends DragGesture {
   kind: 'control'; id: string; draft: string | null; control: SupplyControl; initial: number | boolean; value: number | boolean
   axis: 'x' | 'y' | null; last: { x: number; y: number }; raw: number
@@ -140,8 +141,9 @@ export function snapPosition(
 
 export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, manager: () => Manager | undefined) {
   const circuit = useCircuitStore(), workspace = useWorkspaceStore(), ui = useUiStore()
-  let gesture: MoveGesture | PanGesture | TransformGesture | ControlGesture | null = null
-  const dragging = ref<'move' | 'pan' | 'transform' | 'control' | null>(null)
+  let gesture: MoveGesture | PanGesture | TransformGesture | ControlGesture | ZoomAreaGesture | null = null
+  const dragging = ref<'move' | 'pan' | 'transform' | 'control' | 'zoom-area' | null>(null)
+  const zoomAreaRect = ref<{ left: number; top: number; width: number; height: number } | null>(null)
   const hoveredHandle = ref<TransformHandle | null>(null)
   const hoveredControl = ref<SupplyControl | null>(null)
   const controlHint = computed(() => {
@@ -157,6 +159,7 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   const snap = (point: { x: number; y?: number; z: number } | Vector3, activeType?: string | null, activeId?: string | null, elevation = 0): Position =>
     snapPosition(point, workspace.snap, circuit.graph?.modules ?? [], activeType, activeId, elevation)
   function updatePorts() {
+    if (workspace.zoomAreaActive) { ports.value = []; return }
     const next: typeof ports.value = []
     for (const module of circuit.graph?.modules ?? []) {
       if (workspace.tool !== 'wire' && module.id !== workspace.selectedModuleId) continue
@@ -170,10 +173,19 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
     ports.value = next
   }
   function sync() { manager()?.syncGraph(circuit.graph); manager()?.highlight(workspace.selectedModuleId, workspace.selectedWire); updatePorts() }
-  function cancel() {
+  function cancelGesture() {
     if (gesture) { const pointer = gesture.pointer; gesture = null; dragging.value = null; manager()?.activateGizmo(null); manager()?.lockPointer(false); if (canvas.value?.hasPointerCapture(pointer)) canvas.value.releasePointerCapture(pointer); sync() }
+    zoomAreaRect.value = null; manager()?.lockPointer(false)
     hoveredHandle.value = null; hoveredControl.value = null; manager()?.clearGizmoHover()
     manager()?.setGhost(null)
+  }
+  function cancel() { workspace.cancelZoomArea(); cancelGesture() }
+  function lostPointerCapture(event: PointerEvent) { if (gesture?.pointer === event.pointerId) cancel() }
+  function contextMenu(event: MouseEvent) { event.preventDefault(); if (workspace.zoomAreaActive) cancel() }
+  function areaCoordinates(event: PointerEvent) {
+    const rect = canvas.value!.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0 || ![event.clientX, event.clientY].every(Number.isFinite)) return null
+    return { x: Math.max(0, Math.min(rect.width, event.clientX - rect.left)), y: Math.max(0, Math.min(rect.height, event.clientY - rect.top)) }
   }
   function connect(endpoint: string) {
     if (workspace.tool !== 'wire') { workspace.setTool('wire'); workspace.pendingPort = endpoint; return }
@@ -183,6 +195,17 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   }
   function place(type: string, position: Position) { attempt(() => { const id = circuit.placeModule(type, position); workspace.selectModule(id); manager()?.setGhost(null); sync() }) }
   function pointerDown(event: PointerEvent) {
+    if (workspace.zoomAreaActive) {
+      event.preventDefault?.(); event.stopImmediatePropagation?.()
+      if (event.button === 2) { cancel(); return }
+      if (event.button !== 0 || gesture || !manager() || !canvas.value) return
+      const start = areaCoordinates(event)
+      if (!start) return
+      canvas.value.focus(); gesture = { kind: 'zoom-area', pointer: event.pointerId, start, end: start, dragged: false }
+      zoomAreaRect.value = { left: start.x, top: start.y, width: 0, height: 0 }
+      manager()!.lockPointer(true); canvas.value.setPointerCapture(event.pointerId)
+      return
+    }
     if (event.button === 2 && workspace.placementType) {
       event.preventDefault?.()
       event.stopPropagation?.()
@@ -248,8 +271,16 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   function pointerMove(event: PointerEvent) {
     if (!manager() || !canvas.value) return
     const { x, y } = coordinates(event)
+    if (workspace.zoomAreaActive && !gesture) return
     if (gesture) {
       if (event.pointerId !== gesture.pointer) return
+      if (gesture.kind === 'zoom-area') {
+        const end = areaCoordinates(event)
+        if (!end) { cancel(); return }
+        gesture.end = end; gesture.dragged = true; dragging.value = 'zoom-area'
+        zoomAreaRect.value = { left: Math.min(gesture.start.x, end.x), top: Math.min(gesture.start.y, end.y), width: Math.abs(end.x - gesture.start.x), height: Math.abs(end.y - gesture.start.y) }
+        return
+      }
       const threshold = gesture.kind === 'control' && gesture.control !== 'power_on' ? 1 : 4
       if (!gesture.dragged && Math.hypot(x - gesture.start.x, y - gesture.start.y) < threshold) return
       gesture.dragged = true; dragging.value = gesture.kind
@@ -319,8 +350,15 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   function pointerUp(event: PointerEvent) {
     if (!gesture || event.pointerId !== gesture.pointer) return
     pointerMove(event)
+    if (!gesture) return
     const completed = gesture; gesture = null; dragging.value = null; manager()?.activateGizmo(null); manager()?.lockPointer(false)
     if (canvas.value?.hasPointerCapture(event.pointerId)) canvas.value.releasePointerCapture(event.pointerId)
+    if (completed.kind === 'zoom-area') {
+      zoomAreaRect.value = null
+      if (manager()?.zoomToArea(completed.start.x, completed.start.y, completed.end.x, completed.end.y)) workspace.cancelZoomArea()
+      manager()?.lockPointer(workspace.zoomAreaActive); updatePorts()
+      return
+    }
     if (completed.kind === 'control' && completed.draft === circuit.activeId) {
       if (completed.control !== 'power_on' && completed.dragged) attempt(() => circuit.updateModuleProperties(completed.id, { [completed.control]: completed.value }))
       else if (completed.control === 'power_on' && !completed.dragged && canvas.value) {
@@ -345,6 +383,10 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   }
   function keydown(event: KeyboardEvent) {
     if (event.key === 'Escape') { cancel(); workspace.cancelPlacement(); workspace.editError = ''; return }
+    if (workspace.zoomAreaActive) {
+      if (['Delete', 'Backspace', 'r', 'R', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) event.preventDefault()
+      return
+    }
     if (event.ctrlKey || event.metaKey || event.altKey) return
     if (gesture && ['Delete', 'Backspace', 'r', 'R', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) cancel()
     const id = workspace.selectedModuleId
@@ -371,9 +413,10 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
     if (workspace.selectedWire && !circuit.graph?.connections.some((wire) => wire.source === workspace.selectedWire!.source && wire.destination === workspace.selectedWire!.destination)) workspace.selectedWire = null
     sync()
   }, { deep: true })
-  watch(() => [workspace.tool, workspace.placementType], () => { cancel(); updatePorts() })
+  watch(() => [workspace.tool, workspace.placementType], () => { cancelGesture(); manager()?.lockPointer(workspace.zoomAreaActive); updatePorts() })
+  watch(() => workspace.zoomAreaActive, (active) => { cancelGesture(); manager()?.lockPointer(active); updatePorts() })
   watch(() => [workspace.selectedModuleId, workspace.selectedWire], () => {
-    if (gesture && gesture.kind !== 'pan' && gesture.id !== workspace.selectedModuleId) cancel()
+    if (gesture && gesture.kind !== 'pan' && gesture.kind !== 'zoom-area' && gesture.id !== workspace.selectedModuleId) cancel()
     manager()?.highlight(workspace.selectedModuleId, workspace.selectedWire); updatePorts()
   })
   watch(() => selected.value?.id, (id) => {
@@ -382,5 +425,5 @@ export function useCircuitEditor(canvas: Ref<HTMLCanvasElement | undefined>, man
   }, { immediate: true })
   onUnmounted(cancel)
   function pointerLeave() { if (!gesture) { hoveredHandle.value = null; hoveredControl.value = null; manager()?.clearGizmoHover(); manager()?.setGhost(null) } }
-  return { ports, selected, dragging, hoveredHandle, hoveredControl, controlHint, updatePorts, sync, cancel, connect, pointerDown, pointerMove, pointerUp, pointerLeave, drop, keydown, selectModule }
+  return { ports, selected, dragging, hoveredHandle, hoveredControl, controlHint, zoomAreaRect, updatePorts, sync, cancel, connect, pointerDown, pointerMove, pointerUp, pointerLeave, lostPointerCapture, contextMenu, drop, keydown, selectModule }
 }

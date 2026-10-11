@@ -21,7 +21,7 @@ function setup(tool: WorkspaceTool = 'select') {
   circuit.createDraft(); circuit.past = []
   const captured = new Set<number>()
   const canvas = ref({
-    focus() {}, getBoundingClientRect: () => ({ left: 0, top: 0 }),
+    focus() {}, getBoundingClientRect: () => ({ left: 0, top: 0, width: 1000, height: 700 }),
     setPointerCapture: (id: number) => captured.add(id),
     hasPointerCapture: (id: number) => captured.has(id),
     releasePointerCapture: (id: number) => captured.delete(id),
@@ -36,7 +36,7 @@ function setup(tool: WorkspaceTool = 'select') {
   const app = renderer.createApp({ setup() { editor = useCircuitEditor(canvas, () => manager); return () => null } })
   app.mount({})
   const pointer = (x: number, y: number, pointerId = 1, button = 0) => ({ clientX: x, clientY: y, pointerId, button, preventDefault() {} } as PointerEvent)
-  return { circuit, workspace, manager, editor, captured, pointer, dispose() {
+  return { circuit, workspace, manager, editor, canvas, captured, pointer, dispose() {
     app.unmount(); manager.dispose()
     if (previous) Object.defineProperty(globalThis, 'document', previous)
     else Reflect.deleteProperty(globalThis, 'document')
@@ -48,6 +48,100 @@ function supplyFront(h: ReturnType<typeof setup>, x: number, y: number, z = 1.85
   h.manager.camera.lookAt(0, 1.4, 0)
   return h.manager.project(new Vector3(x, y, z))
 }
+
+test('area selection takes priority over model editing and commits only a new camera frame', async () => {
+  for (const tool of ['move', 'rotate', 'delete', 'wire'] as const) {
+    const h = setup(tool)
+    const area = h.workspace, editor = h.editor
+    try {
+      assert.equal(typeof area.toggleZoomArea, 'function', 'workspace must expose area selection')
+      const id = h.circuit.placeModule('BREADBOARD', { x: 0, y: 0, z: 0 })
+      h.workspace.selectModule(id); await nextTick(); h.circuit.past = []
+      const graph = JSON.stringify(h.circuit.graph), camera = h.manager.camera.position.clone()
+      area.toggleZoomArea(); await nextTick()
+      h.editor.pointerDown(h.pointer(500, 350)); h.editor.pointerMove(h.pointer(750, 525))
+      assert.deepEqual(editor.zoomAreaRect.value, { left: 500, top: 350, width: 250, height: 175 })
+      assert.ok(h.manager.camera.position.equals(camera), 'camera waits for release')
+      h.editor.pointerUp(h.pointer(750, 525, 2))
+      assert.equal(h.captured.size, 1, 'foreign pointer cannot finish a region')
+      h.editor.pointerUp(h.pointer(750, 525)); await nextTick()
+      assert.equal(area.zoomAreaActive, false); assert.equal(editor.zoomAreaRect.value, null)
+      assert.equal(h.captured.size, 0); assert.equal(h.workspace.tool, tool)
+      assert.equal(h.workspace.selectedModuleId, id)
+      assert.equal(JSON.stringify(h.circuit.graph), graph); assert.equal(h.circuit.past.length, 0)
+      assert.ok(h.manager.camera.position.distanceTo(camera) > 1)
+    } finally { h.dispose() }
+  }
+})
+
+test('area selection retries a click and cancels cleanly on Escape, right click, tool, placement or graph changes', async () => {
+  const h = setup()
+  const area = h.workspace, editor = h.editor
+  try {
+    assert.equal(typeof area.toggleZoomArea, 'function')
+    const camera = h.manager.camera.position.clone()
+    area.toggleZoomArea(); await nextTick()
+    h.editor.pointerDown(h.pointer(600, 400)); h.editor.pointerUp(h.pointer(601, 401)); await nextTick()
+    assert.equal(area.zoomAreaActive, true, 'an accidental click allows another attempt')
+    assert.equal(h.captured.size, 0); assert.ok(h.manager.camera.position.equals(camera))
+    const cancelActions = [
+      () => h.editor.keydown({ key: 'Escape' } as KeyboardEvent),
+      () => h.editor.pointerDown(h.pointer(300, 300, 2, 2)),
+      () => area.toggleZoomArea(),
+      () => h.workspace.setTool('move'),
+      () => h.workspace.armPlacement('LED'),
+      () => h.circuit.createDraft(),
+      () => h.editor.cancel(),
+    ]
+    for (const action of cancelActions) {
+      if (!area.zoomAreaActive) area.toggleZoomArea()
+      await nextTick()
+      h.editor.pointerDown(h.pointer(600, 400)); h.editor.pointerMove(h.pointer(-100, -100))
+      assert.deepEqual(editor.zoomAreaRect.value, { left: 0, top: 0, width: 600, height: 400 })
+      action(); await nextTick()
+      assert.equal(area.zoomAreaActive, false); assert.equal(editor.zoomAreaRect.value, null)
+      assert.equal(h.captured.size, 0); assert.ok(h.manager.camera.position.equals(camera))
+      h.editor.pointerUp(h.pointer(0, 0)); assert.ok(h.manager.camera.position.equals(camera))
+    }
+  } finally { h.dispose() }
+})
+
+test('area drag cancels on a right-button context menu and ignores a release after viewport loss', async () => {
+  const h = setup()
+  const editor = h.editor
+  try {
+    assert.equal(typeof editor.contextMenu, 'function', 'mouse chords must also cancel via contextmenu')
+    const camera = h.manager.camera.position.clone()
+    h.workspace.toggleZoomArea(); await nextTick()
+    h.editor.pointerDown(h.pointer(200, 100)); h.editor.pointerMove(h.pointer(700, 500))
+    editor.contextMenu({ preventDefault() {} } as MouseEvent); await nextTick()
+    h.editor.pointerUp(h.pointer(700, 500))
+    assert.equal(h.workspace.zoomAreaActive, false); assert.equal(h.captured.size, 0)
+    assert.ok(h.manager.camera.position.equals(camera))
+    h.workspace.toggleZoomArea(); await nextTick()
+    h.editor.pointerDown(h.pointer(200, 100))
+    h.canvas.value!.getBoundingClientRect = () => ({ left: 0, top: 0, width: 0, height: 0 }) as DOMRect
+    assert.doesNotThrow(() => h.editor.pointerUp(h.pointer(700, 500)))
+    assert.equal(h.workspace.zoomAreaActive, false); assert.equal(h.captured.size, 0)
+    assert.ok(h.manager.camera.position.equals(camera))
+  } finally { h.dispose() }
+})
+
+test('armed area mode allows keyboard focus navigation and a tiny drag survives its lost capture event', async () => {
+  const h = setup()
+  try {
+    h.workspace.toggleZoomArea(); await nextTick()
+    let prevented = false
+    h.editor.keydown({ key: 'Tab', preventDefault() { prevented = true } } as KeyboardEvent)
+    assert.equal(prevented, false, 'Tab must still reach toolbar and other controls')
+    h.editor.pointerDown(h.pointer(200, 100)); h.editor.pointerUp(h.pointer(201, 101))
+    h.editor.lostPointerCapture(h.pointer(201, 101)); await nextTick()
+    assert.equal(h.workspace.zoomAreaActive, true, 'normal release of a rejected drag is not cancellation')
+    h.editor.pointerDown(h.pointer(200, 100)); h.editor.lostPointerCapture(h.pointer(700, 500)); await nextTick()
+    assert.equal(h.workspace.zoomAreaActive, false, 'unexpected loss during an active drag cancels')
+    assert.equal(h.captured.size, 0)
+  } finally { h.dispose() }
+})
 
 test('voltage drag reaches every common setpoint exactly from an irregular starting value', async () => {
   const h = setup()

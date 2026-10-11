@@ -115,3 +115,90 @@ test('captured orbit, unlock and resume cannot poison a temporarily zero-height 
     assert.ok(manager.camera.position.toArray().every(Number.isFinite))
   } finally { manager.dispose() }
 })
+
+test('area zoom centers an off-axis rectangle, preserves heading and fits both screen dimensions', () => {
+  const { manager, wheel } = setup()
+  const areaManager = manager
+  try {
+    assert.equal(typeof areaManager.zoomToArea, 'function', 'SceneManager must provide area framing')
+    manager.pan(2, 1); manager.orbit(65)
+    const heading = manager.camera.quaternion.clone(), fov = manager.camera.fov
+    const forward = manager.camera.getWorldDirection(new Vector3()), distance = Math.hypot(11, 10)
+    const viewPlane = manager.camera.position.clone().addScaledVector(forward, distance)
+    const right = new Vector3(1, 0, 0).applyQuaternion(heading), up = new Vector3(0, 1, 0).applyQuaternion(heading)
+    const halfHeight = distance * Math.tan(fov * Math.PI / 360)
+    // Rectangle (600, 175)..(850, 525) has center (725, 350), height half the viewport.
+    const center = viewPlane.clone().addScaledVector(right, halfHeight * 1000 / 700 * 0.45)
+    const corner = center.clone().addScaledVector(right, halfHeight * 1000 / 700 * 0.25).addScaledVector(up, halfHeight * 0.5)
+    assert.equal(areaManager.zoomToArea(850, 525, 600, 175), true, 'reverse dragging selects the same area')
+    const projectedCenter = manager.project(center), projectedCorner = manager.project(corner)
+    assert.ok(Math.abs(projectedCenter.x - 500) < 1e-6 && Math.abs(projectedCenter.y - 350) < 1e-6)
+    assert.ok(projectedCorner.x > 500 && projectedCorner.x <= 750 + 1e-6 && projectedCorner.y >= -1e-6 && projectedCorner.y < 350, 'both dimensions fit without clipping')
+    assert.ok(Math.abs((projectedCorner.x - 500) / (350 - projectedCorner.y) - 5 / 7) < 1e-6, 'perspective aspect remains uniform')
+    assert.ok(manager.camera.quaternion.angleTo(heading) < 1e-6)
+    assert.equal(manager.camera.fov, fov); assert.equal(manager.camera.zoom, 1)
+    assert.ok(Math.abs(manager.zoomPercent() - 100) < 1e-6, 'a framed area becomes the new 100% reference, like Fit')
+    const framed = manager.camera.position.clone()
+    manager.setZoom(150); wheel(-30); manager.setZoom(100)
+    assert.ok(manager.camera.position.distanceTo(framed) < 1e-6, 'toolbar and wheel remain reversible after framing')
+  } finally { manager.dispose() }
+})
+
+test('area zoom clamps screen bounds and rejects tiny, invalid or inactive selections without moving the view', () => {
+  const { manager } = setup()
+  const areaManager = manager
+  try {
+    assert.equal(typeof areaManager.zoomToArea, 'function')
+    const initial = manager.camera.position.clone(), heading = manager.camera.quaternion.clone()
+    for (const rect of [[100, 100, 100, 400], [100, 100, 105, 110], [NaN, 0, 300, 300], [0, Infinity, 300, 300], [-100, 0, -20, 700]]) {
+      assert.equal(areaManager.zoomToArea(...rect as [number, number, number, number]), false)
+      assert.ok(manager.camera.position.equals(initial)); assert.ok(manager.camera.quaternion.equals(heading))
+    }
+    manager.suspend(true); assert.equal(areaManager.zoomToArea(100, 100, 500, 500), false)
+    manager.suspend(false); manager.resize(0, 0); assert.equal(areaManager.zoomToArea(100, 100, 500, 500), false)
+    manager.resize(480, 900)
+    assert.equal(areaManager.zoomToArea(-100, -100, 1000, 1000), true, 'clamped full viewport keeps the original frame')
+    assert.ok(manager.camera.position.distanceTo(initial) < 1e-6)
+    manager.dispose(); assert.equal(areaManager.zoomToArea(0, 0, 480, 900), false)
+  } finally { manager.dispose() }
+})
+
+test('area zoom focuses the selected foreground depth instead of passing through it', () => {
+  const { manager } = setup()
+  try {
+    const ground = manager.groundPoint(500, 550)!, heading = manager.camera.quaternion.clone()
+    assert.equal(manager.zoomToArea(450, 500, 550, 600), true)
+    const centered = manager.project(ground)
+    assert.ok(Math.abs(centered.x - 500) < 1e-6 && Math.abs(centered.y - 350) < 1e-6, 'selected foreground must remain at screen center')
+    assert.ok(centered.visible); assert.ok(manager.camera.position.y > 0)
+    assert.ok(manager.camera.quaternion.angleTo(heading) < 1e-6)
+    manager.resetView()
+    manager.syncGraph({ schema_version: '1.0', circuit_id: 'area', modules: [{ id: 'A', type: 'CLOCK', position: { x: 0, y: 2, z: 3 } }], connections: [] })
+    const screen = manager.project(new Vector3(0, 2.1, 3)), picked = manager.pick(screen.x, screen.y)!
+    assert.equal(picked.kind, 'module')
+    assert.equal(manager.zoomToArea(screen.x - 50, screen.y - 50, screen.x + 50, screen.y + 50), true)
+    const focused = manager.project(picked.point)
+    assert.ok(Math.abs(focused.x - 500) < 1e-6 && Math.abs(focused.y - 350) < 1e-6, 'elevated components supply their own focus depth')
+    manager.resetView(); manager.camera.position.set(0, 1, 20); manager.camera.lookAt(0, 0, 0)
+    assert.equal(manager.groundPoint(800, 100), null)
+    assert.equal(manager.zoomToArea(700, 50, 900, 150), true, 'above-horizon empty space retains a finite fallback')
+    assert.ok(manager.camera.position.toArray().every(Number.isFinite))
+  } finally { manager.dispose() }
+})
+
+test('area framing contains the nearer rectangle edges at default and near-horizontal angles', () => {
+  for (const lowAngle of [false, true]) {
+    const { manager } = setup()
+    try {
+      if (lowAngle) { manager.camera.position.set(0, 1, 20); manager.camera.lookAt(0, 0, 0) }
+      const top = lowAngle ? 400 : 500
+      const samples = [[450, top], [550, top], [450, 600], [550, 600], [500, 590]].map(([x, y]) => manager.groundPoint(x, y)!)
+      assert.ok(samples.every(Boolean))
+      assert.equal(manager.zoomToArea(450, top, 550, 600), true)
+      for (const point of samples) {
+        const screen = manager.project(point)
+        assert.ok(screen.x >= 0 && screen.x <= 1000 && screen.y >= 0 && screen.y <= 700, `selected surface point was clipped at (${screen.x},${screen.y})`)
+      }
+    } finally { manager.dispose() }
+  }
+})

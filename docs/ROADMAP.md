@@ -34,6 +34,7 @@ UI migration completed on 2026-10-09; evidence in `DEV_LOG.md`:
 - [x] Add application/file-action bar: New / Open / Save / Undo / Redo (local JSON/project history).
 - [x] Add top component ribbon with twelve groups and supplied SVG artwork thumbnails; choice-only palettes anchored to their family and single-line labels.
 - [x] Add left interaction tool rail with seven shared modes.
+- [x] Independently collapse/expand component ribbon and tools sidebar with permanent keyboard-accessible toggles, reclaimed canvas space and scrolling tools at short heights. Evidence: `verification/2026-10-11-collapsible-toolbars-browser.md`.
 - [x] Add central workspace shell occupying most of the viewport.
 - [x] Add status-bar-right Zoom In/Out/Fit Entire Circuit and Workspace Object Snap with definitions (supersedes Perspective overlay/reset).
 - [x] Add bottom simulation status bar with honest unavailable execution controls.
@@ -54,6 +55,7 @@ UI migration completed on 2026-10-09; evidence in `DEV_LOG.md`:
 - [x] Component select/move/rotate/delete; keyboard equivalents in Inspector/canvas.
 - [x] Explicit logical wire/unwire, duplicate/direction/width/input-driver checks.
 - [x] Zoom/pan/orbit/picking/reset/snap, with keyboard view controls.
+- [x] Status-bar Zoom To Area: captured rectangle, surface-depth camera framing, reversible toolbar/wheel zoom and cancellation without graph/history edits; name-only Zoom In/Out/Fit tooltips.
 - [x] Navigation UX correction: Move-only direct model dragging, Select selection, empty-surface left pan, camera-oriented XYZ and adjacent orbit/pan buttons; low-angle drag regression covered.
 - [x] Selection refinement: subtle shape-following yellow contours, recessed breadboard housing and one upper-right Component Info introduction/Add panel; graph/history and Move-only drag retained.
 - [x] Technical workspace refinement: 2px Medium Gold contours, real socket cavities and matching deck openings, joint/bevel clearance, selection-only Info with contained artwork, adaptive minor/major faded grid and no canvas caption. Evidence: `verification/2026-10-09-technical-workbench-browser.md`.

@@ -33,7 +33,14 @@ function activate() {
 }
 onMounted(activate)
 watch(() => props.window.activation, activate)
-onBeforeUnmount(() => { end(); if (root.value?.contains(document.activeElement) && opener?.isConnected) opener.focus() })
+onBeforeUnmount(() => {
+  end()
+  if (root.value?.contains(document.activeElement) && opener?.isConnected) {
+    // A toolbar can be collapsed while its instrument window is still open.
+    const target = opener.getClientRects().length ? opener : opener.closest('.component-ribbon, .tool-rail')?.querySelector<HTMLButtonElement>('.toolbar-collapse-toggle')
+    target?.focus()
+  }
+})
 </script>
 <template>
   <section ref="root" class="floating-window" role="dialog" :aria-labelledby="'window-title-' + window.kind" :style="{ left: window.x + 'px', top: window.y + 'px', width: window.width + 'px', height: window.height + 'px', zIndex: window.z }" @pointerdown="ui.focusWindow(window.kind)" @focusin="ui.focusWindow(window.kind)" @keydown="key">

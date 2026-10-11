@@ -4,6 +4,17 @@ All notable project changes will be documented in this file. The project follows
 
 ## [Unreleased]
 
+### Added — 2026-10-11 Collapsible toolbars
+
+- Component ribbon and tools sidebar independently collapse/expand through permanent chevron buttons, reclaiming canvas height/width while preserving editing mode, selection, placement and circuit/history.
+- Ribbon collapse closes the palette. Native Enter/Space, expanded/controls labels and visible focus return work in both states; tool lists scroll at short heights. Existing resize handling updates camera/window bounds and cancels transient gestures.
+
+### Added / Changed — 2026-10-11 Zoom To Area
+
+- Added Zoom To Area immediately right of Zoom To View Entire Circuit: temporary crosshair/rectangle selection, depth-aware camera framing, retained heading/aspect and a new 100% reference compatible with toolbar/wheel zoom.
+- Escape, right click (including a mouse-button chord), toggle, tool/placement/graph changes, resize, visibility/context loss and capture cancellation release the gesture without editing circuit/history. Tiny rectangles allow another attempt; keyboard focus navigation remains available.
+- Reduced Zoom In, Zoom Out and Zoom To View Entire Circuit tooltips to their exact names.
+
 ### Added — 2026-10-10 L1571979 Function Generator 2 CH
 
 - Added the reference-based silver/charcoal bench model with owl/net*CIRCUIT branding, two channel parameter/waveform panels, six screen keys, 3×3 function keypad, illuminated channel keys, centered encoder/LED arc, arrow keys, three colored BNCs, round power key and inclined bail stand.

@@ -8,7 +8,9 @@ import { getDefinition } from '../../data/editorCatalog'
 const ui = useUiStore()
 const workspace = useWorkspaceStore()
 const root = ref<HTMLElement>()
-const active = computed(() => ribbonGroups.find((group) => group.id === ui.activeRibbonGroup))
+const collapseToggle = ref<HTMLButtonElement>()
+const collapseLabel = computed(() => ui.componentToolbarCollapsed ? 'Expand component toolbar' : 'Collapse component toolbar')
+const active = computed(() => !ui.componentToolbarCollapsed ? ribbonGroups.find((group) => group.id === ui.activeRibbonGroup) : undefined)
 const paletteStyle = ref({ left: '10px', width: '250px' })
 let resizeObserver: ResizeObserver | undefined
 function anchorPalette() {
@@ -20,6 +22,11 @@ function anchorPalette() {
   paletteStyle.value = { left: `${left}px`, width: `${width}px` }
 }
 watch(active, async () => { await nextTick(); anchorPalette() })
+watch(() => ui.componentToolbarCollapsed, (collapsed) => {
+  if (collapsed && root.value?.contains(document.activeElement) && document.activeElement !== collapseToggle.value) {
+    void nextTick(() => collapseToggle.value?.focus())
+  }
+})
 function choose(item: LibraryComponent) {
   // The palette will disappear. Retain a stable keyboard return target first.
   root.value?.querySelector<HTMLButtonElement>(`[data-group="${ui.activeRibbonGroup}"]`)?.focus()
@@ -44,13 +51,15 @@ onMounted(() => {
 onUnmounted(() => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape); resizeObserver?.disconnect() })
 </script>
 <template>
-  <section ref="root" class="component-ribbon" aria-label="Component library">
-  <div class="ribbon-scroll" role="toolbar" aria-label="Component families" @scroll="anchorPalette">
+  <section ref="root" class="component-ribbon" :class="{ 'is-collapsed': ui.componentToolbarCollapsed }" aria-label="Component library">
+    <span v-if="ui.componentToolbarCollapsed" class="ribbon-collapsed-label">Components</span>
+    <div v-show="!ui.componentToolbarCollapsed" id="component-families" class="ribbon-scroll" role="toolbar" aria-label="Component families" @scroll="anchorPalette">
       <button v-for="group in ribbonGroups" :key="group.id" :data-group="group.id" :aria-expanded="ui.activeRibbonGroup === group.id" aria-controls="ribbon-palette" :class="{ active: ui.activeRibbonGroup === group.id }" @click="ui.toggleRibbon(group.id)">
         <span class="ribbon-art"><img v-if="group.icon" :src="iconUrl(group.icon)" alt="" width="44" height="44" /><WorkbenchIcon v-else :name="group.glyph || 'chip'" /></span>
         <span class="ribbon-label">{{ group.label }}</span><WorkbenchIcon class="ribbon-chevron" name="chevron" />
       </button>
     </div>
+    <button ref="collapseToggle" class="toolbar-collapse-toggle ribbon-collapse-toggle" :aria-label="collapseLabel" :title="collapseLabel" :aria-expanded="!ui.componentToolbarCollapsed" aria-controls="component-families" @click="ui.toggleComponentToolbar()"><WorkbenchIcon name="chevron" /></button>
   <div v-if="active" id="ribbon-palette" class="ribbon-palette" :style="paletteStyle" :aria-label="active.label + ' components'">
    <div class="palette-heading"><strong>{{ active.label }}</strong></div>
    <div class="palette-items"><button v-for="item in active.items" :key="item.type" :draggable="!!getDefinition(item.type)" @dragstart="drag($event, item)" @click="choose(item)"><span class="palette-art"><img v-if="item.icon" :src="iconUrl(item.icon)" alt="" width="58" height="58" /><WorkbenchIcon v-else :name="item.glyph || 'chip'" /></span><strong>{{ item.name }}</strong><small>{{ item.window ? 'Open window' : getDefinition(item.type) ? 'Place component' : item.type === 'JUMPER' ? 'Connect ports' : 'Model unavailable' }}</small></button></div>

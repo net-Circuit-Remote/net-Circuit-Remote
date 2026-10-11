@@ -38,6 +38,18 @@ Twenty supplied SVG icons are consumed through committed derivatives generated b
 
 Current implementation status is in DEV_LOG; historical Phase 1 reports stay unchanged.
 
+## Zoom To Area — 2026-10-11
+
+- `docs/SOURCE_ANALYSIS_ZOOM_TO_AREA.md` documents architecture, gesture ownership and perspective depth fitting.
+- `docs/verification/2026-10-11-zoom-to-area-browser.md` and PNG record native interaction and responsive checks.
+- A new status-bar rectangle tool preserves graph/history and view heading; the three existing zoom tooltips now contain names only.
+
+## Collapsible toolbars — 2026-10-11
+
+- `docs/SOURCE_ANALYSIS_COLLAPSIBLE_TOOLBARS.md` traces UI ownership, DOM/focus and canvas resize behavior.
+- `docs/verification/2026-10-11-collapsible-toolbars-browser.md` plus expanded/collapsed PNGs record independent toggles, keyboard, responsive and minimum-height checks.
+- Component families and editing tools can be hidden independently while retaining permanent toggles and circuit/editor state.
+
 ## Navigation UX correction
 
 - `docs/SOURCE_ANALYSIS_WORKSPACE_NAVIGATION.md`

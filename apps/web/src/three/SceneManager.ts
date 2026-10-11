@@ -204,6 +204,44 @@ export function createSceneManager({ renderer, canvas, onRender, onZoomChange, r
       camera.position.copy(origin).addScaledVector(direction, zoomReferenceDistance * 100 / Math.min(200, Math.max(50, percent)))
       camera.zoom = 1; camera.updateProjectionMatrix(); camera.updateMatrixWorld(); controls?.update(); notifyZoom(); schedule()
     },
+    zoomToArea(x1: number, y1: number, x2: number, y2: number) {
+      if (disposed || suspended || !visible || ![x1, y1, x2, y2].every(Number.isFinite)) return false
+      const left = Math.max(0, Math.min(width, Math.min(x1, x2))), right = Math.max(0, Math.min(width, Math.max(x1, x2)))
+      const top = Math.max(0, Math.min(height, Math.min(y1, y2))), bottom = Math.max(0, Math.min(height, Math.max(y1, y2)))
+      if (right - left < 12 || bottom - top < 12) return false
+      const origin = target(), direction = camera.position.clone().sub(origin), distance = direction.length()
+      if (!Number.isFinite(distance) || distance <= camera.near) return false
+      if (left === 0 && top === 0 && right === width && bottom === height) {
+        zoomReferenceDistance = distance; zoomLimits(); notifyZoom(); schedule(); return true
+      }
+      direction.normalize()
+      const x = (left + right) / 2, y = (top + bottom) / 2
+      // Focus the actual surface under the rectangle, keeping a finite fallback above the horizon.
+      const focus = this.pick(x, y)?.point ?? this.groundPoint(x, y) ?? origin
+      const depth = camera.position.clone().sub(focus).dot(direction)
+      if (!Number.isFinite(depth) || depth <= camera.near) return false
+      ray(x, y)
+      const focalPlane = new Plane().setFromNormalAndCoplanarPoint(direction, focus)
+      const center = raycaster.ray.intersectPlane(focalPlane, new Vector3())
+      if (!center || !center.toArray().every(Number.isFinite)) return false
+      let nextDistance = Math.max(camera.near * 4, depth * Math.max((right - left) / width, (bottom - top) / height))
+      const screenRight = new Vector3().setFromMatrixColumn(camera.matrixWorld, 0), screenUp = new Vector3().setFromMatrixColumn(camera.matrixWorld, 1)
+      const verticalTangent = Math.tan(camera.fov * Math.PI / 360), horizontalTangent = verticalTangent * camera.aspect
+      // Fit boundary surface depths too: a low-angle dolly must not pass the nearer edge.
+      for (const sx of [left, x, right]) for (const sy of [top, y, bottom]) {
+        let point = this.pick(sx, sy)?.point ?? this.groundPoint(sx, sy)
+        if (!point) { ray(sx, sy); point = raycaster.ray.intersectPlane(focalPlane, new Vector3()) }
+        if (!point || !point.toArray().every(Number.isFinite)) continue
+        const offset = point.clone().sub(center)
+        nextDistance = Math.max(nextDistance, offset.dot(direction) + Math.max(camera.near * 4, Math.abs(offset.dot(screenRight)) / horizontalTangent, Math.abs(offset.dot(screenUp)) / verticalTangent))
+      }
+      if (!Number.isFinite(nextDistance)) return false
+      nextDistance *= 1.01
+      origin.copy(center); camera.position.copy(center).addScaledVector(direction, nextDistance); camera.lookAt(center)
+      camera.zoom = 1; camera.far = Math.max(camera.far, nextDistance * 4); camera.updateProjectionMatrix(); camera.updateMatrixWorld()
+      zoomReferenceDistance = nextDistance; zoomLimits(); controls?.update(); notifyZoom(); schedule()
+      return true
+    },
     fitCircuit() {
       if (disposed || !models.size) return false
       const bounds = new Box3().setFromObject(content); bounds.union(new Box3().setFromObject(wires))

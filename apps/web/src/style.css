@@ -32,8 +32,12 @@ code { font-family: Consolas, monospace; }
 .inspector-toggle { display: flex; align-items: center; gap: 6px; padding: 5px 9px; flex-shrink: 0; font-size: 11px; }
 .file-error { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #f1b1af; background: #412b31; padding: 6px 14px; }
 .file-error button { display: flex; padding: 2px; background: transparent; }
-.component-ribbon { position: relative; z-index: 20; flex-shrink: 0; background: #202d3c; border-bottom: 1px solid #415167; }
-.ribbon-scroll { display: flex; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #526477 transparent; padding: 4px 10px 5px; }
+.component-ribbon { position: relative; display: flex; min-width: 0; z-index: 20; flex-shrink: 0; background: #202d3c; border-bottom: 1px solid #415167; }
+.ribbon-scroll { display: flex; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #526477 transparent; padding: 4px 10px 5px; }
+.toolbar-collapse-toggle { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; padding: 4px; background: transparent; color: #9db3c5; }
+.ribbon-collapse-toggle { margin: 4px; align-self: flex-start; }
+.ribbon-collapse-toggle[aria-expanded=true] .workbench-icon { transform: rotate(180deg); }
+.ribbon-collapsed-label { display: flex; align-items: center; flex: 1; padding-left: 12px; font-size: 10px; color: #9db3c5; }
 .ribbon-scroll > button { display: flex; flex: 1 0 auto; min-width: 88px; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 3px; border: 1px solid transparent; border-right: 1px solid #364657; background: transparent; height: 86px; padding: 3px 9px; position: relative; }
 .ribbon-scroll > button:last-child { border-right-color: transparent; }
 .ribbon-scroll > button.active { background: #304655; border-color: #4b8e88; }
@@ -98,19 +102,27 @@ code { font-family: Consolas, monospace; }
 .workbench-body { display: flex; flex: 1; min-height: 0; }
 .tool-rail { width: 66px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; background: #1c2836; border-right: 1px solid #35465a; padding: 12px 6px 10px; }
 .rail-label { font-size: 8px; letter-spacing: 1px; color: #7f95a9; margin-bottom: 13px; }
-.tool-rail [role=toolbar] { display: flex; flex-direction: column; gap: 6px; width: 100%; }
-.tool-rail button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 49px; border-color: transparent; background: transparent; width: 100%; color: #a4b5c6; }
+.tool-rail [role=toolbar] { display: flex; flex-direction: column; gap: 6px; width: 100%; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #526477 transparent; }
+.tool-rail button { display: flex; flex-shrink: 0; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 49px; border-color: transparent; background: transparent; width: 100%; color: #a4b5c6; }
 .tool-rail button[aria-pressed=true] { color: #9ae8d9; border-color: #4b8f8a; background: #284947; }
 .tool-rail button span { font-size: 9px; }
+.tool-rail .rail-collapse-toggle { display: grid; width: 28px; height: 28px; border-color: #3b4b60; margin-bottom: 8px; }
+.rail-collapse-toggle .workbench-icon { transform: rotate(90deg); }
+.rail-collapse-toggle[aria-expanded=false] .workbench-icon { transform: rotate(-90deg); }
+.tool-rail.is-collapsed { width: 38px; padding-inline: 4px; }
 .rail-bottom { margin-top: auto; font: 10px Consolas, monospace; color: #5a728b; padding-top: 10px; }
 .workspace-stage { position: relative; flex: 1; min-width: 0; overflow: hidden; isolation: isolate; }
 .circuit-workspace { position: absolute; inset: 0; overflow: hidden; background-color: #101925; background-image: linear-gradient(#293a4e55 1px, transparent 1px), linear-gradient(90deg, #293a4e55 1px, transparent 1px); background-size: 28px 28px; }
 .circuit-workspace canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 .circuit-workspace.can-grab canvas { cursor: grab; }
 .circuit-workspace.is-dragging canvas { cursor: grabbing; }
+.circuit-workspace.is-zoom-area canvas { cursor: crosshair; }
+.zoom-area-rectangle { position: absolute; border: 1px dashed var(--accent); background: #5ccbb822; pointer-events: none; }
+.zoom-area-notice { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); margin: 0; padding: 6px 10px; border: 1px solid #405267; border-radius: 4px; background: #182330ed; color: #bed0de; pointer-events: none; }
 .status-viewport-tools { display: flex; align-items: center; gap: 2px; margin-left: auto; padding-left: 8px; border-left: 1px solid #405267; flex-shrink: 0; }
 .status-viewport-tools button { border-color: transparent; background: transparent; display: grid; place-items: center; padding: 3px; width: 26px; min-height: 26px; }
 .status-viewport-tools button:hover:not(:disabled) { background: #304559; border-color: #4c657b; }
+.status-viewport-tools button[aria-pressed="true"] { color: var(--accent); background: #29463f; border-color: var(--accent); }
 .status-viewport-tools output { font: 10px Consolas, monospace; width: 37px; text-align: center; color: #bed0de; }
 .workspace-empty { position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: min(440px, 90%); pointer-events: none; }
 .empty-cross { color: #5ca49f; font: 40px/1 Consolas, monospace; opacity: .7; }

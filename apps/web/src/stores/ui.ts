@@ -10,9 +10,14 @@ function bound(window: WorkspaceWindow, width: number, height: number) {
 }
 
 export const useUiStore = defineStore('ui', {
-  state: () => ({ activeRibbonGroup: null as string | null, windows: [] as WorkspaceWindow[], viewport: { width: 900, height: 500 }, connectionState: 'idle' as ConnectionState }),
+  state: () => ({ activeRibbonGroup: null as string | null, componentToolbarCollapsed: false, toolsSidebarCollapsed: false, windows: [] as WorkspaceWindow[], viewport: { width: 900, height: 500 }, connectionState: 'idle' as ConnectionState }),
   actions: {
-    toggleRibbon(id: string) { this.activeRibbonGroup = this.activeRibbonGroup === id ? null : id },
+    toggleRibbon(id: string) { if (!this.componentToolbarCollapsed) this.activeRibbonGroup = this.activeRibbonGroup === id ? null : id },
+    toggleComponentToolbar() {
+      this.componentToolbarCollapsed = !this.componentToolbarCollapsed
+      this.activeRibbonGroup = null
+    },
+    toggleToolsSidebar() { this.toolsSidebarCollapsed = !this.toolsSidebarCollapsed },
     setViewport(width: number, height: number) {
       this.viewport = { width: Math.max(0, width), height: Math.max(0, height) }
       for (const window of this.windows) bound(window, this.viewport.width, this.viewport.height)

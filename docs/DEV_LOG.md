@@ -1,10 +1,10 @@
 ---
 project: net-Circuit-Remote
-current_phase: interactive-workspace-stability-audit
-status: source-audit-verified-artwork-provenance-pending
-last_updated: 2026-10-10
+current_phase: interactive-workspace-collapsible-toolbars
+status: collapsible-toolbars-verified
+last_updated: 2026-10-11
 next_task: phase-3-simulator-event-clock-model-integration
-blocking_issue: concurrent-user-icon-provenance-edit
+blocking_issue: none
 hardware_mode: simulation
 fpga_development_started: false
 ---
@@ -14,6 +14,30 @@ fpga_development_started: false
 ## Current Goal
 
 Phase 2 **Interactive Circuit Workspace** is implemented, preserving Phase 1 shell and transport boundaries. Next: Phase 3 simulator/event/clock/model adapters and real output/capture data.
+
+## Collapsible Component Toolbar and Tools Sidebar — 2026-10-11
+
+Added independent session-only UI flags and permanent native chevron buttons for the horizontal component ribbon and vertical tools rail. Both start expanded; Enter/Space, aria-expanded/controls and dynamic labels work. `v-show` retains toolbar DOM/scroll while removing hidden controls from layout/focus/accessibility. Ribbon collapse closes its palette and prevents hidden families opening one. Editing mode, selection, armed placement, graph, saved/history state and logical endpoints remain separate from layout.
+
+Existing canvas ResizeObserver updates renderer/camera aspect and floating-window bounds; transient pointer previews/Zoom To Area cancel safely on resize without an edit command. Hidden instrument openers now return focus to the visible toolbar toggle. Browser found Probe overlapping the status bar at height560 after adding the fixed toggle; scoped list scrolling with min-height0/nonshrinking buttons corrected it. Toggle remains outside the scroller. Independent review found no outstanding material issue, including this fix.
+
+Verification: two new real-store cases observed FAIL before implementation, then **frontend163/163 PASS** with production/test TypeScript checks. Final **production build PASS**, 133 modules; existing >500 kB bundle advisory. **Frontend boundary/docs/context17/17 PASS**. Browser tested four layout combinations at 1280×720, 1366×768, 1920×1080 and 390×844, plus the default compact viewport and height560. Both toggles remain in view, no horizontal document overflow; Enter/Space restore tool state, placement works while collapsed, instrument Escape returns focus correctly and resize cancels Area. Default canvas grows 632.4×442 → 660.4×511.4. Viewport overrides reset; screenshots saved. Initial stale Pinia hot reload caused one missing-action error; reload initialized new actions and no new warnings/errors appeared during subsequent verification.
+
+Context/whitespace checks pass. npm tests/build use the previously approved external execution for sandbox realpath/loopback restrictions; no dependency changes. Backend/hardware full suites were not rerun for this UI-only task (the preceding Zoom task's97/97 result stays historical). No contract/artwork changes, commit/push/deployment.
+
+Detailed ownership/algorithms: `SOURCE_ANALYSIS_COLLAPSIBLE_TOOLBARS.md`. Evidence: `verification/2026-10-11-collapsible-toolbars-browser.md` and expanded/collapsed PNGs. Phase 3 remains the existing next task.
+
+## Zoom To Area and concise zoom tooltips — 2026-10-11
+
+Added the requested status-bar button immediately right of Zoom To View Entire Circuit. A temporary view mode retains the prior tool/selection, focuses the canvas and captures a rectangle before editing/picking actions. The overlay has no Three.js resources. Release frames the actual center surface, fits sampled boundary depths with retained heading/FOV/aspect, and rebases wheel/toolbar magnification to 100% like Fit. Whole-viewport selection preserves the existing pose. Graph, model root scale, endpoint identities and Undo/Redo remain untouched.
+
+Escape/right-click/toggle, tool/placement/graph changes, viewport resize, hidden/context-lost scene and unexpected capture loss cancel. Right-button chords also cancel through contextmenu; normal capture release after a tiny drag allows retry. Tab remains available; release after invalid/zero viewport is guarded. Zoom In, Zoom Out and Zoom To View Entire Circuit titles now contain only their exact names.
+
+Regression sequence: missing framing/state failed before implementation. Independent review reproduced a foreground center crossing the camera and right-button chord cancellation. Both were fixed; the follow-up near-horizontal edge-depth clipping was reproduced and fixed by sample-based perspective fitting. Camera tests cover default/low views, elevated models, horizon fallback, clamping/inactive/non-finite cases and wheel/toolbar reversibility. Editor tests cover priority over Move/Rotate/Delete/Wire, unchanged graph/history, reverse drag, foreign pointers, cancellation/retry and keyboard focus.
+
+Final frontend **161/161 PASS**, production **build PASS** (133 modules; existing large-chunk advisory), whole Python repository **97/97 PASS** with three existing dependency deprecation warnings. The previously recorded artwork provenance failure no longer reproduces; this task did not edit or regenerate artwork. Sandbox loopback/realpath restrictions required approved external execution for full suites/build/server; no production dependency changes. Browser verifies final native reverse drag over Breadboard 630, retained component count, 100% reference, Escape, exact tooltips/order and layout at 1280×720, 1366×768, 1920×1080 plus the default compact viewport. Final warning/error logs are empty.
+
+Detailed source/algorithms: `SOURCE_ANALYSIS_ZOOM_TO_AREA.md`. Evidence: `verification/2026-10-11-zoom-to-area-browser.md` and PNG. No commit/push/deployment; simulator/hardware contracts unchanged. The next Phase 3 work remains the existing event/clock/model integration.
 
 ## Whole-project stability audit — 2026-10-10
 
@@ -191,6 +215,8 @@ Device-library coverage is small. gRPC generated bindings/handlers, exact SDRAM/
 ## AI Handoff
 
 ### What changed
+
+Latest task adds temporary Zoom To Area rectangle framing and concise zoom titles; see the 2026-10-11 entry and SOURCE_ANALYSIS_ZOOM_TO_AREA. Source/build/frontend/Python verification passed. Preserve the previous graph/history/geometry and hardware boundaries.
 
 Phase 2 canonical catalog, separate memory contract, graph command/history layer, scene/models/picking/wires/camera controls, pointer/drag/keyboard interactions, selected Inspector/Hex Editor, lifecycle fixes, tests and Markdown. Preserve historical specs/verification and supplied artwork/axis gizmo.
 

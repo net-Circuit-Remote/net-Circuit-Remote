@@ -6,8 +6,13 @@ import { useUiStore } from '../../stores/ui'
 import { useWorkspaceStore } from '../../stores/workspace'
 import HardwareStatus from '../HardwareStatus.vue'
 import WorkbenchIcon from './WorkbenchIcon.vue'
+import { nextTick } from 'vue'
 const circuit = useCircuitStore(), station = useStationStore(), experiment = useExperimentStore(), ui = useUiStore()
 const workspace = useWorkspaceStore()
+function zoomToArea() {
+  workspace.toggleZoomArea()
+  if (workspace.zoomAreaActive) void nextTick(() => document.querySelector<HTMLCanvasElement>('canvas[aria-label="Three-dimensional circuit workspace"]')?.focus())
+}
 </script>
 <template>
   <footer class="simulation-statusbar" aria-label="Simulation status">
@@ -19,10 +24,11 @@ const workspace = useWorkspaceStore()
     <div class="connection-status"><HardwareStatus /><button @click="ui.openWindow('inspector')" :class="{ connected: ui.connectionState === 'connected' }" :title="station.error || 'Backend event connection'"><i />{{ ui.connectionState }}</button></div>
     <div class="status-viewport-tools" role="toolbar" aria-label="Workspace view controls">
       <label class="snap-toggle" title="Workspace Object Snap: align placement and movement to 0.5-unit spacing, dock modular breadboards and snap gizmo rotation to 15 degrees."><input v-model="workspace.snap" type="checkbox" aria-label="Workspace Object Snap" aria-describedby="workspace-snap-help" />Object Snap</label>
-      <button aria-label="Zoom Out" title="Zoom Out: reduce workspace magnification by 10%." :disabled="workspace.zoom <= 50" @click="workspace.setZoom(workspace.zoom - 10)"><WorkbenchIcon name="minus" /></button>
+      <button aria-label="Zoom Out" title="Zoom Out" :disabled="workspace.zoom <= 50" @click="workspace.setZoom(workspace.zoom - 10)"><WorkbenchIcon name="minus" /></button>
       <output aria-label="Workspace magnification">{{ workspace.zoom }}%</output>
-      <button aria-label="Zoom In" title="Zoom In: increase workspace magnification by 10%." :disabled="workspace.zoom >= 200" @click="workspace.setZoom(workspace.zoom + 10)"><WorkbenchIcon name="plus" /></button>
-      <button aria-label="Zoom To View Entire Circuit" title="Zoom To View Entire Circuit: fit every component and wire, preserving the viewing direction." :disabled="!circuit.graph?.modules.length" @click="workspace.fitEntireCircuit()"><WorkbenchIcon name="reset" /></button>
+      <button aria-label="Zoom In" title="Zoom In" :disabled="workspace.zoom >= 200" @click="workspace.setZoom(workspace.zoom + 10)"><WorkbenchIcon name="plus" /></button>
+      <button aria-label="Zoom To View Entire Circuit" title="Zoom To View Entire Circuit" :disabled="!circuit.graph?.modules.length" @click="workspace.fitEntireCircuit()"><WorkbenchIcon name="reset" /></button>
+      <button aria-label="Zoom To Area" title="Zoom To Area" :aria-pressed="workspace.zoomAreaActive" @click="zoomToArea"><WorkbenchIcon name="zoom-area" /></button>
     </div>
     <span id="workspace-snap-help" class="visually-hidden">Workspace Object Snap aligns placement and movement to 0.5-unit spacing, docks modular breadboards during free movement and snaps gizmo rotation to 15 degrees. Turn off for fine positioning and continuous rotation.</span>
   </footer>
