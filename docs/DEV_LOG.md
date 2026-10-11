@@ -1,7 +1,7 @@
 ---
 project: net-Circuit-Remote
-current_phase: interactive-workspace-collapsible-toolbars
-status: collapsible-toolbars-verified
+current_phase: interactive-workspace-resizable-panels
+status: fully-collapsible-resizable-panels-verified
 last_updated: 2026-10-11
 next_task: phase-3-simulator-event-clock-model-integration
 blocking_issue: none
@@ -15,7 +15,19 @@ fpga_development_started: false
 
 Phase 2 **Interactive Circuit Workspace** is implemented, preserving Phase 1 shell and transport boundaries. Next: Phase 3 simulator/event/clock/model adapters and real output/capture data.
 
-## Collapsible Component Toolbar and Tools Sidebar — 2026-10-11
+## Fully collapsible and resizable panels — 2026-10-11
+
+Inspected shell/flex constraints, toolbar DOM, state, canvas ResizeObserver, SceneManager resize and window focus before editing. Replaced the previous36 px ribbon strip/38 px rail with zero-height/zero-width wrappers and wholly hidden inner sections. Native buttons float at top/left workspace edges with exact Collapse/Expand Components/Tools labels. Icons, canvas, simulation controls, contracts and architecture stay intact.
+
+Expanded dimensions initialize from the current rendered layout and remain in `ui`. A shell observer measures available workbench space separately from the canvas; responsive maxima reserve canvas space without overwriting saved preferences. Shared `usePanelResize` supplies local captured-pointer dragging, limits, final-release position, foreign-pointer guards, keyboard resizing and cancel rollback. Collapse/capture loss/disposal release gestures. Toggles cannot initiate resizing. No dependencies or global listeners added. Transitions honor reduced motion and disable while dragging.
+
+Eight new regressions cover size memory/limits, real composable pointer/keyboard lifecycle and SceneManager camera/model/connection preservation. Missing sizing APIs initially failed; foreign-pointer cancellation also failed before its ownership guard. Final **frontend171/171 PASS**, including TypeScript checks. **Production build PASS**,134 modules; existing >500 kB advisory remains. Native drags reach min/max96–260 px /54–180 px, restore sizes through Enter/Space and measure exact zero collapsed height/width. At1280×720, saved180/150 expanded canvas1130×449 becomes1280×629 fully collapsed. Clock–LED stays2 components/1 wire/110% zoom. Responsive checks cover1280×720,1366×768,1920×1080,390×844,390×480 and320×480. Small-screen clamping restores180/150 when space returns; no horizontal document overflow. Scope Escape returns focus to Expand Tools with its opener hidden.
+
+Independent review found equal stacking contexts let the180 px rail cover Structure's first item. Browser hit testing reproduced the blocked Breadboard click; lowering Tools below Components restored the actual click. No other material finding remains. An initial stale-store HMR error disappeared after reload; no new warnings/errors occurred during subsequent native checks. Source algorithms: `SOURCE_ANALYSIS_COLLAPSIBLE_TOOLBARS.md`. Screenshots, exact file list and checks: `verification/2026-10-11-resizable-panels-browser.md`. The preceding partial-collapse entry below is historical.
+
+Final frontend boundary/docs/context **17/17 PASS**; `scripts/check_context.py` and `git diff --check` PASS. Full backend/hardware suites were not rerun for this UI-only feature. Tests/build use approved external execution for existing sandbox runtime restrictions. No commit/push/deployment; Phase 3 remains the existing next task.
+
+## Initial partial-collapse implementation — 2026-10-11 (superseded)
 
 Added independent session-only UI flags and permanent native chevron buttons for the horizontal component ribbon and vertical tools rail. Both start expanded; Enter/Space, aria-expanded/controls and dynamic labels work. `v-show` retains toolbar DOM/scroll while removing hidden controls from layout/focus/accessibility. Ribbon collapse closes its palette and prevents hidden families opening one. Editing mode, selection, armed placement, graph, saved/history state and logical endpoints remain separate from layout.
 

@@ -34,7 +34,7 @@ UI migration completed on 2026-10-09; evidence in `DEV_LOG.md`:
 - [x] Add application/file-action bar: New / Open / Save / Undo / Redo (local JSON/project history).
 - [x] Add top component ribbon with twelve groups and supplied SVG artwork thumbnails; choice-only palettes anchored to their family and single-line labels.
 - [x] Add left interaction tool rail with seven shared modes.
-- [x] Independently collapse/expand component ribbon and tools sidebar with permanent keyboard-accessible toggles, reclaimed canvas space and scrolling tools at short heights. Evidence: `verification/2026-10-11-collapsible-toolbars-browser.md`.
+- [x] Fully collapse component ribbon/tools sidebar to zero height/width with floating edge toggles; captured drag/keyboard resizing, responsive limits and remembered expanded dimensions. Evidence: `verification/2026-10-11-resizable-panels-browser.md` (supersedes the initial partial-collapse layout).
 - [x] Add central workspace shell occupying most of the viewport.
 - [x] Add status-bar-right Zoom In/Out/Fit Entire Circuit and Workspace Object Snap with definitions (supersedes Perspective overlay/reset).
 - [x] Add bottom simulation status bar with honest unavailable execution controls.

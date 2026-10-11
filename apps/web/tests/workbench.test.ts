@@ -81,6 +81,45 @@ test('collapsing either toolbar preserves circuit history, selection and the edi
   assert.equal(JSON.stringify(circuit.$state), graph)
 })
 
+test('panels remember expanded sizes independently through collapse and responsive clamping', () => {
+  const ui = useUiStore()
+  assert.equal(ui.componentToolbarHeight, null)
+  assert.equal(ui.toolsSidebarWidth, null)
+  ui.setWorkbenchSize(1200, 700)
+  ui.setComponentToolbarHeight(180)
+  ui.setToolsSidebarWidth(150)
+  ui.toggleComponentToolbar(); ui.toggleToolsSidebar()
+  assert.equal(ui.componentToolbarHeight, 180)
+  assert.equal(ui.toolsSidebarWidth, 150)
+  ui.setWorkbenchSize(320, 300)
+  assert.equal(ui.componentToolbarMaxHeight, 120)
+  assert.equal(ui.toolsSidebarMaxWidth, 120)
+  assert.equal(ui.componentToolbarHeight, 180, 'responsive limits must not erase the preference')
+  assert.equal(ui.toolsSidebarWidth, 150)
+  ui.toggleComponentToolbar(); ui.toggleToolsSidebar()
+  ui.setWorkbenchSize(1200, 700)
+  assert.equal(ui.componentToolbarHeight, 180)
+  assert.equal(ui.toolsSidebarWidth, 150)
+})
+
+test('panel sizes reject invalid input and have finite minimum/maximum dimensions', () => {
+  const ui = useUiStore()
+  ui.setComponentToolbarHeight(-500); ui.setToolsSidebarWidth(-500)
+  assert.equal(ui.componentToolbarHeight, 96)
+  assert.equal(ui.toolsSidebarWidth, 54)
+  ui.setComponentToolbarHeight(9999); ui.setToolsSidebarWidth(9999)
+  assert.equal(ui.componentToolbarHeight, 260)
+  assert.equal(ui.toolsSidebarWidth, 180)
+  for (const invalid of [NaN, Infinity, -Infinity]) {
+    ui.setComponentToolbarHeight(invalid); ui.setToolsSidebarWidth(invalid)
+    ui.setWorkbenchSize(invalid, invalid)
+    assert.equal(ui.componentToolbarHeight, 260)
+    assert.equal(ui.toolsSidebarWidth, 180)
+    assert.ok(Number.isFinite(ui.componentToolbarMaxHeight))
+    assert.ok(Number.isFinite(ui.toolsSidebarMaxWidth))
+  }
+})
+
 test('floating windows are unique, reusable and reordered when focused', () => {
   const ui = useUiStore()
   ui.setViewport(1100, 600)

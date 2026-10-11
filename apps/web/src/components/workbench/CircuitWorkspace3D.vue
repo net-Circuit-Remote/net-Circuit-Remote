@@ -21,7 +21,7 @@ const editor = useCircuitEditor(canvas, () => manager)
 function visibility() { if (contextLost || document.hidden) editor.cancel(); manager?.suspend(contextLost || document.hidden) }
 function updateGizmoObstacles() {
   const origin = host.value?.getBoundingClientRect(), stage = host.value?.parentElement
-  if (manager && origin && stage) manager.setGizmoObstacles([...stage.querySelectorAll('.component-information, .floating-window, .workspace-navigator')].map((element) => {
+  if (manager && origin && stage) manager.setGizmoObstacles([...(stage.closest('.workbench-layout') ?? stage).querySelectorAll('.component-information, .floating-window, .workspace-navigator, .toolbar-collapse-toggle')].map((element) => {
       const r = element.getBoundingClientRect(); return { left: r.left - origin.left, top: r.top - origin.top, right: r.right - origin.left, bottom: r.bottom - origin.top }
   }))
 }

@@ -4,10 +4,11 @@ All notable project changes will be documented in this file. The project follows
 
 ## [Unreleased]
 
-### Added — 2026-10-11 Collapsible toolbars
+### Added / Changed — 2026-10-11 Collapsible and resizable panels
 
-- Component ribbon and tools sidebar independently collapse/expand through permanent chevron buttons, reclaiming canvas height/width while preserving editing mode, selection, placement and circuit/history.
-- Ribbon collapse closes the palette. Native Enter/Space, expanded/controls labels and visible focus return work in both states; tool lists scroll at short heights. Existing resize handling updates camera/window bounds and cancels transient gestures.
+- Component ribbon and tools sidebar fully collapse to zero height/width with floating top/left edge buttons; their headers, backgrounds, borders and content leave no layout strip.
+- Bottom/right resize handles support captured dragging and keyboard arrows/Home/End with minimum/maximum dimensions. Responsive limits preserve saved expanded sizes across collapse/reopen and smaller viewports.
+- Ribbon collapse closes the palette. Native Enter/Space, expanded/controls labels and visible focus return work in both states; tool lists scroll at short heights. Existing resize handling updates renderer/camera aspect and window bounds, cancels transient gestures and retains camera pose/zoom, graph/history and simulation state. Component palettes remain above the widened Tools rail.
 
 ### Added / Changed — 2026-10-11 Zoom To Area
 

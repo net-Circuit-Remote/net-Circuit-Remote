@@ -10,7 +10,11 @@ function bound(window: WorkspaceWindow, width: number, height: number) {
 }
 
 export const useUiStore = defineStore('ui', {
-  state: () => ({ activeRibbonGroup: null as string | null, componentToolbarCollapsed: false, toolsSidebarCollapsed: false, windows: [] as WorkspaceWindow[], viewport: { width: 900, height: 500 }, connectionState: 'idle' as ConnectionState }),
+  state: () => ({ activeRibbonGroup: null as string | null, componentToolbarCollapsed: false, toolsSidebarCollapsed: false, componentToolbarHeight: null as number | null, toolsSidebarWidth: null as number | null, workbenchSize: { width: 900, height: 600 }, windows: [] as WorkspaceWindow[], viewport: { width: 900, height: 500 }, connectionState: 'idle' as ConnectionState }),
+  getters: {
+    componentToolbarMaxHeight: (state) => Math.max(96, Math.min(260, state.workbenchSize.height - 180)),
+    toolsSidebarMaxWidth: (state) => Math.max(54, Math.min(180, state.workbenchSize.width - 200)),
+  },
   actions: {
     toggleRibbon(id: string) { if (!this.componentToolbarCollapsed) this.activeRibbonGroup = this.activeRibbonGroup === id ? null : id },
     toggleComponentToolbar() {
@@ -18,6 +22,11 @@ export const useUiStore = defineStore('ui', {
       this.activeRibbonGroup = null
     },
     toggleToolsSidebar() { this.toolsSidebarCollapsed = !this.toolsSidebarCollapsed },
+    setComponentToolbarHeight(height: number) { if (Number.isFinite(height)) this.componentToolbarHeight = Math.max(96, Math.min(260, height)) },
+    setToolsSidebarWidth(width: number) { if (Number.isFinite(width)) this.toolsSidebarWidth = Math.max(54, Math.min(180, width)) },
+    setWorkbenchSize(width: number, height: number) {
+      if (Number.isFinite(width) && Number.isFinite(height)) this.workbenchSize = { width: Math.max(0, width), height: Math.max(0, height) }
+    },
     setViewport(width: number, height: number) {
       this.viewport = { width: Math.max(0, width), height: Math.max(0, height) }
       for (const window of this.windows) bound(window, this.viewport.width, this.viewport.height)

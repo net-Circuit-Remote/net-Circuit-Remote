@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { usePanelResize } from '../../composables/usePanelResize'
 import { useWorkspaceStore, type WorkspaceTool } from '../../stores/workspace'
 import { useUiStore } from '../../stores/ui'
 import WorkbenchIcon from './WorkbenchIcon.vue'
 const workspace = useWorkspaceStore()
 const ui = useUiStore()
-const toolList = ref<HTMLElement>()
+const root = ref<HTMLElement>()
 const collapseToggle = ref<HTMLButtonElement>()
-const collapseLabel = computed(() => ui.toolsSidebarCollapsed ? 'Expand tools sidebar' : 'Collapse tools sidebar')
+const collapseLabel = computed(() => ui.toolsSidebarCollapsed ? 'Expand Tools' : 'Collapse Tools')
+const expandedWidth = computed(() => ui.toolsSidebarWidth === null ? undefined : Math.min(ui.toolsSidebarWidth, ui.toolsSidebarMaxWidth))
+const resize = usePanelResize({ axis: 'x', enabled: () => !ui.toolsSidebarCollapsed, size: () => ui.toolsSidebarWidth ?? 66, limits: () => ({ min: 54, max: ui.toolsSidebarMaxWidth }), setSize: ui.setToolsSidebarWidth })
+onMounted(() => { if (ui.toolsSidebarWidth === null && root.value) ui.setToolsSidebarWidth(root.value.getBoundingClientRect().width) })
 watch(() => ui.toolsSidebarCollapsed, (collapsed) => {
-  if (collapsed && toolList.value?.contains(document.activeElement)) void nextTick(() => collapseToggle.value?.focus())
+  if (collapsed && root.value?.contains(document.activeElement) && document.activeElement !== collapseToggle.value) void nextTick(() => collapseToggle.value?.focus())
 })
 const tools: { id: WorkspaceTool; name: string }[] = ['select', 'wire', 'move', 'rotate', 'delete', 'scope', 'probe'].map((id) => ({ id: id as WorkspaceTool, name: id[0].toUpperCase() + id.slice(1) }))
 function select(tool: WorkspaceTool) {
@@ -19,12 +23,15 @@ function select(tool: WorkspaceTool) {
 }
 </script>
 <template>
-  <aside class="tool-rail" :class="{ 'is-collapsed': ui.toolsSidebarCollapsed }" aria-label="Workspace tools">
-    <button ref="collapseToggle" class="toolbar-collapse-toggle rail-collapse-toggle" :aria-label="collapseLabel" :title="collapseLabel" :aria-expanded="!ui.toolsSidebarCollapsed" aria-controls="editing-tools" @click="ui.toggleToolsSidebar()"><WorkbenchIcon name="chevron" /></button>
-    <div v-show="!ui.toolsSidebarCollapsed" class="rail-label">TOOLS</div>
-    <div v-show="!ui.toolsSidebarCollapsed" id="editing-tools" ref="toolList" role="toolbar" aria-label="Editing tools" aria-orientation="vertical">
+  <div ref="root" class="tools-panel" :class="{ 'is-collapsed': ui.toolsSidebarCollapsed, 'is-resizing': resize.dragging.value }" :style="{ width: ui.toolsSidebarCollapsed ? '0px' : expandedWidth === undefined ? undefined : expandedWidth + 'px' }">
+  <aside v-show="!ui.toolsSidebarCollapsed" id="tools-sidebar" class="tool-rail" aria-label="Workspace tools">
+    <div class="rail-label">TOOLS</div>
+    <div id="editing-tools" role="toolbar" aria-label="Editing tools" aria-orientation="vertical">
       <button v-for="tool in tools" :key="tool.id" :aria-label="tool.name" :aria-pressed="workspace.tool === tool.id" :title="tool.name + (['scope', 'probe'].includes(tool.id) ? ' · open instrument' : ' · edit logical graph')" @click="select(tool.id)"><WorkbenchIcon :name="tool.id" /><span>{{ tool.name }}</span></button>
     </div>
-    <span v-show="!ui.toolsSidebarCollapsed" class="rail-bottom">XZ</span>
+    <span class="rail-bottom">XZ</span>
   </aside>
+    <button ref="collapseToggle" class="toolbar-collapse-toggle rail-collapse-toggle" :aria-label="collapseLabel" :title="collapseLabel" :aria-expanded="!ui.toolsSidebarCollapsed" aria-controls="tools-sidebar" @click="ui.toggleToolsSidebar()"><WorkbenchIcon name="chevron" /></button>
+    <div v-show="!ui.toolsSidebarCollapsed" class="panel-resize-handle rail-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize Tools" title="Resize Tools" tabindex="0" aria-controls="tools-sidebar" :aria-valuemin="54" :aria-valuemax="ui.toolsSidebarMaxWidth" :aria-valuenow="expandedWidth" @pointerdown="resize.pointerDown" @pointermove="resize.pointerMove" @pointerup="resize.pointerUp" @pointercancel="resize.cancel" @lostpointercapture="resize.lostPointerCapture" @keydown="resize.keydown" />
+  </div>
 </template>

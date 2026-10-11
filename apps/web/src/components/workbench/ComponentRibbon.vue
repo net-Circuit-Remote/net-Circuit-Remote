@@ -5,11 +5,14 @@ import { useUiStore } from '../../stores/ui'
 import { useWorkspaceStore } from '../../stores/workspace'
 import WorkbenchIcon from './WorkbenchIcon.vue'
 import { getDefinition } from '../../data/editorCatalog'
+import { usePanelResize } from '../../composables/usePanelResize'
 const ui = useUiStore()
 const workspace = useWorkspaceStore()
 const root = ref<HTMLElement>()
 const collapseToggle = ref<HTMLButtonElement>()
-const collapseLabel = computed(() => ui.componentToolbarCollapsed ? 'Expand component toolbar' : 'Collapse component toolbar')
+const collapseLabel = computed(() => ui.componentToolbarCollapsed ? 'Expand Components' : 'Collapse Components')
+const expandedHeight = computed(() => ui.componentToolbarHeight === null ? undefined : Math.min(ui.componentToolbarHeight, ui.componentToolbarMaxHeight))
+const resize = usePanelResize({ axis: 'y', enabled: () => !ui.componentToolbarCollapsed, size: () => ui.componentToolbarHeight ?? 96, limits: () => ({ min: 96, max: ui.componentToolbarMaxHeight }), setSize: ui.setComponentToolbarHeight })
 const active = computed(() => !ui.componentToolbarCollapsed ? ribbonGroups.find((group) => group.id === ui.activeRibbonGroup) : undefined)
 const paletteStyle = ref({ left: '10px', width: '250px' })
 let resizeObserver: ResizeObserver | undefined
@@ -45,24 +48,27 @@ function drag(event: DragEvent, item: LibraryComponent) {
 function outside(event: PointerEvent) { if (event.target instanceof Node && !root.value?.contains(event.target)) ui.activeRibbonGroup = null }
 function escape(event: KeyboardEvent) { if (event.key === 'Escape' && ui.activeRibbonGroup) { root.value?.querySelector<HTMLButtonElement>(`[data-group="${ui.activeRibbonGroup}"]`)?.focus(); ui.activeRibbonGroup = null } }
 onMounted(() => {
+  if (ui.componentToolbarHeight === null && root.value) ui.setComponentToolbarHeight(root.value.getBoundingClientRect().height)
   document.addEventListener('pointerdown', outside); document.addEventListener('keydown', escape)
   resizeObserver = new ResizeObserver(anchorPalette); if (root.value) resizeObserver.observe(root.value)
 })
 onUnmounted(() => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape); resizeObserver?.disconnect() })
 </script>
 <template>
-  <section ref="root" class="component-ribbon" :class="{ 'is-collapsed': ui.componentToolbarCollapsed }" aria-label="Component library">
-    <span v-if="ui.componentToolbarCollapsed" class="ribbon-collapsed-label">Components</span>
-    <div v-show="!ui.componentToolbarCollapsed" id="component-families" class="ribbon-scroll" role="toolbar" aria-label="Component families" @scroll="anchorPalette">
+  <div ref="root" class="component-panel" :class="{ 'is-collapsed': ui.componentToolbarCollapsed, 'is-resizing': resize.dragging.value, 'has-size': expandedHeight !== undefined }" :style="{ height: ui.componentToolbarCollapsed ? '0px' : expandedHeight === undefined ? undefined : expandedHeight + 'px' }">
+    <section v-show="!ui.componentToolbarCollapsed" id="component-toolbar" class="component-ribbon" aria-label="Component library">
+    <div id="component-families" class="ribbon-scroll" role="toolbar" aria-label="Component families" @scroll="anchorPalette">
       <button v-for="group in ribbonGroups" :key="group.id" :data-group="group.id" :aria-expanded="ui.activeRibbonGroup === group.id" aria-controls="ribbon-palette" :class="{ active: ui.activeRibbonGroup === group.id }" @click="ui.toggleRibbon(group.id)">
         <span class="ribbon-art"><img v-if="group.icon" :src="iconUrl(group.icon)" alt="" width="44" height="44" /><WorkbenchIcon v-else :name="group.glyph || 'chip'" /></span>
         <span class="ribbon-label">{{ group.label }}</span><WorkbenchIcon class="ribbon-chevron" name="chevron" />
       </button>
     </div>
-    <button ref="collapseToggle" class="toolbar-collapse-toggle ribbon-collapse-toggle" :aria-label="collapseLabel" :title="collapseLabel" :aria-expanded="!ui.componentToolbarCollapsed" aria-controls="component-families" @click="ui.toggleComponentToolbar()"><WorkbenchIcon name="chevron" /></button>
+    </section>
+    <button ref="collapseToggle" class="toolbar-collapse-toggle ribbon-collapse-toggle" :aria-label="collapseLabel" :title="collapseLabel" :aria-expanded="!ui.componentToolbarCollapsed" aria-controls="component-toolbar" @click="ui.toggleComponentToolbar()"><WorkbenchIcon name="chevron" /></button>
+    <div v-show="!ui.componentToolbarCollapsed" class="panel-resize-handle ribbon-resize-handle" role="separator" aria-orientation="horizontal" aria-label="Resize Components" title="Resize Components" tabindex="0" aria-controls="component-toolbar" :aria-valuemin="96" :aria-valuemax="ui.componentToolbarMaxHeight" :aria-valuenow="expandedHeight" @pointerdown="resize.pointerDown" @pointermove="resize.pointerMove" @pointerup="resize.pointerUp" @pointercancel="resize.cancel" @lostpointercapture="resize.lostPointerCapture" @keydown="resize.keydown" />
   <div v-if="active" id="ribbon-palette" class="ribbon-palette" :style="paletteStyle" :aria-label="active.label + ' components'">
    <div class="palette-heading"><strong>{{ active.label }}</strong></div>
    <div class="palette-items"><button v-for="item in active.items" :key="item.type" :draggable="!!getDefinition(item.type)" @dragstart="drag($event, item)" @click="choose(item)"><span class="palette-art"><img v-if="item.icon" :src="iconUrl(item.icon)" alt="" width="58" height="58" /><WorkbenchIcon v-else :name="item.glyph || 'chip'" /></span><strong>{{ item.name }}</strong><small>{{ item.window ? 'Open window' : getDefinition(item.type) ? 'Place component' : item.type === 'JUMPER' ? 'Connect ports' : 'Model unavailable' }}</small></button></div>
     </div>
-  </section>
+  </div>
 </template>

@@ -16,6 +16,25 @@ function setup(onZoomChange?: (percent: number) => void) {
   return { manager, wheel, canvas }
 }
 
+test('panel-driven viewport resizing preserves camera pose, magnification, models and connections', () => {
+  const { manager } = setup()
+  try {
+    const graph = { schema_version: '1.0' as const, circuit_id: 'panels', modules: [{ id: 'A', type: 'CLOCK', position: { x: 0, y: 0, z: 0 } }, { id: 'B', type: 'LED', position: { x: 4, y: 0, z: 2 } }], connections: [{ source: 'A.OUT', destination: 'B.IN' }] }
+    manager.syncGraph(graph); manager.pan(1, 2); manager.orbit(30); manager.setZoom(137.5)
+    const snapshot = JSON.stringify(graph), position = manager.camera.position.clone(), heading = manager.camera.quaternion.clone(), zoom = manager.zoomPercent()
+    const poses = [...manager.models.values()].map((model) => model.matrixWorld.clone())
+    for (const [width, height] of [[900, 380], [1000, 700], [480, 600], [320, 150]]) {
+      manager.resize(width, height)
+      assert.ok(manager.camera.position.equals(position))
+      assert.ok(manager.camera.quaternion.equals(heading))
+      assert.ok(Math.abs(manager.zoomPercent() - zoom) < 1e-9)
+      assert.equal(manager.camera.aspect, width / height)
+      assert.equal(JSON.stringify(graph), snapshot)
+      assert.ok([...manager.models.values()].every((model, index) => model.matrixWorld.equals(poses[index])))
+    }
+  } finally { manager.dispose() }
+})
+
 test('wheel and toolbar use target-relative dolly with one reported zoom and reversible limits', () => {
   const reports: number[] = [], { manager, wheel } = setup((value) => reports.push(value))
   try {
